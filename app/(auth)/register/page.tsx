@@ -25,7 +25,7 @@ export default function RegisterPage() {
   ];
 
   return (
-    <main className="flex h-svh overflow-hidden pt-8 lg:pt-0">
+    <main className="flex min-h-svh lg:h-svh lg:overflow-hidden pt-8 lg:pt-0">
 
       {/* Left — decorative panel */}
       <div
@@ -78,7 +78,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right — form */}
-      <div className="w-full lg:w-[55%] flex flex-col items-center justify-center px-5 sm:px-10 overflow-y-auto" style={{ backgroundColor: '#f8faff' }}>
+      <div className="w-full lg:w-[55%] flex flex-col items-center justify-center px-5 sm:px-10 lg:overflow-y-auto" style={{ backgroundColor: '#f8faff' }}>
 
 <div className="w-full max-w-md py-4 sm:py-8">
           {done ? (
