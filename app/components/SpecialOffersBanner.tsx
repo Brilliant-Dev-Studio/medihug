@@ -72,7 +72,7 @@ export default function SpecialOffersBanner() {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-lg sm:text-2xl font-bold mb-4" style={{ color: '#0d2b6e' }}>{tr.specialOffersTitle}</h2>
 
-        <div className="relative overflow-hidden rounded-2xl" style={{ height: '200px' }}>
+        <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: '160px' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={offer.id}
@@ -84,35 +84,35 @@ export default function SpecialOffersBanner() {
             >
               {/* Background Image */}
               <Image src={offer.img} alt="offer" fill className="object-cover" />
-              {/* Dark overlay for text readability */}
-              <div className="absolute inset-0 bg-black/30" />
-
-              {/* Content */}
-              <div className="relative z-10 h-full flex flex-col sm:flex-row items-center justify-between px-6 sm:px-10 py-6 gap-4">
-                <div className="flex-1 text-center sm:text-left">
-                  <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full inline-block mb-3">
-                    {lang === 'mm' ? offer.badge_mm : offer.badge_en}
-                  </span>
-                  <h3 className="text-white text-xl sm:text-2xl font-bold mb-1">
-                    {lang === 'mm' ? offer.title_mm : offer.title_en}
-                  </h3>
-                  <p className="text-white/75 text-sm">
-                    {lang === 'mm' ? offer.desc_mm : offer.desc_en}
-                  </p>
-                </div>
-                <a
-                  href="#"
-                  className="shrink-0 font-semibold text-sm px-7 py-3 rounded-full hover:opacity-90 transition-opacity"
-                  style={{ backgroundColor: offer.ctaBg, color: offer.ctaColor }}
-                >
-                  {lang === 'mm' ? offer.cta_mm : offer.cta_en}
-                </a>
-              </div>
+              {/* Dark overlay */}
+              <div className="absolute inset-0 bg-black/40" />
             </motion.div>
           </AnimatePresence>
 
+          {/* Content — outside AnimatePresence so it doesn't flicker */}
+          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 sm:px-10 py-5 sm:py-8 gap-3 sm:gap-4">
+            <div className="flex-1">
+              <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full inline-block mb-2">
+                {lang === 'mm' ? offer.badge_mm : offer.badge_en}
+              </span>
+              <h3 className="text-white text-base sm:text-2xl font-bold leading-snug mb-1">
+                {lang === 'mm' ? offer.title_mm : offer.title_en}
+              </h3>
+              <p className="text-white/80 text-xs sm:text-sm">
+                {lang === 'mm' ? offer.desc_mm : offer.desc_en}
+              </p>
+            </div>
+            <a
+              href="#"
+              className="shrink-0 font-semibold text-xs sm:text-sm px-5 sm:px-7 py-2.5 sm:py-3 rounded-full hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: offer.ctaBg, color: offer.ctaColor }}
+            >
+              {lang === 'mm' ? offer.cta_mm : offer.cta_en}
+            </a>
+          </div>
+
           {/* Controls */}
-          <div className="absolute bottom-3 right-4 flex items-center gap-2">
+          <div className="relative z-10 flex items-center justify-end gap-2 px-4 pb-3">
             <button onClick={() => setCurrent(prev => (prev - 1 + offers.length) % offers.length)} className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
               <ChevronLeft className="w-4 h-4 text-white" />
             </button>
