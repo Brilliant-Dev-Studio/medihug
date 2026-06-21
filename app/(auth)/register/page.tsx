@@ -25,7 +25,7 @@ export default function RegisterPage() {
   ];
 
   return (
-    <main className="flex h-svh overflow-hidden">
+    <main className="flex h-svh overflow-hidden pt-8 lg:pt-0">
 
       {/* Left — decorative panel */}
       <div
@@ -80,15 +80,7 @@ export default function RegisterPage() {
       {/* Right — form */}
       <div className="w-full lg:w-[55%] flex flex-col items-center justify-center px-5 sm:px-10 overflow-y-auto" style={{ backgroundColor: '#f8faff' }}>
 
-        {/* Mobile logo */}
-        <div className="lg:hidden mb-4 mt-4">
-          <Link href="/" className="text-2xl font-bold">
-            <span style={{ color: '#0d2b6e' }}>Medi</span>
-            <span style={{ color: '#4facfe' }}>Hug</span>
-          </Link>
-        </div>
-
-        <div className="w-full max-w-md py-4 sm:py-8">
+<div className="w-full max-w-md py-4 sm:py-8">
           {done ? (
             <div className="text-center flex flex-col items-center gap-5 py-10 bg-white rounded-2xl shadow-sm border border-gray-100 px-8">
               <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: '#eff6ff' }}>

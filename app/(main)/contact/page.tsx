@@ -59,7 +59,7 @@ export default function ContactPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 gap-5">
               <div className="flex items-start gap-4">
                 <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                   <Phone className="w-4 h-4 text-white" />

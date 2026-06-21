@@ -103,8 +103,24 @@ export default function Header() {
             </svg>
             09779995588
           </a>
-          <Link href="/signin" className="text-sm font-semibold" style={{ color: '#0d2b6e' }}>{tr.signin}</Link>
-          <Link href="/register" className="text-white text-sm font-semibold px-5 py-2.5 rounded-full" style={{ backgroundColor: '#0d2b6e' }}>
+          <Link
+            href="/signin"
+            className="relative text-sm font-semibold transition-colors"
+            style={{ color: '#0d2b6e' }}
+          >
+            {tr.signin}
+            {pathname === '/signin' && (
+              <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: '#0d2b6e' }} />
+            )}
+          </Link>
+          <Link
+            href="/register"
+            className="text-sm font-semibold px-5 py-2.5 rounded-full transition-all"
+            style={{
+              backgroundColor: pathname === '/register' ? '#4facfe' : '#0d2b6e',
+              color: '#fff',
+            }}
+          >
             {tr.register}
           </Link>
           <LangDropdown />
@@ -175,8 +191,26 @@ export default function Header() {
           </div>
 
           <div className="flex gap-3 pt-1">
-            <Link href="/signin" className="flex-1 text-center text-sm font-semibold py-2.5 rounded-full border" style={{ color: '#0d2b6e', borderColor: '#0d2b6e' }} onClick={() => setOpen(false)}>{tr.signin}</Link>
-            <Link href="/register" className="flex-1 text-center text-white text-sm font-semibold py-2.5 rounded-full" style={{ backgroundColor: '#0d2b6e' }} onClick={() => setOpen(false)}>{tr.register}</Link>
+            <Link
+              href="/signin"
+              className="flex-1 text-center text-sm font-semibold py-2.5 rounded-full border transition-colors"
+              style={{
+                backgroundColor: pathname === '/signin' ? '#0d2b6e' : 'transparent',
+                color: pathname === '/signin' ? '#fff' : '#0d2b6e',
+                borderColor: '#0d2b6e',
+              }}
+              onClick={() => setOpen(false)}
+            >
+              {tr.signin}
+            </Link>
+            <Link
+              href="/register"
+              className="flex-1 text-center text-white text-sm font-semibold py-2.5 rounded-full transition-colors"
+              style={{ backgroundColor: pathname === '/register' ? '#4facfe' : '#0d2b6e' }}
+              onClick={() => setOpen(false)}
+            >
+              {tr.register}
+            </Link>
           </div>
         </div>
       )}

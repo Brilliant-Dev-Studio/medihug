@@ -15,7 +15,7 @@ export default function SignInPage() {
   };
 
   return (
-    <main className="flex h-svh overflow-hidden">
+    <main className="flex h-svh overflow-hidden pt-8 lg:pt-0">
 
       {/* Left — decorative panel */}
       <div
@@ -79,15 +79,7 @@ export default function SignInPage() {
       {/* Right — form */}
       <div className="w-full lg:w-[55%] flex flex-col items-center justify-center px-5 sm:px-10 overflow-y-auto" style={{ backgroundColor: '#f8faff' }}>
 
-        {/* Mobile logo */}
-        <div className="lg:hidden mb-6 mt-4">
-          <Link href="/" className="text-2xl font-bold">
-            <span style={{ color: '#0d2b6e' }}>Medi</span>
-            <span style={{ color: '#4facfe' }}>Hug</span>
-          </Link>
-        </div>
-
-        <div className="w-full max-w-md">
+<div className="w-full max-w-md">
 
           {/* Header */}
           <div className="mb-6 sm:mb-8">
