@@ -179,7 +179,7 @@ export default function PartnerClinics() {
                 </div>
 
                 {/* Button */}
-                <button className="w-full mt-auto py-2.5 rounded-xl text-xs font-semibold text-white" style={{ backgroundColor: color }}>
+                <button className="w-full mt-auto py-2.5 rounded-xl text-xs font-semibold text-white" style={{ backgroundColor: '#0d2b6e' }}>
                   {tr.viewDetails}
                 </button>
               </div>

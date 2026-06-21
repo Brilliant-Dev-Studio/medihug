@@ -1,16 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import BlurText from './components/BlurText';
-import AdSlider from './components/AdSlider';
-import HealthCategories from './components/HealthCategories';
-import TopSellingProducts from './components/TopSellingProducts';
-import Testimonials from './components/Testimonials';
-import OurDoctors from './components/OurDoctors';
-import PartnerClinics from './components/PartnerClinics';
-import BlogArticles from './components/BlogArticles';
-import SpecialOffersBanner from './components/SpecialOffersBanner';
-import { useLang } from './lib/LanguageContext';
+import BlurText from '../components/BlurText';
+import AdSlider from '../components/AdSlider';
+import HealthCategories from '../components/HealthCategories';
+import TopSellingProducts from '../components/TopSellingProducts';
+import Testimonials from '../components/Testimonials';
+import OurDoctors from '../components/OurDoctors';
+import PartnerClinics from '../components/PartnerClinics';
+import BlogArticles from '../components/BlogArticles';
+import SpecialOffersBanner from '../components/SpecialOffersBanner';
+import { useLang } from '../lib/LanguageContext';
 
 export default function Home() {
   const { tr } = useLang();

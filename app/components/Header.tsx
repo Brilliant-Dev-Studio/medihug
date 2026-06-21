@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { Menu, X, ChevronDown, Globe } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
 export default function Header() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const { lang, setLang, tr } = useLang();
@@ -71,9 +73,26 @@ export default function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link href="/" className="text-sm font-semibold" style={{ color: '#1a1a2e' }}>{tr.home}</Link>
-          <Link href="/contact" className="text-sm font-semibold" style={{ color: '#1a1a2e' }}>{tr.contact}</Link>
-          <Link href="/privacy" className="text-sm font-semibold" style={{ color: '#1a1a2e' }}>{tr.privacy}</Link>
+          {[
+            { href: '/', label: tr.home },
+            { href: '/contact', label: tr.contact },
+            { href: '/privacy', label: tr.privacy },
+          ].map(({ href, label }) => {
+            const active = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="relative text-sm font-semibold transition-colors"
+                style={{ color: active ? '#0d2b6e' : '#1a1a2e' }}
+              >
+                {label}
+                {active && (
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: '#0d2b6e' }} />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Desktop Actions */}
@@ -100,9 +119,25 @@ export default function Header() {
       {/* Mobile Sidebar */}
       {open && (
         <div className="md:hidden max-w-6xl mx-auto mt-2 bg-white rounded-2xl shadow-md px-6 py-6 flex flex-col gap-4">
-          <Link href="/" className="text-sm font-semibold py-2 border-b border-gray-100" style={{ color: '#1a1a2e' }} onClick={() => setOpen(false)}>{tr.home}</Link>
-          <Link href="/contact" className="text-sm font-semibold py-2 border-b border-gray-100" style={{ color: '#1a1a2e' }} onClick={() => setOpen(false)}>{tr.contact}</Link>
-          <Link href="/privacy" className="text-sm font-semibold py-2 border-b border-gray-100" style={{ color: '#1a1a2e' }} onClick={() => setOpen(false)}>{tr.privacy}</Link>
+          {[
+            { href: '/', label: tr.home },
+            { href: '/contact', label: tr.contact },
+            { href: '/privacy', label: tr.privacy },
+          ].map(({ href, label }) => {
+            const active = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="text-sm font-semibold py-2 border-b border-gray-100 flex items-center justify-between"
+                style={{ color: active ? '#0d2b6e' : '#1a1a2e' }}
+                onClick={() => setOpen(false)}
+              >
+                {label}
+                {active && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#0d2b6e' }} />}
+              </Link>
+            );
+          })}
           <a href="tel:09779995588" className="flex items-center gap-2 text-sm font-semibold py-2 border-b border-gray-100" style={{ color: '#0d2b6e' }}>
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />

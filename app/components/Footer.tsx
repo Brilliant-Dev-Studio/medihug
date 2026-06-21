@@ -7,7 +7,7 @@ export default function Footer() {
   const { tr } = useLang();
 
   return (
-    <footer className="w-full mt-6" style={{ backgroundColor: '#0d2b6e' }}>
+    <footer className="w-full " style={{ backgroundColor: '#0d2b6e' }}>
       <div className="max-w-6xl mx-auto px-8 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
 
         {/* Brand */}
@@ -39,10 +39,14 @@ export default function Footer() {
         <div className="flex flex-col gap-3">
           <h4 className="text-white font-semibold text-xs uppercase tracking-widest">{tr.quickLinks}</h4>
           <ul className="flex flex-col gap-1.5">
-            {[tr.home, tr.contact, tr.privacy].map(item => (
-              <li key={item}>
-                <Link href="/" className="text-white/50 text-xs hover:text-white transition-colors flex items-center gap-1.5">
-                  <span style={{ color: '#4facfe' }}>›</span> {item}
+            {[
+              { label: tr.home, href: '/' },
+              { label: tr.contact, href: '/contact' },
+              { label: tr.privacy, href: '/privacy' },
+            ].map(({ label, href }) => (
+              <li key={label}>
+                <Link href={href} className="text-white/50 text-xs hover:text-white transition-colors flex items-center gap-1.5">
+                  <span style={{ color: '#4facfe' }}>›</span> {label}
                 </Link>
               </li>
             ))}
