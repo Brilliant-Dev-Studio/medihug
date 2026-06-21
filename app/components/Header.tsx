@@ -67,9 +67,9 @@ export default function Header() {
       <header className="max-w-6xl mx-auto bg-white rounded-3xl shadow-sm px-5 sm:px-8 flex items-center justify-between" style={{ height: '75px' }}>
 
         {/* Logo */}
-        <span className="text-xl font-bold tracking-tight shrink-0" style={{ color: '#0d2b6e' }}>
+        <Link href="/" className="text-xl font-bold tracking-tight shrink-0" style={{ color: '#0d2b6e' }}>
           Medi<span style={{ color: '#1a6bcc' }}>Hug</span>
-        </span>
+        </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6">
