@@ -8,7 +8,7 @@ export default function Footer() {
 
   return (
     <footer className="w-full mt-6" style={{ backgroundColor: '#0d2b6e' }}>
-      <div className="max-w-6xl mx-auto px-8 py-8 grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="max-w-6xl mx-auto px-8 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
 
         {/* Brand */}
         <div className="flex flex-col gap-3">
