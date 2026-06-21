@@ -7,6 +7,9 @@ import HealthCategories from './components/HealthCategories';
 import TopSellingProducts from './components/TopSellingProducts';
 import Testimonials from './components/Testimonials';
 import OurDoctors from './components/OurDoctors';
+import PartnerClinics from './components/PartnerClinics';
+import BlogArticles from './components/BlogArticles';
+import SpecialOffersBanner from './components/SpecialOffersBanner';
 import { useLang } from './lib/LanguageContext';
 
 export default function Home() {
@@ -53,6 +56,9 @@ export default function Home() {
     <TopSellingProducts />
     <Testimonials />
     <OurDoctors />
+    <SpecialOffersBanner />
+    <PartnerClinics />
+    <BlogArticles />
     </>
   );
 }

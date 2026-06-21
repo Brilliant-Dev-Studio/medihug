@@ -31,13 +31,18 @@ export default function OurDoctors() {
             <h2 className="text-lg sm:text-2xl font-bold" style={{ color: '#0d2b6e' }}>{tr.doctorsTitle}</h2>
             <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.doctorsSubtitle}</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => scroll('left')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-              <ChevronLeft className="w-4 h-4 text-gray-500" />
-            </button>
-            <button onClick={() => scroll('right')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-              <ChevronRight className="w-4 h-4 text-gray-500" />
-            </button>
+          <div className="flex items-center gap-3">
+            <a href="#" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: '#0d2b6e', borderColor: '#0d2b6e' }}>
+              {tr.seeAll}
+            </a>
+            <div className="flex gap-2">
+              <button onClick={() => scroll('left')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                <ChevronLeft className="w-4 h-4 text-gray-500" />
+              </button>
+              <button onClick={() => scroll('right')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                <ChevronRight className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
           </div>
         </div>
 

@@ -13,8 +13,8 @@ export const t = {
     // Hero
     heroTitle: 'ကျန်းမာရေး အတွက် ချိတ်ဆက်ပေးသည်',
     heroDesc: 'MediHug သည် လူနာများနှင့် ကျန်းမာရေး ပြုစုသူများကို ဆေးကုသမှု၊ စိတ်ကျန်းမာရေး၊ နာတာရှည် ရောဂါ စီမံကွပ်ကဲမှုနှင့် အခြားဝန်ဆောင်မှုများအတွက် ချိတ်ဆက်ပေးပါသည်။',
-    getCareNow: 'ယခုပင် စောင့်ရှောက်မှု ရယူပါ',
-    noInsurance: 'အာမခံမလိုပါ',
+    getCareNow: 'စာရင်းသွင်းရန်',
+    noInsurance: 'ချိန်းဆိုရန်',
 
     // Health Categories
     categoriesTitle: 'ကျန်းမာရေး အမျိုးအစားများ ရှာဖွေပါ',
@@ -39,6 +39,7 @@ export const t = {
     topProductsTitle: 'အရောင်းရဆုံး ကုန်ပစ္စည်းများ',
     topProductsSubtitle: 'သုံးစွဲသူများ အကြိုက်ဆုံးများ',
     add: 'ထည့်ရန်',
+    viewAll: 'အားလုံးကြည့်ရန်',
 
     // Testimonials
     testimonialsTitle: 'သုံးစွဲသူများ၏ သုံးသပ်ချက်',
@@ -50,6 +51,7 @@ export const t = {
     experience: 'နှစ် အတွေ့အကြုံ',
     reviews: 'သုံးသပ်ချက်',
     bookConsultation: 'ဆေးစစ် ချိန်းဆိုရန်',
+    seeAll: 'အားလုံးကြည့်ရန်',
 
     // Footer
     footerTagline: 'ပိုမိုကောင်းမွန်သော ကျန်းမာရေးအတွက် တည်ဆောက်ထားသည်',
@@ -59,6 +61,19 @@ export const t = {
     telemedicine: 'အဝေးမှ ဆေးကုသမှု',
     doctorConsultation: 'ဆရာဝန် တိုင်ပင်ဆွေးနွေးမှု',
     emergencyCare: 'အရေးပေါ် ကုသမှု',
+
+    // Blog
+    blogTitle: 'ဆောင်းပါးများ',
+    blogSubtitle: 'ကျန်းမာရေး သတင်းများနှင့် အကြံဉာဏ်များ',
+    minRead: 'မိနစ် ဖတ်ရန်',
+
+    // Special Offers Banner
+    specialOffersTitle: 'အထူး အစီအစဉ်များ',
+
+    // Partner Clinics
+    partnerTitle: 'မိတ်ဖက် ဆေးရုံ/ဆေးခန်းများ',
+    partnerSubtitle: 'ယုံကြည်စိတ်ချရသော ကျန်းမာရေး ဝန်ဆောင်မှု ပေးသူများ',
+    viewDetails: 'အသေးစိတ်ကြည့်ရန်',
   },
 
   en: {
@@ -73,8 +88,8 @@ export const t = {
     // Hero
     heroTitle: 'Connecting you to better health',
     heroDesc: 'MediHug connects patients and care providers for medical care, mental health, chronic condition management and more.',
-    getCareNow: 'Get care now',
-    noInsurance: 'No insurance needed',
+    getCareNow: 'Register Now',
+    noInsurance: 'Book Appointment',
 
     // Health Categories
     categoriesTitle: 'Explore Our Health Categories',
@@ -99,6 +114,7 @@ export const t = {
     topProductsTitle: 'Top Selling Products',
     topProductsSubtitle: 'Most loved by our customers',
     add: 'Add',
+    viewAll: 'View All',
 
     // Testimonials
     testimonialsTitle: 'What Our Customers Say',
@@ -110,6 +126,7 @@ export const t = {
     experience: 'Experience',
     reviews: 'reviews',
     bookConsultation: 'Book Consultation',
+    seeAll: 'See All',
 
     // Footer
     footerTagline: 'Built with ❤️ for better health',
@@ -119,5 +136,18 @@ export const t = {
     telemedicine: 'Telemedicine',
     doctorConsultation: 'Doctor Consultation',
     emergencyCare: 'Emergency Care',
+
+    // Blog
+    blogTitle: 'Articles & Blog',
+    blogSubtitle: 'Health news, tips & expert advice',
+    minRead: 'min read',
+
+    // Special Offers Banner
+    specialOffersTitle: 'Special Offers',
+
+    // Partner Clinics
+    partnerTitle: 'Partner Hospitals & Clinics',
+    partnerSubtitle: 'Trusted healthcare service providers',
+    viewDetails: 'View Details',
   },
 };
