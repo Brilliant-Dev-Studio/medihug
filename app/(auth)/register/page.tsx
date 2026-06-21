@@ -25,7 +25,7 @@ export default function RegisterPage() {
   ];
 
   return (
-    <main className="flex min-h-svh lg:h-svh lg:overflow-hidden pt-8 lg:pt-0">
+    <main className="flex min-h-svh lg:h-svh lg:overflow-hidden pt-[90px] lg:pt-0">
 
       {/* Left — decorative panel */}
       <div
