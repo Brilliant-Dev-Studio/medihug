@@ -50,11 +50,11 @@ export default function HealthCategories() {
               className="flex flex-col items-center gap-2 bg-white rounded-2xl border border-gray-100 px-2 pt-5 pb-4 cursor-pointer text-center"
             >
               {image ? (
-                <Image src={image} alt={key} width={52} height={52} className="object-contain w-12 h-12" />
+                <Image src={image} alt={key} width={56} height={56} className="object-contain w-12 h-12 sm:w-14 sm:h-14" />
               ) : (
-                Icon && <Icon style={{ color }} className="w-10 h-10" strokeWidth={2.5} />
+                Icon && <Icon style={{ color }} className="w-8 h-8 sm:w-10 sm:h-10" strokeWidth={2.5} />
               )}
-              <span className="text-xs leading-snug font-medium text-gray-600 mt-1">
+              <span className="text-xs sm:text-xs leading-snug font-semibold text-gray-600 mt-1">
                 {tr.categories[key]}
               </span>
             </button>
