@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
 import { LanguageProvider } from "./lib/LanguageContext";
 
 const poppins = Poppins({
@@ -22,12 +21,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} h-full antialiased`}>
+    <html lang="mm" className={`${poppins.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col relative">
         <LanguageProvider>
-          <Header />
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 3000,
+              style: { fontFamily: 'var(--font-poppins)', fontSize: '14px' },
+              success: { iconTheme: { primary: '#0d2b6e', secondary: '#fff' } },
+              error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+            }}
+          />
           {children}
-          <Footer />
         </LanguageProvider>
       </body>
     </html>

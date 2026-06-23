@@ -2,16 +2,44 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Phone, Lock } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useLang } from '../../lib/LanguageContext';
 
 export default function SignInPage() {
   const { lang } = useLang();
+  const router = useRouter();
   const [show, setShow] = useState(false);
   const [form, setForm] = useState({ phone: '', password: '' });
 
+  const mm = lang === 'mm';
+
+  const validate = () => {
+    if (!form.phone.trim()) {
+      toast.error(mm ? 'ဖုန်းနံပါတ် ထည့်ပါ' : 'Please enter your phone number');
+      return false;
+    }
+    if (!/^(09|\+?959)\d{7,9}$/.test(form.phone.replace(/\s/g, ''))) {
+      toast.error(mm ? 'ဖုန်းနံပါတ် မှားနေသည်' : 'Invalid phone number format');
+      return false;
+    }
+    if (!form.password) {
+      toast.error(mm ? 'စကားဝှက် ထည့်ပါ' : 'Please enter your password');
+      return false;
+    }
+    if (form.password.length < 6) {
+      toast.error(mm ? 'စကားဝှက် အနည်းဆုံး ၆ လုံး ဖြစ်ရမည်' : 'Password must be at least 6 characters');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
+    toast.success(mm ? 'OTP ကုဒ် ပေးပို့နေသည်...' : 'Sending OTP code...');
+    router.push('/verify');
   };
 
   return (

@@ -2,20 +2,61 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Phone, Lock, User } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useLang } from '../../lib/LanguageContext';
 
 export default function RegisterPage() {
   const { lang } = useLang();
+  const router = useRouter();
   const [show, setShow] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [form, setForm] = useState({ username: '', phone: '', password: '', confirm: '' });
-  const [done, setDone] = useState(false);
+
+  const mm = lang === 'mm';
+
+  const validate = () => {
+    if (!form.username.trim()) {
+      toast.error(mm ? 'အသုံးပြုသူ နာမည် ထည့်ပါ' : 'Please enter a username');
+      return false;
+    }
+    if (form.username.trim().length < 3) {
+      toast.error(mm ? 'Username အနည်းဆုံး ၃ လုံး ဖြစ်ရမည်' : 'Username must be at least 3 characters');
+      return false;
+    }
+    if (!form.phone.trim()) {
+      toast.error(mm ? 'ဖုန်းနံပါတ် ထည့်ပါ' : 'Please enter your phone number');
+      return false;
+    }
+    if (!/^(09|\+?959)\d{7,9}$/.test(form.phone.replace(/\s/g, ''))) {
+      toast.error(mm ? 'ဖုန်းနံပါတ် မှားနေသည်' : 'Invalid phone number format');
+      return false;
+    }
+    if (!form.password) {
+      toast.error(mm ? 'စကားဝှက် ထည့်ပါ' : 'Please enter a password');
+      return false;
+    }
+    if (form.password.length < 6) {
+      toast.error(mm ? 'စကားဝှက် အနည်းဆုံး ၆ လုံး ဖြစ်ရမည်' : 'Password must be at least 6 characters');
+      return false;
+    }
+    if (!form.confirm) {
+      toast.error(mm ? 'စကားဝှက် အတည်ပြုပါ' : 'Please confirm your password');
+      return false;
+    }
+    if (form.password !== form.confirm) {
+      toast.error(mm ? 'စကားဝှက် မတူညီပါ' : 'Passwords do not match');
+      return false;
+    }
+    return true;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.password !== form.confirm) return;
-    setDone(true);
+    if (!validate()) return;
+    toast.success(mm ? 'OTP ကုဒ် ပေးပို့နေသည်...' : 'Sending OTP code...');
+    router.push('/verify');
   };
 
   const steps = [
@@ -81,29 +122,8 @@ export default function RegisterPage() {
       <div className="w-full lg:w-[55%] flex flex-col items-center justify-center px-5 sm:px-10 lg:overflow-y-auto" style={{ backgroundColor: '#f8faff' }}>
 
 <div className="w-full max-w-md py-4 sm:py-8">
-          {done ? (
-            <div className="text-center flex flex-col items-center gap-5 py-10 bg-white rounded-2xl shadow-sm border border-gray-100 px-8">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: '#eff6ff' }}>
-                <svg className="w-9 h-9" fill="none" stroke="#0d2b6e" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-xl font-bold mb-2" style={{ color: '#0d2b6e' }}>
-                  {lang === 'mm' ? 'မှတ်ပုံတင်ပြီးပါပြီ!' : 'Registration Complete!'}
-                </h2>
-                <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
-                  {lang === 'mm'
-                    ? 'သင့်အကောင့် အောင်မြင်စွာ ဖွင့်ပြီးပါပြီ။'
-                    : 'Your account has been created. You can now sign in.'}
-                </p>
-              </div>
-              <Link href="/signin" className="px-8 py-3 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity" style={{ backgroundColor: '#0d2b6e' }}>
-                {lang === 'mm' ? 'ဝင်ရောက်ရန်' : 'Sign In'}
-              </Link>
-            </div>
-          ) : (
-            <>
+          <>
+
               <div className="mb-6">
                 <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#4facfe' }}>
                   {lang === 'mm' ? 'အကောင့် အသစ်' : 'New account'}
@@ -208,7 +228,7 @@ export default function RegisterPage() {
                   className="w-full py-3.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity mt-1"
                   style={{ backgroundColor: '#0d2b6e' }}
                 >
-                  {lang === 'mm' ? 'အကောင့် ဖွင့်ရန်' : 'Create Account'}
+                  {lang === 'mm' ? 'စာရင်းသွင်းရန်' : 'Register'}
                 </button>
 
               </form>
@@ -219,8 +239,7 @@ export default function RegisterPage() {
                   {lang === 'mm' ? 'ဝင်ရောက်ရန်' : 'Sign In'}
                 </Link>
               </p>
-            </>
-          )}
+          </>
         </div>
       </div>
     </main>

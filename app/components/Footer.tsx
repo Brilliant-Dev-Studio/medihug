@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Phone, MapPin } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
 export default function Footer() {
@@ -72,11 +73,11 @@ export default function Footer() {
           <h4 className="text-white font-semibold text-xs uppercase tracking-widest">Contact</h4>
           <ul className="flex flex-col gap-2 text-xs text-white/50">
             <li className="flex items-start gap-2">
-              <span style={{ color: '#4facfe' }} className="mt-0.5">📞</span>
+              <Phone className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: '#4facfe' }} />
               <span>5588 (Ext 1),<br />09 77 999 5588</span>
             </li>
             <li className="flex items-start gap-2">
-              <span style={{ color: '#4facfe' }} className="mt-0.5">📍</span>
+              <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: '#4facfe' }} />
               <span>No.339, 11th Floor, Room 1103,<br />Bogyoke Aung San Road,<br />Sakura Tower, Yangon.</span>
             </li>
           </ul>

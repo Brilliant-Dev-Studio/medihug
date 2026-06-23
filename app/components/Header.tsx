@@ -115,13 +115,13 @@ export default function Header() {
           </Link>
           <Link
             href="/register"
-            className="text-sm font-semibold px-5 py-2.5 rounded-full transition-all"
-            style={{
-              backgroundColor: pathname === '/register' ? '#4facfe' : '#0d2b6e',
-              color: '#fff',
-            }}
+            className="relative text-sm font-semibold transition-colors"
+            style={{ color: '#0d2b6e' }}
           >
             {tr.register}
+            {pathname === '/register' && (
+              <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: '#0d2b6e' }} />
+            )}
           </Link>
           <LangDropdown />
         </div>

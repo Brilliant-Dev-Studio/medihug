@@ -52,10 +52,10 @@ export default function Home() {
     </section>
 
     <AdSlider />
+    <OurDoctors />
     <HealthCategories />
     <TopSellingProducts />
     <Testimonials />
-    <OurDoctors />
     <SpecialOffersBanner />
     <PartnerClinics />
     <BlogArticles />
