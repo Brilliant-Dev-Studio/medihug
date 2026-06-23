@@ -81,7 +81,7 @@ export default function HealthBlogSlider() {
         {blogCategories.map((cat, i) => (
           <button
             key={i}
-            className="shrink-0 relative w-24 h-24 rounded-2xl overflow-hidden active:scale-95 transition-all"
+            className="shrink-0 relative w-24 h-24 rounded-xl overflow-hidden active:scale-95 transition-all"
           >
             <Image
               src={cat.img}

@@ -121,8 +121,8 @@ export default function PatientDashboard() {
         className="px-4"
         style={{
           background: 'linear-gradient(180deg, #0d2b6e 0%, #1a6bcc 100%)',
-          borderBottomLeftRadius: 28,
-          borderBottomRightRadius: 28,
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20,
           marginTop: -72,
           paddingTop: 84,
           paddingBottom: 60,
@@ -135,7 +135,7 @@ export default function PatientDashboard() {
           </div>
           <WeatherWidget />
         </div>
-        <Link href="/patient/doctors" className="flex items-center gap-3 rounded-2xl px-4 py-3.5 w-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+        <Link href="/patient/doctors" className="flex items-center gap-3 rounded-xl px-4 py-3.5 w-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
           <Search className="w-4 h-4 shrink-0" style={{ color: 'rgba(255,255,255,0.7)' }} />
           <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search doctors...'}</span>
         </Link>
@@ -146,9 +146,6 @@ export default function PatientDashboard() {
         {/* ── Ad Banner (50% overlap on hero) ── */}
         <div className="overflow-hidden bg-white border border-gray-100 shadow-sm flex items-center px-4 py-3 gap-3" style={{ position: 'relative', zIndex: 10, borderRadius: 28 }}>
           <div className="flex-1 min-w-0">
-            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mb-2" style={{ backgroundColor: '#eff6ff', color: '#1a6bcc' }}>
-              {mm ? '🩺 ဆရာဝန် တိုင်ပင်ရန်' : '🩺 Online Consult'}
-            </span>
             <p className="font-bold text-sm leading-snug mb-0.5" style={{ color: '#0d2b6e' }}>
               {mm ? ads[0].title_mm : ads[0].title_en}
             </p>
@@ -181,7 +178,7 @@ export default function PatientDashboard() {
               <Link
                 key={labelEn}
                 href={href}
-                className="flex flex-col items-center gap-1.5 px-0.5 py-2.5 bg-white rounded-2xl border border-gray-100 active:scale-95 transition-all"
+                className="flex flex-col items-center gap-1.5 px-0.5 py-2.5 bg-white rounded-xl border border-gray-100 active:scale-95 transition-all"
               >
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center"
@@ -189,14 +186,14 @@ export default function PatientDashboard() {
                 >
                   <Icon style={{ width: 20, height: 20, color }} />
                 </div>
-                <span className="text-[10px] font-semibold text-center leading-tight whitespace-pre-line" style={{ color: '#374151' }}>
+                <span className="text-[10px] font-semibold text-center whitespace-pre-line" style={{ color: '#374151' }}>
                   {mm ? labelMm : labelEn}
                 </span>
               </Link>
             ))}
             <Link
               href="/patient/categories"
-              className="flex flex-col items-center gap-1.5 px-0.5 py-2.5 bg-white rounded-2xl border border-gray-100 active:scale-95 transition-all"
+              className="flex flex-col items-center gap-1.5 px-0.5 py-2.5 bg-white rounded-xl border border-gray-100 active:scale-95 transition-all"
             >
               <div
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
@@ -204,7 +201,7 @@ export default function PatientDashboard() {
               >
                 <LayoutGrid style={{ width: 20, height: 20, color: '#6b7280' }} />
               </div>
-              <span className="text-[10px] font-semibold text-center leading-tight" style={{ color: '#374151' }}>
+              <span className="text-[10px] font-semibold text-center" style={{ color: '#374151' }}>
                 {mm ? 'နောက်ထပ်' : 'More'}
               </span>
             </Link>
@@ -226,7 +223,7 @@ export default function PatientDashboard() {
           </div>
 
           {upcomingAppointments.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-100 flex items-center gap-3 px-4 py-4">
+            <div className="bg-white rounded-xl border border-gray-100 flex items-center gap-3 px-4 py-4">
               <Lottie
                 animationData={emptyLottie}
                 loop
@@ -252,7 +249,7 @@ export default function PatientDashboard() {
           ) : (
             <div className="flex flex-col gap-2">
               {upcomingAppointments.map((a, i) => (
-                <div key={i} className="bg-white rounded-2xl px-3 py-3 border border-gray-100 flex items-center gap-3">
+                <div key={i} className="bg-white rounded-xl px-3 py-3 border border-gray-100 flex items-center gap-3">
                   <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-gray-100">
                     <Image src={a.img} alt={a.doctor_en} width={44} height={44} className="w-full h-full object-cover" />
                   </div>
@@ -286,7 +283,7 @@ export default function PatientDashboard() {
           </div>
           <div className="flex flex-col gap-2">
             {doctors.map((d, i) => (
-              <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-gray-100 bg-white">
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-white">
                 {/* Photo */}
                 <div className="relative shrink-0">
                   <div
@@ -303,20 +300,20 @@ export default function PatientDashboard() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-xs truncate leading-tight" style={{ color: '#0d2b6e' }}>
+                  <p className="font-bold text-xs truncate" style={{ color: '#0d2b6e', lineHeight: '1.8' }}>
                     {mm ? d.name_mm : d.name_en}
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span
                       className="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                      style={{ backgroundColor: '#eff6ff', color: '#1a6bcc' }}
+                      style={{ backgroundColor: '#eff6ff', color: '#1a6bcc', lineHeight: '1.8' }}
                     >
                       {mm ? d.spec_mm : d.spec_en}
                     </span>
                     <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                     <span className="text-[10px] font-bold" style={{ color: '#b45309' }}>{d.rating}</span>
                   </div>
-                  <span className="text-[10px] font-semibold" style={{ color: '#0d2b6e' }}>
+                  <span className="text-[10px] font-semibold" style={{ color: '#0d2b6e', lineHeight: '1.8' }}>
                     {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
                   </span>
                 </div>
