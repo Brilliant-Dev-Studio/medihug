@@ -95,13 +95,13 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         {/* Mobile: scroll container — header is sticky inside it */}
         <div
           ref={scrollRef}
-          className="lg:hidden h-screen overflow-y-auto pb-16 flex flex-col"
+          className="lg:hidden h-screen overflow-y-auto pb-16 flex flex-col w-screen max-w-full"
         >
           {/* Sticky header inside scroll container */}
           <div
             className="sticky top-0 z-40 px-4 py-4 flex items-center justify-between transition-all duration-300"
             style={{
-              background: scrolled ? '#ffffff' : 'transparent',
+              background: scrolled ? '#ffffff' : 'linear-gradient(135deg, #0d2b6e 0%, #1a6bcc 100%)',
               boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.08)' : 'none',
             }}
           >

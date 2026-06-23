@@ -14,6 +14,9 @@ import { useLang } from '../../lib/LanguageContext';
 import emptyLottie from '../../../public/lottie-empty.json';
 import doctorLottie from '../../../public/lottie/Live chatbot.json';
 import SpecialOffersBanner from '../../components/SpecialOffersBanner';
+import AdSlider from '../../components/AdSlider';
+import HealthBlogSlider from '../../components/HealthBlogSlider';
+import PartnerClinicsSlider from '../../components/PartnerClinicsSlider';
 
 
 type WeatherData = { temp: number; code: number; city: string };
@@ -96,9 +99,9 @@ const ads = [
 ];
 
 const doctors = [
-  { name_mm: 'ဒေါ်ကျော်ကျော်သိန်း', name_en: 'Dr. Kyaw Kyaw Thein', spec_mm: 'နှလုံးအထူးကု',   spec_en: 'Cardiologist',  rating: 4.9, img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&crop=face' },
-  { name_mm: 'ဦးမောင်မောင်ဝင်း',     name_en: 'Dr. Maung Maung Win',  spec_mm: 'အရေပြားအထူးကု', spec_en: 'Dermatologist', rating: 4.8, img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face' },
-  { name_mm: 'ဒေါ်သန်းသန်းမြင့်',   name_en: 'Dr. Than Than Myint',  spec_mm: 'ကလေးအထူးကု',   spec_en: 'Pediatrician',  rating: 4.7, img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=100&h=100&fit=crop&crop=face' },
+  { name_mm: 'ဒေါ်ကျော်ကျော်သိန်း', name_en: 'Dr. Kyaw Kyaw Thein', spec_mm: 'နှလုံးအထူးကု',   spec_en: 'Cardiologist',  rating: 4.9, price: 15000, img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&crop=face' },
+  { name_mm: 'ဦးမောင်မောင်ဝင်း',     name_en: 'Dr. Maung Maung Win',  spec_mm: 'အရေပြားအထူးကု', spec_en: 'Dermatologist', rating: 4.8, price: 12000, img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face' },
+  { name_mm: 'ဒေါ်သန်းသန်းမြင့်',   name_en: 'Dr. Than Than Myint',  spec_mm: 'ကလေးအထူးကု',   spec_en: 'Pediatrician',  rating: 4.7, price: 10000, img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=100&h=100&fit=crop&crop=face' },
 ];
 
 const upcomingAppointments: { doctor_mm: string; doctor_en: string; spec_mm: string; spec_en: string; date: string; time: string; img: string }[] = [
@@ -111,7 +114,7 @@ export default function PatientDashboard() {
   const mm = lang === 'mm';
 
   return (
-    <div className="bg-gray-50 min-h-full">
+    <div className="bg-gray-50 min-h-full w-full" style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
 
       {/* ── Hero: header + search seamless ── */}
       <div
@@ -121,11 +124,11 @@ export default function PatientDashboard() {
           borderBottomLeftRadius: 28,
           borderBottomRightRadius: 28,
           marginTop: -72,
-          paddingTop: 96,
-          paddingBottom: 80,
+          paddingTop: 84,
+          paddingBottom: 60,
         }}
       >
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-3">
           <div>
             <p className="text-xs text-white/60">{mm ? 'မင်္ဂလာပါ 👋' : 'Hello 👋'}</p>
             <h1 className="text-lg font-bold text-white">Patient User</h1>
@@ -138,7 +141,7 @@ export default function PatientDashboard() {
         </Link>
       </div>
 
-      <div className="px-4 pb-4 space-y-5" style={{ marginTop: -56 }}>
+      <div className="px-4 pb-4 space-y-3" style={{ marginTop: -44 }}>
 
         {/* ── Ad Banner (50% overlap on hero) ── */}
         <div className="overflow-hidden bg-white border border-gray-100 shadow-sm flex items-center px-4 py-3 gap-3" style={{ position: 'relative', zIndex: 10, borderRadius: 28 }}>
@@ -173,8 +176,8 @@ export default function PatientDashboard() {
               {mm ? 'ဝန်ဆောင်မှု အမျိုးအစားများ' : 'Services'}
             </h2>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {categories.slice(0, 8).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
+          <div className="grid grid-cols-3 gap-1">
+            {categories.slice(0, 5).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
               <Link
                 key={labelEn}
                 href={href}
@@ -208,6 +211,9 @@ export default function PatientDashboard() {
           </div>
         </div>
 
+        {/* ── Ads Slider ── */}
+        <AdSlider />
+
         {/* ── Upcoming Appointments ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
@@ -220,45 +226,46 @@ export default function PatientDashboard() {
           </div>
 
           {upcomingAppointments.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-4">
+            <div className="bg-white rounded-2xl border border-gray-100 flex items-center gap-3 px-4 py-4">
               <Lottie
                 animationData={emptyLottie}
                 loop
                 autoplay
-                style={{ width: 160, height: 160 }}
+                style={{ width: 72, height: 72, flexShrink: 0 }}
               />
-              <p className="text-sm font-semibold text-gray-500 -mt-2">
-                {mm ? 'ချိန်းဆိုမှု မရှိသေးပါ' : 'No upcoming appointments'}
-              </p>
-              <p className="text-xs text-gray-400 mt-1 mb-4">
-                {mm ? 'ဆရာဝန်နှင့် ချိန်းဆိုရန် အောက်ကို နှိပ်ပါ' : 'Book a doctor appointment below'}
-              </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-500">
+                  {mm ? 'ချိန်းဆိုမှု မရှိသေးပါ' : 'No upcoming appointments'}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {mm ? 'ဆရာဝန်နှင့် ချိန်းဆိုရန် နှိပ်ပါ' : 'Tap below to book a doctor'}
+                </p>
+              </div>
               <Link
                 href="/patient/appointments"
-                className="text-xs font-semibold px-5 py-2.5 rounded-xl text-white"
+                className="text-xs font-bold px-4 py-2 rounded-full text-white shrink-0"
                 style={{ backgroundColor: '#0d2b6e' }}
               >
-                {mm ? 'ချိန်းဆိုရန်' : 'Book Appointment'}
+                {mm ? 'ချိန်းဆို' : 'Book'}
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               {upcomingAppointments.map((a, i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 border-gray-100">
-                    <Image src={a.img} alt={a.doctor_en} width={48} height={48} className="w-full h-full object-cover" />
+                <div key={i} className="bg-white rounded-2xl px-3 py-3 border border-gray-100 flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-gray-100">
+                    <Image src={a.img} alt={a.doctor_en} width={44} height={44} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate" style={{ color: '#0d2b6e' }}>
                       {mm ? a.doctor_mm : a.doctor_en}
                     </p>
-                    <p className="text-xs text-gray-400">{mm ? a.spec_mm : a.spec_en}</p>
-                    <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 mt-0.5">
                       <Clock className="w-3 h-3 text-gray-400" />
-                      <span className="text-xs text-gray-500">{a.date} · {a.time}</span>
+                      <span className="text-xs text-gray-400">{a.date} · {a.time}</span>
                     </div>
                   </div>
-                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0" style={{ backgroundColor: '#eff6ff', color: '#0d2b6e' }}>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full shrink-0" style={{ backgroundColor: '#eff6ff', color: '#0d2b6e' }}>
                     {mm ? 'အတည်ပြု' : 'Confirmed'}
                   </span>
                 </div>
@@ -277,44 +284,47 @@ export default function PatientDashboard() {
               {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {doctors.map((d, i) => (
-              <div key={i} className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl border border-gray-100 bg-white">
+              <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-gray-100 bg-white">
                 {/* Photo */}
                 <div className="relative shrink-0">
                   <div
-                    className="w-14 h-14 rounded-full overflow-hidden"
-                    style={{ boxShadow: '0 0 0 2px #e8eeff, 0 0 0 4px #fff' }}
+                    className="w-11 h-11 rounded-full overflow-hidden"
+                    style={{ boxShadow: '0 0 0 2px #e8eeff, 0 0 0 3px #fff' }}
                   >
-                    <Image src={d.img} alt={d.name_en} width={56} height={56} className="w-full h-full object-cover" />
+                    <Image src={d.img} alt={d.name_en} width={44} height={44} className="w-full h-full object-cover" />
                   </div>
                   <span
-                    className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white"
+                    className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white"
                     style={{ backgroundColor: '#22c55e' }}
                   />
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm truncate leading-tight" style={{ color: '#0d2b6e' }}>
+                  <p className="font-bold text-xs truncate leading-tight" style={{ color: '#0d2b6e' }}>
                     {mm ? d.name_mm : d.name_en}
                   </p>
-                  <span
-                    className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1"
-                    style={{ backgroundColor: '#eff6ff', color: '#1a6bcc' }}
-                  >
-                    {mm ? d.spec_mm : d.spec_en}
-                  </span>
-                  <div className="flex items-center gap-1 mt-1.5">
-                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-bold" style={{ color: '#b45309' }}>{d.rating}</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span
+                      className="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                      style={{ backgroundColor: '#eff6ff', color: '#1a6bcc' }}
+                    >
+                      {mm ? d.spec_mm : d.spec_en}
+                    </span>
+                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                    <span className="text-[10px] font-bold" style={{ color: '#b45309' }}>{d.rating}</span>
                   </div>
+                  <span className="text-[10px] font-semibold" style={{ color: '#0d2b6e' }}>
+                    {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
+                  </span>
                 </div>
 
                 {/* Book button */}
                 <Link
                   href="/patient/appointments"
-                  className="text-xs font-bold px-4 py-2 rounded-full shrink-0 text-white transition-all"
+                  className="text-[10px] font-bold px-3 py-1.5 rounded-full shrink-0 text-white transition-all"
                   style={{ background: 'linear-gradient(135deg, #0d2b6e 0%, #1a6bcc 100%)' }}
                 >
                   {mm ? 'ချိန်းဆို' : 'Book'}
@@ -323,6 +333,12 @@ export default function PatientDashboard() {
             ))}
           </div>
         </div>
+
+        {/* ── Health Blog Categories ── */}
+        <HealthBlogSlider />
+
+        {/* ── Partner Clinics ── */}
+        <PartnerClinicsSlider />
 
       </div>
 
