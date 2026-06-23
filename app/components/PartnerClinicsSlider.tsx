@@ -57,7 +57,7 @@ export default function PartnerClinicsSlider() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-bold text-sm" style={{ color: '#0d2b6e' }}>
+        <h2 className="font-bold text-base" style={{ color: '#0d2b6e' }}>
           {mm ? 'မိတ်ဖက် ဆေးရုံ ဆေးခန်းများ' : 'Partner Clinics'}
         </h2>
       </div>

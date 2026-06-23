@@ -130,14 +130,14 @@ export default function PatientDashboard() {
       >
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-xs text-white/60">{mm ? 'မင်္ဂလာပါ 👋' : 'Hello 👋'}</p>
-            <h1 className="text-lg font-bold text-white">Patient User</h1>
+            <p className="text-sm text-white/60">{mm ? 'မင်္ဂလာပါ 👋' : 'Hello 👋'}</p>
+            <h1 className="text-xl font-bold text-white">Patient User</h1>
           </div>
           <WeatherWidget />
         </div>
         <Link href="/patient/doctors" className="flex items-center gap-3 rounded-xl px-4 py-3.5 w-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
           <Search className="w-4 h-4 shrink-0" style={{ color: 'rgba(255,255,255,0.7)' }} />
-          <span className="text-sm" style={{ color: 'rgba(255,255,255,0.6)' }}>{mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search doctors...'}</span>
+          <span className="text-base" style={{ color: 'rgba(255,255,255,0.6)' }}>{mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search doctors...'}</span>
         </Link>
       </div>
 
@@ -169,7 +169,7 @@ export default function PatientDashboard() {
         {/* ── Categories ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-sm" style={{ color: '#0d2b6e' }}>
+            <h2 className="font-bold text-base" style={{ color: '#0d2b6e' }}>
               {mm ? 'ဝန်ဆောင်မှု အမျိုးအစားများ' : 'Services'}
             </h2>
           </div>
@@ -186,7 +186,7 @@ export default function PatientDashboard() {
                 >
                   <Icon style={{ width: 20, height: 20, color }} />
                 </div>
-                <span className="text-[10px] font-semibold text-center whitespace-pre-line" style={{ color: '#374151' }}>
+                <span className="text-xs font-semibold text-center whitespace-pre-line" style={{ color: '#374151' }}>
                   {mm ? labelMm : labelEn}
                 </span>
               </Link>
@@ -201,7 +201,7 @@ export default function PatientDashboard() {
               >
                 <LayoutGrid style={{ width: 20, height: 20, color: '#6b7280' }} />
               </div>
-              <span className="text-[10px] font-semibold text-center" style={{ color: '#374151' }}>
+              <span className="text-xs font-semibold text-center" style={{ color: '#374151' }}>
                 {mm ? 'နောက်ထပ်' : 'More'}
               </span>
             </Link>
@@ -214,7 +214,7 @@ export default function PatientDashboard() {
         {/* ── Upcoming Appointments ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-sm" style={{ color: '#0d2b6e' }}>
+            <h2 className="font-bold text-base" style={{ color: '#0d2b6e' }}>
               {mm ? 'လာမည့် ချိန်းဆိုမှုများ' : 'Upcoming Appointments'}
             </h2>
             <Link href="/patient/appointments" className="text-xs font-semibold flex items-center gap-0.5" style={{ color: '#4facfe' }}>
@@ -274,7 +274,7 @@ export default function PatientDashboard() {
         {/* ── Top Doctors ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-bold text-sm" style={{ color: '#0d2b6e' }}>
+            <h2 className="font-bold text-base" style={{ color: '#0d2b6e' }}>
               {mm ? 'အကြံပြုသော ဆရာဝန်များ' : 'Top Doctors'}
             </h2>
             <Link href="/patient/doctors" className="text-xs font-semibold flex items-center gap-0.5" style={{ color: '#4facfe' }}>
@@ -305,7 +305,7 @@ export default function PatientDashboard() {
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <span
-                      className="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                      className="inline-block text-[11px] font-semibold px-1.5 py-0.5 rounded-full"
                       style={{ backgroundColor: '#eff6ff', color: '#1a6bcc', lineHeight: '1.8' }}
                     >
                       {mm ? d.spec_mm : d.spec_en}
@@ -313,7 +313,7 @@ export default function PatientDashboard() {
                     <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                     <span className="text-[10px] font-bold" style={{ color: '#b45309' }}>{d.rating}</span>
                   </div>
-                  <span className="text-[10px] font-semibold" style={{ color: '#0d2b6e', lineHeight: '1.8' }}>
+                  <span className="text-xs font-semibold" style={{ color: '#0d2b6e', lineHeight: '1.8' }}>
                     {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
                   </span>
                 </div>
@@ -321,7 +321,7 @@ export default function PatientDashboard() {
                 {/* Book button */}
                 <Link
                   href="/patient/appointments"
-                  className="text-[10px] font-bold px-3 py-1.5 rounded-full shrink-0 text-white transition-all"
+                  className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0 text-white transition-all"
                   style={{ background: 'linear-gradient(135deg, #0d2b6e 0%, #1a6bcc 100%)' }}
                 >
                   {mm ? 'ချိန်းဆို' : 'Book'}
