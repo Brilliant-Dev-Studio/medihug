@@ -1,43 +1,35 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
 import {
   Search, Stethoscope, Calendar, FileText, Pill,
   Heart, Activity, AlertCircle, Brain, Baby, Eye,
   ChevronRight, Star, Clock, LayoutGrid,
+  MapPin,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import emptyLottie from '../../../public/lottie-empty.json';
 import doctorLottie from '../../../public/lottie/Live chatbot.json';
 import SpecialOffersBanner from '../../components/SpecialOffersBanner';
 
+
 type WeatherData = { temp: number; code: number; city: string };
 
-function weatherIcon(code: number): string {
-  if (code === 0) return '☀️';
-  if (code <= 3) return '⛅';
-  if (code <= 48) return '🌫️';
-  if (code <= 55) return '🌦️';
-  if (code <= 65) return '🌧️';
-  if (code <= 75) return '❄️';
-  if (code <= 82) return '🌨️';
+function weatherEmoji(code: number): string {
+  if (code === 0)  return '☀️';
+  if (code <= 3)   return '⛅';
+  if (code <= 48)  return '🌫️';
+  if (code <= 55)  return '🌦️';
+  if (code <= 65)  return '🌧️';
+  if (code <= 75)  return '❄️';
+  if (code <= 82)  return '🌨️';
   return '⛈️';
 }
 
-function weatherLabel(code: number, mm: boolean): string {
-  if (code === 0) return mm ? 'နေကြည်' : 'Clear';
-  if (code <= 3) return mm ? 'တိမ်အနည်းငယ်' : 'Partly Cloudy';
-  if (code <= 48) return mm ? 'မြူဆိုင်း' : 'Foggy';
-  if (code <= 55) return mm ? 'မိုးအနည်းငယ်' : 'Drizzle';
-  if (code <= 65) return mm ? 'မိုးရွာ' : 'Rainy';
-  if (code <= 75) return mm ? 'နှင်းကျ' : 'Snowy';
-  return mm ? 'မိုးကြိုး' : 'Thunderstorm';
-}
-
-function WeatherWidget({ mm }: { mm: boolean }) {
+function WeatherWidget() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
 
   useEffect(() => {
@@ -45,37 +37,40 @@ function WeatherWidget({ mm }: { mm: boolean }) {
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
       const { latitude: lat, longitude: lon } = coords;
       try {
-        const [weatherRes, geoRes] = await Promise.all([
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&temperature_unit=celsius`),
+        const [wRes, gRes] = await Promise.all([
+          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`),
           fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
         ]);
-        const weatherJson = await weatherRes.json();
-        const geoJson = await geoRes.json();
-        const city = geoJson.address?.city || geoJson.address?.town || geoJson.address?.state || '';
+        const wJson = await wRes.json();
+        const gJson = await gRes.json();
         setWeather({
-          temp: Math.round(weatherJson.current.temperature_2m),
-          code: weatherJson.current.weather_code,
-          city,
+          temp: Math.round(wJson.current.temperature_2m),
+          code: wJson.current.weather_code,
+          city: gJson.address?.city || gJson.address?.town || gJson.address?.state || '',
         });
       } catch {}
     });
   }, []);
 
   if (!weather) return (
-    <div className="flex flex-col items-end gap-0.5 opacity-50">
-      <div className="w-16 h-4 rounded bg-white/20 animate-pulse" />
-      <div className="w-10 h-3 rounded bg-white/20 animate-pulse mt-1" />
+    <div className="flex flex-col items-end gap-1">
+      <div className="w-12 h-5 rounded-lg bg-white/20 animate-pulse" />
+      <div className="w-16 h-3 rounded bg-white/15 animate-pulse" />
     </div>
   );
 
   return (
     <div className="flex flex-col items-end gap-0.5">
-      <div className="flex items-center gap-1">
-        <span className="text-2xl leading-none">{weatherIcon(weather.code)}</span>
-        <span className="text-2xl font-bold text-white leading-none">{weather.temp}°</span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xl leading-none">{weatherEmoji(weather.code)}</span>
+        <span className="text-xl font-bold text-white leading-none">{weather.temp}°C</span>
       </div>
-      <span className="text-[10px] text-white/70 font-medium">{weatherLabel(weather.code, mm)}</span>
-      {weather.city ? <span className="text-[10px] text-white/50 leading-none">{weather.city}</span> : null}
+      {weather.city && (
+        <div className="flex items-center gap-0.5">
+          <MapPin className="w-2.5 h-2.5 text-white/50" />
+          <span className="text-[10px] text-white/50">{weather.city}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -135,7 +130,7 @@ export default function PatientDashboard() {
             <p className="text-xs text-white/60">{mm ? 'မင်္ဂလာပါ 👋' : 'Hello 👋'}</p>
             <h1 className="text-lg font-bold text-white">Patient User</h1>
           </div>
-          <WeatherWidget mm={mm} />
+          <WeatherWidget />
         </div>
         <Link href="/patient/doctors" className="flex items-center gap-3 rounded-2xl px-4 py-3.5 w-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
           <Search className="w-4 h-4 shrink-0" style={{ color: 'rgba(255,255,255,0.7)' }} />
@@ -178,8 +173,8 @@ export default function PatientDashboard() {
               {mm ? 'ဝန်ဆောင်မှု အမျိုးအစားများ' : 'Services'}
             </h2>
           </div>
-          <div className="grid grid-cols-4 gap-2">
-            {categories.slice(0, 6).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
+          <div className="grid grid-cols-3 gap-2">
+            {categories.slice(0, 8).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
               <Link
                 key={labelEn}
                 href={href}
