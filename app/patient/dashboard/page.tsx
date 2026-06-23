@@ -178,7 +178,7 @@ export default function PatientDashboard() {
               <Link
                 key={labelEn}
                 href={href}
-                className="flex flex-col items-center gap-1.5 p-2.5 bg-white rounded-2xl border border-gray-100 active:scale-95 transition-all"
+                className="flex flex-col items-center gap-1.5 px-0.5 py-2.5 bg-white rounded-2xl border border-gray-100 active:scale-95 transition-all"
               >
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center"
@@ -193,7 +193,7 @@ export default function PatientDashboard() {
             ))}
             <Link
               href="/patient/categories"
-              className="flex flex-col items-center gap-1.5 p-2.5 bg-white rounded-2xl border border-gray-100 active:scale-95 transition-all"
+              className="flex flex-col items-center gap-1.5 px-0.5 py-2.5 bg-white rounded-2xl border border-gray-100 active:scale-95 transition-all"
             >
               <div
                 className="w-11 h-11 rounded-xl flex items-center justify-center"
