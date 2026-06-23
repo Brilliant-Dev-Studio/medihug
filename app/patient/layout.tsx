@@ -101,7 +101,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
           <div
             className="sticky top-0 z-40 px-4 py-4 flex items-center justify-between transition-all duration-300"
             style={{
-              background: scrolled ? '#ffffff' : 'linear-gradient(135deg, #0d2b6e 0%, #1a6bcc 100%)',
+              background: scrolled ? '#ffffff' : 'transparent',
               boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.08)' : 'none',
             }}
           >

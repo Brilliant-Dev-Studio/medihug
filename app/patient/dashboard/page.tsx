@@ -114,13 +114,13 @@ export default function PatientDashboard() {
   const mm = lang === 'mm';
 
   return (
-    <div className="bg-gray-50 min-h-full w-full" style={{ maxWidth: '100vw', overflowX: 'hidden' }}>
+    <div className="bg-gray-50 min-h-full w-full" style={{ maxWidth: '100vw', overflowX: 'clip' }}>
 
       {/* ── Hero: header + search seamless ── */}
       <div
         className="px-4"
         style={{
-          background: 'linear-gradient(135deg, #0d2b6e 0%, #1a6bcc 100%)',
+          background: 'linear-gradient(180deg, #0d2b6e 0%, #1a6bcc 100%)',
           borderBottomLeftRadius: 28,
           borderBottomRightRadius: 28,
           marginTop: -72,
