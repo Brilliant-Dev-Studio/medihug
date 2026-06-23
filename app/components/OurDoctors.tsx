@@ -48,7 +48,7 @@ export default function OurDoctors() {
 
         <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
           {doctors.map(({ id, name, experience, rating, reviews, category, color, img }) => (
-            <div key={id} className="shrink-0 w-64 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
+            <div key={id} className="shrink-0 w-72 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
               <div className="w-full h-48 relative overflow-hidden bg-gray-100">
                 <Image src={img} alt={name} fill className="object-cover object-top" />
               </div>

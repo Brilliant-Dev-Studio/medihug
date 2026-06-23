@@ -50,7 +50,7 @@ export default function TopSellingProducts() {
 
         <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
           {products.map(product => (
-            <div key={product.id} className="shrink-0 w-64 rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col">
+            <div key={product.id} className="shrink-0 w-72 rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col">
               <div className="w-full h-44 relative overflow-hidden bg-gray-50">
                 <Image src={product.img} alt={product.name} fill className="object-cover" />
               </div>

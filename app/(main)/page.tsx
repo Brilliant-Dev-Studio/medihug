@@ -26,6 +26,7 @@ export default function Home() {
         style={{ objectPosition: '50% 30%' }}
         priority
       />
+      <div className="absolute inset-0 bg-black/40" />
       <div className="absolute inset-0 bg-linear-to-r from-[#0d2b6e]/70 via-[#0d2b6e]/30 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-64 bg-linear-to-t from-black/70 to-transparent" />
 

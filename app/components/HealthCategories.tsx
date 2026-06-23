@@ -43,18 +43,18 @@ export default function HealthCategories() {
           {tr.categoriesTitle}
         </h2>
 
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2">
           {categories.map(({ key, icon: Icon, image, color }) => (
             <button
               key={key}
-              className="flex flex-col items-center gap-2 bg-white rounded-2xl border border-gray-100 px-2 pt-5 pb-4 cursor-pointer text-center"
+              className="flex flex-col items-center gap-1.5 bg-white rounded-xl border border-gray-100 px-1.5 py-2.5 cursor-pointer text-center sm:rounded-2xl sm:px-2 sm:pt-5 sm:pb-4 sm:gap-2"
             >
               {image ? (
-                <Image src={image} alt={key} width={56} height={56} className="object-contain w-12 h-12 sm:w-14 sm:h-14" />
+                <Image src={image} alt={key} width={40} height={40} className="object-contain w-8 h-8 sm:w-14 sm:h-14" />
               ) : (
-                Icon && <Icon style={{ color }} className="w-8 h-8 sm:w-10 sm:h-10" strokeWidth={2.5} />
+                Icon && <Icon style={{ color }} className="w-6 h-6 sm:w-10 sm:h-10" strokeWidth={2.5} />
               )}
-              <span className="text-xs sm:text-xs leading-snug font-semibold text-gray-600 mt-1">
+              <span className="text-[10px] sm:text-xs leading-tight font-semibold text-gray-600">
                 {tr.categories[key]}
               </span>
             </button>
