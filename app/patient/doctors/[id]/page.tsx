@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, ChevronLeft, GraduationCap, Languages, MapPin, Stethoscope, BriefcaseMedical, CheckCircle2, Hospital, CalendarX2, Images, X } from 'lucide-react';
+import { Heart, ChevronLeft, GraduationCap, Languages, MapPin, Stethoscope, BriefcaseMedical, CheckCircle2, Hospital, Images, X, Sunrise, Sun, Sunset, Calendar, Clock } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
 
 const PRIMARY   = '#0d2b6e';
@@ -200,12 +200,19 @@ function InfoCard({ icon, title, children }: { icon: React.ReactNode; title: str
 export default function DoctorDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { lang } = useLang();
   const mm = lang === 'mm';
 
   const [favorited, setFavorited]   = useState(false);
-  const [tab, setTab]               = useState<Tab>('profile');
+  const [tab, setTab]               = useState<Tab>(searchParams.get('tab') === 'schedule' ? 'schedule' : 'profile');
   const [lightbox, setLightbox]     = useState<number | null>(null);
+  const [selectedDay,    setSelectedDay]    = useState(0);
+  const [selectionMode,  setSelectionMode]  = useState<'single' | 'range'>('single');
+  const [selectedSlot,   setSelectedSlot]   = useState<string | null>(null);
+  const [rangeStart,     setRangeStart]     = useState<string | null>(null);
+  const [rangeEnd,       setRangeEnd]       = useState<string | null>(null);
+  const [hoveredSlot,    setHoveredSlot]    = useState<string | null>(null);
 
   const doctor = ALL_DOCTORS.find(d => d.id === Number(id));
 
@@ -395,20 +402,348 @@ export default function DoctorDetailPage() {
         </div>
       </div>
     </>
-  ) : (
-    <div className="px-4 lg:px-6 pt-4 pb-4">
-      <div className="bg-white rounded-2xl p-6 border border-gray-100 flex flex-col items-center justify-center gap-2">
-        <CalendarX2 className="w-12 h-12 text-gray-300" />
-        <p className="text-sm font-semibold text-gray-400">{mm ? 'အချိန်ဇယား မရှိသေးပါ' : 'No schedule available yet'}</p>
+  ) : (() => {
+    /* ── static helpers ── */
+    const today    = new Date();
+    const DAY_MM   = ['တနင်္ဂနွေ','တနင်္လာ','အင်္ဂါ','ဗုဒ္ဓဟူး','ကြာသပတေး','သောကြာ','စနေ'];
+    const DAY_EN   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const MONTH_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return d;
+    });
+
+    function gen15Min(startH: number, endH: number) {
+      const slots: string[] = [];
+      let h = startH, m = 0;
+      while (h < endH) {
+        slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
+        m += 15;
+        if (m >= 60) { m = 0; h++; }
+      }
+      return slots;
+    }
+
+    function toMin(t: string) {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    }
+    function fmtDuration(a: string, b: string) {
+      const mins = Math.abs(toMin(b) - toMin(a)) + 15;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return h > 0 ? `${h} hr${m ? ` ${m} min` : ''}` : `${m} min`;
+    }
+
+    const periods = [
+      { label_mm: 'မနက်ပိုင်း',   label_en: 'Morning',   Icon: Sunrise, iconColor: '#f97316', slots: gen15Min(9,  12) },
+      { label_mm: 'နေ့လည်ပိုင်း', label_en: 'Afternoon', Icon: Sun,     iconColor: '#eab308', slots: gen15Min(13, 17) },
+      { label_mm: 'ညနေပိုင်း',    label_en: 'Evening',   Icon: Sunset,  iconColor: '#6366f1', slots: gen15Min(17, 19) },
+    ];
+
+    const allSlots = periods.flatMap(p => p.slots);
+
+    const BOOKED_SEEDS = [
+      ['09:00','09:30','10:15','11:00','13:15','14:00','14:45','16:30','17:00','18:15'],
+      ['09:15','10:00','10:45','13:00','13:45','15:00','15:30','16:00','17:30'],
+      ['09:00','09:45','11:15','13:30','14:15','15:45','16:15','17:15','18:00'],
+      ['10:30','11:00','13:00','14:30','15:00','16:45','17:00','17:45'],
+      ['09:00','09:30','10:00','13:15','14:00','16:00','17:30','18:30'],
+      ['09:45','10:30','11:15','13:45','15:15','16:30','17:15'],
+      ['09:15','10:15','11:00','13:00','14:45','15:30','16:00','18:00'],
+    ];
+    const bookedSet = new Set(BOOKED_SEEDS[selectedDay % 7]);
+
+    /* range helpers */
+    const startIdx  = rangeStart   ? allSlots.indexOf(rangeStart)   : -1;
+    const endIdx    = rangeEnd     ? allSlots.indexOf(rangeEnd)     : -1;
+    const hoverIdx  = hoveredSlot  ? allSlots.indexOf(hoveredSlot)  : -1;
+    const loIdx     = rangeEnd ? Math.min(startIdx, endIdx) : startIdx;
+    const hiIdx     = rangeEnd ? Math.max(startIdx, endIdx) : (hoveredSlot && hoverIdx > startIdx ? hoverIdx : startIdx);
+
+    /* reset helper */
+    const resetAll = () => {
+      setSelectedSlot(null);
+      setRangeStart(null);
+      setRangeEnd(null);
+      setHoveredSlot(null);
+    };
+
+    /* day label */
+    const dayLabel = `${DAY_EN[days[selectedDay].getDay()]} ${days[selectedDay].getDate()} ${MONTH_EN[days[selectedDay].getMonth()]}`;
+
+    /* show confirm? */
+    const showConfirm = selectionMode === 'single'
+      ? selectedSlot !== null
+      : (rangeStart !== null && rangeEnd !== null);
+
+    return (
+      <div className="px-4 lg:px-6 pt-4 pb-6 flex flex-col gap-4">
+
+        {/* ── Mode toggle ── */}
+        <div className="flex items-center gap-3">
+          <div
+            className="flex rounded-xl p-1 gap-1"
+            style={{ backgroundColor: '#f3f4f6' }}
+          >
+            {(['single', 'range'] as const).map(mode => {
+              const active = selectionMode === mode;
+              return (
+                <button
+                  key={mode}
+                  onClick={() => { setSelectionMode(mode); resetAll(); }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all"
+                  style={{
+                    backgroundColor: active ? PRIMARY : 'transparent',
+                    color: active ? '#fff' : '#6b7280',
+                    boxShadow: active ? `0 2px 8px ${PRIMARY}35` : 'none',
+                  }}
+                >
+                  <span>{mode === 'single' ? '◆' : '↔'}</span>
+                  <span>{mode === 'single' ? (mm ? 'တစ်ကြိမ်' : 'Single') : (mm ? 'အပိုင်းအခြား' : 'Range')}</span>
+                </button>
+              );
+            })}
+          </div>
+          {selectionMode === 'range' && (
+            <p className="text-[11px] text-gray-400 leading-tight">
+              {mm
+                ? (rangeStart ? (rangeEnd ? '' : 'ကုန်ဆုံးချိန် ရွေးပါ') : 'စတင်ချိန် ရွေးပါ')
+                : (rangeStart ? (rangeEnd ? '' : 'Pick end time') : 'Pick start time')
+              }
+            </p>
+          )}
+        </div>
+
+        {/* ── Date selector ── */}
+        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          {days.map((d, i) => {
+            const active  = i === selectedDay;
+            const isToday = i === 0;
+            return (
+              <button
+                key={i}
+                onClick={() => { setSelectedDay(i); resetAll(); }}
+                className="shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-2xl transition-all"
+                style={{
+                  minWidth: 60,
+                  backgroundColor: active ? PRIMARY : '#fff',
+                  border: `1.5px solid ${active ? PRIMARY : '#e5e7eb'}`,
+                  boxShadow: active ? `0 4px 14px ${PRIMARY}30` : 'none',
+                }}
+              >
+                <span className="text-[10px] font-semibold" style={{ color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}>
+                  {mm ? DAY_MM[d.getDay()] : DAY_EN[d.getDay()]}
+                </span>
+                <span className="text-lg font-bold leading-tight mt-0.5" style={{ color: active ? '#fff' : '#111827' }}>
+                  {d.getDate()}
+                </span>
+                {isToday ? (
+                  <span className="text-[9px] font-bold mt-0.5 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: active ? 'rgba(255,255,255,0.25)' : '#eff6ff', color: active ? '#fff' : PRIMARY }}>
+                    {mm ? 'ယနေ့' : 'Today'}
+                  </span>
+                ) : (
+                  <span className="text-[10px] mt-0.5" style={{ color: active ? 'rgba(255,255,255,0.6)' : '#d1d5db' }}>
+                    {MONTH_EN[d.getMonth()]}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Legend ── */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {[
+            { fill: '#fff',    border: '#e5e7eb', label_mm: 'ရနိုင်သည်',   label_en: 'Available' },
+            { fill: PRIMARY,   border: PRIMARY,   label_mm: 'ရွေးချယ်',    label_en: 'Selected'  },
+            { fill: '#f3f4f6', border: '#e5e7eb', label_mm: 'ပြည့်သည်',    label_en: 'Booked'    },
+            ...(selectionMode === 'range' ? [
+              { fill: '#eff6ff', border: '#bfdbfe', label_mm: 'ရွေးချယ်ထားသော အပိုင်း', label_en: 'In range' },
+            ] : []),
+          ].map(l => (
+            <div key={l.label_en} className="flex items-center gap-1.5">
+              <div className="w-4 h-4 rounded-md border" style={{ backgroundColor: l.fill, borderColor: l.border }} />
+              <span className="text-[11px] text-gray-500">{mm ? l.label_mm : l.label_en}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Time periods ── */}
+        {periods.map(period => (
+          <div key={period.label_en} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-50">
+              <period.Icon className="w-4 h-4 shrink-0" style={{ color: period.iconColor }} />
+              <p className="text-sm font-bold" style={{ color: PRIMARY }}>
+                {mm ? period.label_mm : period.label_en}
+              </p>
+              <span className="ml-auto text-[11px] text-gray-400">
+                {period.slots[0]} – {period.slots[period.slots.length - 1]}
+              </span>
+            </div>
+            <div className="p-3 grid grid-cols-4 lg:grid-cols-6 gap-2">
+              {period.slots.map(slot => {
+                const booked = bookedSet.has(slot);
+                const idx    = allSlots.indexOf(slot);
+
+                /* single mode */
+                const isSingleSelected = selectionMode === 'single' && selectedSlot === slot;
+
+                /* range mode */
+                const isEndpoint   = selectionMode === 'range' && (slot === rangeStart || slot === rangeEnd);
+                const isInRange    = selectionMode === 'range' && rangeStart !== null && rangeEnd !== null
+                                     && idx > loIdx && idx < hiIdx;
+                const isHoverRange = selectionMode === 'range' && rangeStart !== null && rangeEnd === null
+                                     && hoverIdx > startIdx && idx > startIdx && idx <= hoverIdx;
+
+                const bg = booked       ? '#f3f4f6'
+                         : isSingleSelected || isEndpoint ? PRIMARY
+                         : isInRange    ? '#eff6ff'
+                         : isHoverRange ? '#f0f9ff'
+                         : '#fff';
+                const fg = booked       ? '#d1d5db'
+                         : isSingleSelected || isEndpoint ? '#fff'
+                         : isInRange    ? PRIMARY
+                         : '#374151';
+                const bd = booked       ? '#e5e7eb'
+                         : isSingleSelected || isEndpoint ? PRIMARY
+                         : isInRange    ? '#bfdbfe'
+                         : isHoverRange ? '#93c5fd'
+                         : '#e5e7eb';
+                const shadow = (isSingleSelected || isEndpoint) ? `0 3px 10px ${PRIMARY}35` : 'none';
+
+                const handleClick = () => {
+                  if (booked) return;
+                  if (selectionMode === 'single') {
+                    setSelectedSlot(slot === selectedSlot ? null : slot);
+                    return;
+                  }
+                  /* range mode */
+                  if (!rangeStart) {
+                    setRangeStart(slot);
+                  } else if (!rangeEnd) {
+                    if (slot === rangeStart) { setRangeStart(null); return; }
+                    const lo = Math.min(allSlots.indexOf(rangeStart), idx);
+                    const hi = Math.max(allSlots.indexOf(rangeStart), idx);
+                    const blocked = allSlots.slice(lo + 1, hi).some(s => bookedSet.has(s));
+                    if (blocked) return;
+                    setRangeEnd(slot);
+                    setHoveredSlot(null);
+                  } else {
+                    setRangeStart(slot); setRangeEnd(null); setHoveredSlot(null);
+                  }
+                };
+
+                return (
+                  <button
+                    key={slot}
+                    disabled={booked}
+                    onClick={handleClick}
+                    onMouseEnter={() => selectionMode === 'range' && !booked && setHoveredSlot(slot)}
+                    onMouseLeave={() => selectionMode === 'range' && setHoveredSlot(null)}
+                    className="rounded-xl py-2.5 text-xs font-semibold transition-all text-center"
+                    style={{
+                      backgroundColor: bg,
+                      color: fg,
+                      border: `1.5px solid ${bd}`,
+                      boxShadow: shadow,
+                      cursor: booked ? 'not-allowed' : 'pointer',
+                      textDecoration: booked ? 'line-through' : 'none',
+                    }}
+                  >
+                    {slot}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* ── Confirm bar ── */}
+        {showConfirm && (
+          <div
+            className="sticky bottom-0 -mx-4 lg:-mx-6 px-4 lg:px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3"
+            style={{ backgroundColor: '#fff', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
+          >
+            <div className="min-w-0">
+              <p className="text-xs text-gray-400 mb-0.5">
+                {mm ? 'ရွေးချယ်ထားသောအချိန်' : 'Selected time'}
+              </p>
+              {selectionMode === 'single' ? (
+                <p className="text-base font-bold truncate" style={{ color: PRIMARY }}>
+                  {dayLabel} · {selectedSlot}
+                </p>
+              ) : (
+                <div>
+                  <p className="text-base font-bold leading-tight" style={{ color: PRIMARY }}>
+                    {dayLabel} · {[rangeStart, rangeEnd].sort((a,b) => toMin(a!) - toMin(b!)).join(' → ')}
+                  </p>
+                  <p className="text-xs font-semibold mt-0.5" style={{ color: ACCENT }}>
+                    {fmtDuration(rangeStart!, rangeEnd!)}
+                  </p>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={goToBooking}
+              className="shrink-0 px-5 py-3 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90"
+              style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
+            >
+              {mm ? 'ချိန်းဆိုမည်' : 'Confirm Booking'}
+            </button>
+          </div>
+        )}
+
       </div>
-    </div>
-  );
+    );
+  })();
+
+  /* shared booking navigation — used by sidebar button, mobile bottom bar, and confirm bar */
+  function goToBooking() {
+    if (!doctor) return;
+    const hasSlot = selectionMode === 'single' ? selectedSlot !== null
+                                                : (rangeStart !== null && rangeEnd !== null);
+    if (!hasSlot) { setTab('schedule'); return; }
+
+    const DAY_EN2   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const MONTH_EN2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const today2    = new Date();
+    const days2     = Array.from({ length: 7 }, (_, i) => { const d = new Date(today2); d.setDate(today2.getDate() + i); return d; });
+    const dayLabel2 = `${DAY_EN2[days2[selectedDay].getDay()]} ${days2[selectedDay].getDate()} ${MONTH_EN2[days2[selectedDay].getMonth()]}`;
+
+    function toMin2(t: string) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+    function fmtDur(a: string, b: string) {
+      const mins = Math.abs(toMin2(b) - toMin2(a)) + 15;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return h > 0 ? `${h} hr${m ? ` ${m} min` : ''}` : `${m} min`;
+    }
+
+    const sorted = selectionMode === 'range' && rangeStart && rangeEnd
+      ? [rangeStart, rangeEnd].sort((a, b) => toMin2(a) - toMin2(b))
+      : [selectedSlot ?? '', ''];
+
+    const q = new URLSearchParams({
+      doctorId: String(doctor.id),
+      name:     doctor.name_en,
+      nameMm:   doctor.name_mm,
+      spec:     doctor.spec_en,
+      specMm:   doctor.spec_mm,
+      img:      doctor.img,
+      date:     dayLabel2,
+      start:    sorted[0],
+      end:      sorted[1],
+      duration: selectionMode === 'range' && rangeStart && rangeEnd ? fmtDur(rangeStart, rangeEnd) : '',
+      fee:      doctor.price.toLocaleString(),
+    });
+    router.push(`/patient/booking?${q.toString()}`);
+  }
 
   return (
     <div className="min-h-full bg-gray-50 lg:bg-gray-100">
 
       {/* ══ DESKTOP: h-screen two-column ══ */}
-      <div className="hidden lg:flex gap-5 h-screen overflow-hidden px-6 py-6 max-w-7xl mx-auto">
+      <div className="hidden lg:flex gap-5 h-screen overflow-hidden px-6 py-6">
 
         {/* Left: scrollable content */}
         <div className="flex-1 overflow-y-auto rounded-2xl bg-gray-50 flex flex-col">
@@ -507,19 +842,80 @@ export default function DoctorDetailPage() {
 
           {/* Booking card */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col gap-4">
+            {/* Selected slot display */}
+            {(() => {
+              const DAY_EN_S   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+              const MONTH_EN_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const today_s    = new Date();
+              const d_s        = new Date(today_s); d_s.setDate(today_s.getDate() + selectedDay);
+              const dl         = `${DAY_EN_S[d_s.getDay()]} ${d_s.getDate()} ${MONTH_EN_S[d_s.getMonth()]}`;
+              const hasSingle  = selectionMode === 'single' && selectedSlot;
+              const hasRange   = selectionMode === 'range' && rangeStart && rangeEnd;
+
+              function toMin_s(t: string) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+              const sortedRange = hasRange
+                ? [rangeStart!, rangeEnd!].sort((a, b) => toMin_s(a) - toMin_s(b))
+                : null;
+              const durMins = sortedRange
+                ? Math.abs(toMin_s(sortedRange[1]) - toMin_s(sortedRange[0])) + 15
+                : null;
+              const dur = durMins
+                ? (Math.floor(durMins / 60) > 0
+                    ? `${Math.floor(durMins / 60)} hr${durMins % 60 ? ` ${durMins % 60} min` : ''}`
+                    : `${durMins} min`)
+                : null;
+
+              if (!hasSingle && !hasRange) return (
+                <div
+                  className="flex items-center gap-2.5 px-3 py-3 rounded-xl"
+                  style={{ backgroundColor: '#f8faff', border: '1px dashed #bfdbfe' }}
+                >
+                  <Clock className="w-4 h-4 shrink-0 text-gray-300" />
+                  <p className="text-xs text-gray-400">
+                    {mm ? 'အချိန်ဇယားမှ အချိန်ရွေးပါ' : 'Select a time from Schedule'}
+                  </p>
+                </div>
+              );
+
+              return (
+                <div
+                  className="px-3 py-3 rounded-xl flex flex-col gap-1"
+                  style={{ backgroundColor: '#eff6ff', border: `1px solid ${PRIMARY}20` }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: SECONDARY }} />
+                    <p className="text-xs font-semibold" style={{ color: PRIMARY }}>{dl}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: SECONDARY }} />
+                    <p className="text-sm font-bold" style={{ color: PRIMARY }}>
+                      {hasSingle
+                        ? selectedSlot
+                        : `${sortedRange![0]} → ${sortedRange![1]}`}
+                    </p>
+                    {dur && (
+                      <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${PRIMARY}15`, color: PRIMARY }}>
+                        {dur}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div>
               <p className="text-xs text-gray-400 mb-1">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation Fee'}</p>
               <p className="text-2xl font-bold" style={{ color: PRIMARY }}>
                 {doctor.price.toLocaleString()} <span className="text-sm font-semibold text-gray-400">MMK</span>
               </p>
             </div>
-            <Link
-              href="/patient/appointments"
+            <button
+              onClick={goToBooking}
               className="block w-full text-center text-sm font-bold py-3.5 rounded-xl text-white transition-opacity hover:opacity-90"
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
             >
               {mm ? 'ချိန်းဆိုမည်' : 'Book Appointment'}
-            </Link>
+            </button>
             <button
               onClick={() => setFavorited(p => !p)}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all"
@@ -592,9 +988,9 @@ export default function DoctorDetailPage() {
             <span className="text-sm text-gray-400">-</span>
             <span className="text-xl font-bold" style={{ color: PRIMARY }}>{doctor.price.toLocaleString()} MMK</span>
           </div>
-          <Link href="/patient/appointments" className="block w-full text-center text-base font-bold py-4 rounded-2xl text-white active:scale-95 transition-transform" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+          <button onClick={goToBooking} className="block w-full text-center text-base font-bold py-4 rounded-2xl text-white active:scale-95 transition-transform" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
             {mm ? 'ချိန်းဆိုမည်' : 'Book Appointment'}
-          </Link>
+          </button>
         </div>
       </div>
 

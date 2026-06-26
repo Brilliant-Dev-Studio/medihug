@@ -8,6 +8,7 @@ import {
   Search, Stethoscope, Calendar, FileText, Pill,
   Heart, Activity, AlertCircle, Brain, Baby, Eye,
   ChevronRight, Star, Clock, LayoutGrid, MapPin,
+  Bone, Droplets, Microscope, Syringe, Wind, Thermometer,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import emptyLottie from '../../../public/lottie-empty.json';
@@ -96,10 +97,27 @@ const categories = [
   { icon: Eye,         mm: 'မျက်စိ\nဆေးခန်း',          en: 'Eye\nClinic',      color: '#6366f1', bg: '#eef2ff', href: '#' },
 ];
 
+const specialtyCategories = [
+  { icon: Heart,       mm: 'နှလုံး သွေးကြော\nအထူးကု',              en: 'Cardiology',                color: '#ef4444', bg: '#fef2f2', href: '/patient/doctors' },
+  { icon: Baby,        mm: 'ကလေးကျန်းမာရေး\nအထူးကု',              en: 'Pediatrics',                color: '#f97316', bg: '#fff7ed', href: '/patient/doctors' },
+  { icon: Brain,       mm: 'ဦးနောက်နှင့်\nအကြောအထူးကု',           en: 'Neurology',                 color: '#8b5cf6', bg: '#f5f3ff', href: '/patient/doctors' },
+  { icon: Eye,         mm: 'မျက်စိ\nအထူးကု',                       en: 'Ophthalmology',             color: '#06b6d4', bg: '#ecfeff', href: '/patient/doctors' },
+  { icon: Bone,        mm: 'အရိုးနှင့်\nဆစ်ကြောအထူးကု',            en: 'Orthopedics',               color: '#78716c', bg: '#f5f5f4', href: '/patient/doctors' },
+  { icon: Droplets,    mm: 'ဆီးချို သွေးချို\nအထူးကု',             en: 'Endocrinology',             color: '#0ea5e9', bg: '#f0f9ff', href: '/patient/doctors' },
+  { icon: Stethoscope, mm: 'အစာအိမ်နှင့် အူ\nလမ်းကြောင်းအထူးကု', en: 'Gastroenterology',          color: '#10b981', bg: '#f0fdf4', href: '/patient/doctors' },
+  { icon: Activity,    mm: 'သားဖွားမီးယပ်\nအထူးကု',                en: 'Obstetrics & Gynecology',   color: '#ec4899', bg: '#fdf2f8', href: '/patient/doctors' },
+  { icon: Brain,       mm: 'ကလေးစိတ်ကျန်းမာ\nရေးအထူးကု',          en: 'Child Psychiatry',          color: '#6366f1', bg: '#eef2ff', href: '/patient/doctors' },
+  { icon: Wind,        mm: 'အဆုတ်နှင့်\nအသက်ရှူအထူးကု',            en: 'Pulmonology',               color: '#14b8a6', bg: '#f0fdfa', href: '/patient/doctors' },
+  { icon: Microscope,  mm: 'ကင်ဆာ\nကုသမှုအထူးကု',                  en: 'Oncology',                  color: '#dc2626', bg: '#fef2f2', href: '/patient/doctors' },
+  { icon: Droplets,    mm: 'ကျောက်ကပ်\nအထူးကု',                    en: 'Nephrology',                color: '#2563eb', bg: '#eff6ff', href: '/patient/doctors' },
+  { icon: Syringe,     mm: 'အရေပြား\nအထူးကု',                      en: 'Dermatology',               color: '#d97706', bg: '#fffbeb', href: '/patient/doctors' },
+  { icon: Thermometer, mm: 'ကူးစက်ရောဂါ\nအထူးကု',                  en: 'Infectious Disease',        color: '#16a34a', bg: '#f0fdf4', href: '/patient/doctors' },
+];
+
 const doctors = [
-  { id: 2, name_mm: 'ဒေါ်ကျော်ကျော်သိန်း', name_en: 'Dr. Kyaw Kyaw Thein', spec_mm: 'နှလုံးအထူးကု',   spec_en: 'Cardiologist',  rating: 4.9, price: 15000, img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=100&h=100&fit=crop&crop=face' },
-  { id: 4, name_mm: 'ဦးမောင်မောင်ဝင်း',     name_en: 'Dr. Maung Maung Win',  spec_mm: 'အရေပြားအထူးကု', spec_en: 'Dermatologist', rating: 4.8, price: 12000, img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=100&h=100&fit=crop&crop=face' },
-  { id: 3, name_mm: 'ဒေါ်သန်းသန်းမြင့်',   name_en: 'Dr. Than Than Myint',  spec_mm: 'ကလေးအထူးကု',   spec_en: 'Pediatrician',  rating: 4.7, price: 10000, img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=100&h=100&fit=crop&crop=face' },
+  { id: 2, name_mm: 'ဒေါ်ကျော်ကျော်သိန်း', name_en: 'Dr. Kyaw Kyaw Thein', spec_mm: 'နှလုံးအထူးကု',   spec_en: 'Cardiologist',  rating: 4.9, price: 15000, img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face' },
+  { id: 4, name_mm: 'ဦးမောင်မောင်ဝင်း',     name_en: 'Dr. Maung Maung Win',  spec_mm: 'အရေပြားအထူးကု', spec_en: 'Dermatologist', rating: 4.8, price: 12000, img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face' },
+  { id: 3, name_mm: 'ဒေါ်သန်းသန်းမြင့်',   name_en: 'Dr. Than Than Myint',  spec_mm: 'ကလေးအထူးကု',   spec_en: 'Pediatrician',  rating: 4.7, price: 10000, img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&crop=face' },
 ];
 
 const upcomingAppointments: {
@@ -115,7 +133,7 @@ export default function PatientDashboard() {
     <div className="bg-gray-50 min-h-full w-full lg:bg-gray-100 lg:min-h-screen">
 
       {/* Desktop container wrapper */}
-      <div className="lg:max-w-7xl lg:mx-auto lg:px-6 lg:py-6 lg:flex lg:gap-5 lg:h-screen lg:overflow-hidden">
+      <div className="lg:px-6 lg:py-6 lg:flex lg:gap-5 lg:h-screen lg:overflow-hidden">
 
       {/* ════════════════ LEFT COLUMN ════════════════ */}
       <div className="flex-1 lg:overflow-y-auto lg:rounded-2xl lg:bg-gray-50">
@@ -285,40 +303,64 @@ export default function PatientDashboard() {
           {/* Health Blog */}
           <HealthBlogSlider />
 
-          {/* Mobile-only: Top Doctors */}
+          {/* Desktop-only: Specialty Categories section */}
+          <div className="hidden lg:block">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold text-xl" style={{ color: PRIMARY }}>
+                {mm ? 'အထူးကုဆရာဝန်များ' : 'Specialist Doctors'}
+              </h2>
+              <Link href="/patient/specialists" className="text-sm font-semibold flex items-center gap-0.5" style={{ color: ACCENT }}>
+                {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {specialtyCategories.slice(0, 8).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
+                <Link
+                  key={labelEn}
+                  href={href}
+                  className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3.5 active:scale-[0.98] transition-all hover:border-gray-200 hover:shadow-sm"
+                >
+                  <span className="text-sm font-semibold text-gray-700 whitespace-pre-line leading-snug">
+                    {mm ? labelMm : labelEn}
+                  </span>
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: bg, border: `1.5px solid ${color}30` }}
+                  >
+                    <Icon style={{ width: 24, height: 24, color }} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile-only: Specialty Categories */}
           <div className="lg:hidden">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-base" style={{ color: PRIMARY }}>
-                {mm ? 'အကြံပြုသော ဆရာဝန်များ' : 'Top Doctors'}
+                {mm ? 'အထူးကုဆရာဝန်များ' : 'Specialist Doctors'}
               </h2>
-              <Link href="/patient/doctors" className="text-xs font-semibold flex items-center gap-0.5" style={{ color: ACCENT }}>
+              <Link href="/patient/specialists" className="text-xs font-semibold flex items-center gap-0.5" style={{ color: ACCENT }}>
                 {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3 h-3" />
               </Link>
             </div>
-            <div className="flex flex-col gap-2">
-              {doctors.map((d, i) => (
-                <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-white">
-                  <div className="relative shrink-0">
-                    <div className="w-11 h-11 rounded-full overflow-hidden" style={{ boxShadow: '0 0 0 2px #e8eeff, 0 0 0 3px #fff' }}>
-                      <Image src={d.img} alt={d.name_en} width={44} height={44} className="w-full h-full object-cover" />
-                    </div>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white" style={{ backgroundColor: '#22c55e' }} />
+            <div className="grid grid-cols-2 gap-2">
+              {specialtyCategories.slice(0, 8).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
+                <Link
+                  key={labelEn}
+                  href={href}
+                  className="flex items-center justify-between gap-2 bg-white rounded-2xl border border-gray-100 px-3 py-3 active:scale-[0.98] transition-all"
+                >
+                  <span className="text-xs font-semibold text-gray-700 whitespace-pre-line leading-snug flex-1">
+                    {mm ? labelMm : labelEn}
+                  </span>
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: bg, border: `1.5px solid ${color}30` }}
+                  >
+                    <Icon style={{ width: 20, height: 20, color }} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-xs truncate" style={{ color: PRIMARY }}>{mm ? d.name_mm : d.name_en}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#eff6ff', color: SECONDARY }}>
-                        {mm ? d.spec_mm : d.spec_en}
-                      </span>
-                      <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                      <span className="text-[10px] font-bold text-amber-700">{d.rating}</span>
-                    </div>
-                    <span className="text-xs font-semibold" style={{ color: PRIMARY }}>{d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}</span>
-                  </div>
-                  <Link href="/patient/appointments" className="text-xs font-bold px-3 py-1.5 rounded-full shrink-0 text-white" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
-                    {mm ? 'ချိန်းဆို' : 'Book'}
-                  </Link>
-                </div>
+                </Link>
               ))}
             </div>
           </div>

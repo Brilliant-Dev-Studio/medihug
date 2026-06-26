@@ -379,7 +379,7 @@ export default function AppointmentsPage() {
     <div className="min-h-full bg-slate-50 lg:bg-gray-100">
 
       {/* ══ DESKTOP ══ */}
-      <div className="hidden lg:flex gap-5 h-screen overflow-hidden px-6 py-6 max-w-7xl mx-auto">
+      <div className="hidden lg:flex gap-5 h-screen overflow-hidden px-6 py-6">
 
         {/* ── Left: main list ── */}
         <div className="flex-1 overflow-y-auto rounded-2xl bg-gray-50 flex flex-col min-w-0">

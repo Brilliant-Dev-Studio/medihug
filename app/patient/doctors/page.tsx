@@ -1,90 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, Search, SlidersHorizontal, Clock, Star, BriefcaseMedical, Stethoscope, Banknote, Check, RotateCcw, ListFilter } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
-
-type Doctor = {
-  id: number;
-  name_mm: string;
-  name_en: string;
-  spec_mm: string;
-  spec_en: string;
-  exp: number;
-  price: number;
-  waitMin: number;
-  nextSlot_mm: string;
-  nextSlot_en: string;
-  img: string;
-  online: boolean;
-  rating: number;
-  myDoctor?: boolean;
-};
-
-const ALL_DOCTORS: Doctor[] = [
-  {
-    id: 1,
-    name_mm: 'ပါမောက္ခသိန်းအောင်',
-    name_en: 'Prof. Dr. Thein Aung',
-    spec_mm: 'ကလေးကျန်းမာရေးအထူးကု',
-    spec_en: 'Pediatric Specialist',
-    exp: 43, price: 22000, waitMin: 15, rating: 4.9,
-    nextSlot_mm: 'မနက်ဖြန် မနက် 9:00',
-    nextSlot_en: 'Tomorrow 9:00 AM',
-    img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face',
-    online: true, myDoctor: true,
-  },
-  {
-    id: 2,
-    name_mm: 'ဒေါ်ကျော်ကျော်သိန်း',
-    name_en: 'Dr. Kyaw Kyaw Thein',
-    spec_mm: 'နှလုံးအထူးကု',
-    spec_en: 'Cardiologist',
-    exp: 28, price: 15000, waitMin: 10, rating: 4.8,
-    nextSlot_mm: 'ယနေ့ မွန်းလွဲ 2:00',
-    nextSlot_en: 'Today 2:00 PM',
-    img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face',
-    online: true,
-  },
-  {
-    id: 3,
-    name_mm: 'ဒေါ်သန်းသန်းမြင့်',
-    name_en: 'Dr. Than Than Myint',
-    spec_mm: 'ကလေးအထူးကု',
-    spec_en: 'Pediatrician',
-    exp: 18, price: 10000, waitMin: 30, rating: 4.7,
-    nextSlot_mm: 'မနက်ဖြန် မနက် 10:30',
-    nextSlot_en: 'Tomorrow 10:30 AM',
-    img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&crop=face',
-    online: false, myDoctor: true,
-  },
-  {
-    id: 4,
-    name_mm: 'ဦးမောင်မောင်ဝင်း',
-    name_en: 'Dr. Maung Maung Win',
-    spec_mm: 'အရေပြားအထူးကု',
-    spec_en: 'Dermatologist',
-    exp: 12, price: 12000, waitMin: 20, rating: 4.6,
-    nextSlot_mm: 'ယနေ့ ညနေ 4:00',
-    nextSlot_en: 'Today 4:00 PM',
-    img: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=400&fit=crop&crop=face',
-    online: true,
-  },
-  {
-    id: 5,
-    name_mm: 'ဒေါ်နွဲ့နွဲ့မြင့်',
-    name_en: 'Dr. Nwe Nwe Myint',
-    spec_mm: 'မျက်စိအထူးကု',
-    spec_en: 'Ophthalmologist',
-    exp: 22, price: 18000, waitMin: 45, rating: 4.9,
-    nextSlot_mm: 'မနက်ဖြန် မနက် 8:00',
-    nextSlot_en: 'Tomorrow 8:00 AM',
-    img: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=400&h=400&fit=crop&crop=face',
-    online: false,
-  },
-];
+import { ALL_DOCTORS, type Doctor } from '../../lib/doctors';
 
 const PRIMARY   = '#0d2b6e';
 const SECONDARY = '#1a6bcc';
@@ -135,7 +57,7 @@ function DoctorCardMobile({ doc, mm, favorited, onToggleFav }: {
         <Link href={`/patient/doctors/${doc.id}`} className="flex-1 text-center text-sm font-semibold py-2.5 rounded-full border transition-all active:scale-95" style={{ borderColor: PRIMARY, color: PRIMARY }}>
           {mm ? 'ကိုယ်ရေးအကျဉ်း' : 'View Profile'}
         </Link>
-        <Link href="/patient/appointments" className="flex-1 text-center text-sm font-bold py-2.5 rounded-full text-white transition-all active:scale-95" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+        <Link href={`/patient/doctors/${doc.id}?tab=schedule`} className="flex-1 text-center text-sm font-bold py-2.5 rounded-full text-white transition-all active:scale-95" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
           {mm ? 'ချိန်းဆိုမည်' : 'Book Now'}
         </Link>
       </div>
@@ -204,7 +126,7 @@ function DoctorCardDesktop({ doc, mm, favorited, onToggleFav }: {
               {mm ? 'ကိုယ်ရေးအကျဉ်း' : 'Profile'}
             </Link>
             <Link
-              href="/patient/appointments"
+              href={`/patient/doctors/${doc.id}?tab=schedule`}
               className="flex-1 text-center text-sm font-bold py-2.5 rounded-full text-white transition-all hover:opacity-90"
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
             >
@@ -259,7 +181,7 @@ function RadioRow({ active, label, count, onClick }: { active: boolean; label: s
   );
 }
 
-export default function DoctorsPage() {
+function DoctorsContent({ initialSpec }: { initialSpec: string }) {
   const { lang } = useLang();
   const mm = lang === 'mm';
 
@@ -267,7 +189,7 @@ export default function DoctorsPage() {
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [search, setSearch]     = useState('');
   const [filterExp, setFilterExp]       = useState<ExpRange>('all');
-  const [filterSpec, setFilterSpec]     = useState<string>('all');
+  const [filterSpec, setFilterSpec]     = useState<string>(initialSpec);
   const [priceMin, setPriceMin]         = useState(0);
   const [priceMax, setPriceMax]         = useState(50000);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
@@ -507,7 +429,7 @@ export default function DoctorsPage() {
     <div className="min-h-full bg-gray-50 lg:bg-gray-100">
 
       {/* ══ DESKTOP: dashboard-style h-screen two-column ══ */}
-      <div className="hidden lg:flex gap-5 h-screen overflow-hidden px-6 py-6 max-w-7xl mx-auto">
+      <div className="hidden lg:flex gap-5 h-screen overflow-hidden px-6 py-6">
 
         {/* Left: scrollable card */}
         <div className="flex-1 overflow-y-auto rounded-2xl bg-gray-50 flex flex-col">
@@ -770,5 +692,20 @@ export default function DoctorsPage() {
       </div>
 
     </div>
+  );
+}
+
+function DoctorsPageWrapper() {
+  const searchParams = useSearchParams();
+  const spec = searchParams.get('spec') ?? 'all';
+  const initialSpec = ALL_SPECS.includes(spec) ? spec : 'all';
+  return <DoctorsContent initialSpec={initialSpec} />;
+}
+
+export default function DoctorsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DoctorsPageWrapper />
+    </Suspense>
   );
 }

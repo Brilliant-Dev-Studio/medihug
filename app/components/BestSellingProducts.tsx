@@ -38,7 +38,7 @@ function ProductCard({ p, mm }: { p: Product; mm: boolean }) {
   const next = (e: React.MouseEvent) => { e.stopPropagation(); setSlide(s => (s + 1) % total); };
 
   return (
-    <div className="shrink-0 w-44 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col">
+    <Link href={`/patient/records/${p.id}`} className="shrink-0 w-44 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col active:scale-95 transition-all hover:border-gray-200 hover:shadow-sm">
       {/* Slider */}
       <div className="relative overflow-hidden bg-gray-50" style={{ height: 140 }}>
         {p.imgs.map((src, i) => (
@@ -73,7 +73,7 @@ function ProductCard({ p, mm }: { p: Product; mm: boolean }) {
           <span className="text-sm font-bold" style={{ color: PRIMARY }}>{p.price} Ks</span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
