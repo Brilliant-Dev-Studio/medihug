@@ -1,4 +1,5 @@
 'use client';
+import { theme } from '../../lib/theme';
 
 import { useState } from 'react';
 import Image from 'next/image';
@@ -6,8 +7,8 @@ import Link from 'next/link';
 import { Search, SlidersHorizontal, Star, Heart, Check, RotateCcw, ListFilter, Banknote, Tag, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
 
 type Product = {
   id: number;

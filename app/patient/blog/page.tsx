@@ -1,12 +1,13 @@
 'use client';
+import { theme } from '../../lib/theme';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
 
 const blogCategories = [
   { mm: 'အတ္တအိမ်ကျန်းမာရေး',      en: 'Digestive Health',    img: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=400&fit=crop',    slug: 'digestive' },

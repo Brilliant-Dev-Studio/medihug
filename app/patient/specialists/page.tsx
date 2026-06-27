@@ -1,4 +1,5 @@
 'use client';
+import { theme } from '../../lib/theme';
 
 import Link from 'next/link';
 import {
@@ -8,8 +9,8 @@ import {
 import { useLang } from '../../lib/LanguageContext';
 import { ALL_DOCTORS, SPEC_ICON_MAP } from '../../lib/doctors';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
 
 const ICON_FALLBACK_MAP: Record<string, React.ElementType> = {
   'Pediatric Specialist': Baby,

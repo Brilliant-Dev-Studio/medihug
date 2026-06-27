@@ -1,4 +1,5 @@
 'use client';
+import { theme } from '../../../lib/theme';
 
 import { useState } from 'react';
 import Image from 'next/image';
@@ -6,8 +7,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Star, Heart, Package, Shield, Truck, CheckCircle2, ZoomIn, X } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
 const VIBER_NUMBER = '959123456789'; // placeholder number
 
 type Product = {

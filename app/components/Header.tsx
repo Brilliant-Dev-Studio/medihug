@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { Menu, X, ChevronDown, Globe } from 'lucide-react';
@@ -67,8 +68,8 @@ export default function Header() {
       <header className="max-w-6xl mx-auto bg-white rounded-3xl shadow-sm px-5 sm:px-8 flex items-center justify-between" style={{ height: '75px' }}>
 
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold tracking-tight shrink-0" style={{ color: '#0d2b6e' }}>
-          Medi<span style={{ color: '#1a6bcc' }}>Hug</span>
+        <Link href="/" className="shrink-0 flex items-center">
+          <Image src="/medihug-logo.png" alt="MediHug" width={160} height={52} className="object-contain h-13 w-auto" priority />
         </Link>
 
         {/* Desktop Nav */}

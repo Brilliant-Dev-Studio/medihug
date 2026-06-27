@@ -1,4 +1,5 @@
 'use client';
+import { theme } from '../../lib/theme';
 
 import Link from 'next/link';
 import {
@@ -8,12 +9,12 @@ import {
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
 
 const categories = [
-  { icon: Stethoscope, mm: 'ဆရာဝန်တိုင်ပင်ရန်',    en: 'Consult Doctor',      color: '#0d2b6e', bg: '#eff6ff', href: '/patient/doctors' },
-  { icon: Calendar,    mm: 'ချိန်းဆိုမှု ဗုကင်',     en: 'Book Appointment',    color: '#4facfe', bg: '#f0f9ff', href: '/patient/appointments' },
+  { icon: Stethoscope, mm: 'ဆရာဝန်တိုင်ပင်ရန်',    en: 'Consult Doctor',      color: 'var(--color-primary)', bg: '#eff6ff', href: '/patient/doctors' },
+  { icon: Calendar,    mm: 'ချိန်းဆိုမှု ဗုကင်',     en: 'Book Appointment',    color: 'var(--color-accent)', bg: '#f0f9ff', href: '/patient/appointments' },
   { icon: Activity,    mm: 'BMI တိုင်းတာ',            en: 'BMI Checker',         color: '#10b981', bg: '#f0fdf4', href: '#' },
   { icon: FileText,    mm: 'ကျန်းမာရေး မှတ်တမ်း',   en: 'Health Records',      color: '#8b5cf6', bg: '#f5f3ff', href: '/patient/records' },
   { icon: Pill,        mm: 'ဆေးညွှန်းများ',           en: 'Prescriptions',       color: '#f59e0b', bg: '#fffbeb', href: '#' },

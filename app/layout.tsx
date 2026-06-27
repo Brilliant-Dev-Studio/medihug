@@ -12,7 +12,12 @@ const poppins = Poppins({
 
 export const metadata: Metadata = {
   title: "MediHug",
-  description: "MediHug Project",
+  description: "MediHug — Compassionate Healthcare",
+  icons: {
+    icon: '/favicon/favicon-96x96.png',
+    shortcut: '/favicon/favicon-96x96.png',
+    apple: '/favicon/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({

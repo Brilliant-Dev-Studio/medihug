@@ -1,16 +1,18 @@
 'use client';
+import { theme } from '../../lib/theme';
 
 import { useState } from 'react';
 import Image from 'next/image';
 import {
   Calendar, Clock, Video, X, ChevronRight,
-  CheckCircle2, Star, RotateCcw, Ban, AlertCircle,
+  CheckCircle2, Star, RotateCcw, Ban, AlertCircle, FileText,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useLang } from '../../lib/LanguageContext';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
-const ACCENT    = '#4facfe';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
+const ACCENT    = 'var(--color-accent)';
 
 /* ─────────────────── types ─────────────────── */
 type Status = 'pending_payment' | 'waiting_doctor' | 'confirmed' | 'ready';
@@ -142,14 +144,14 @@ const STATUS_CONFIG: Record<Status, {
   confirmed: {
     badgeEn: 'Confirmed',          badgeMm: 'အတည်ပြုပြီး',
     pillBg: '#10b981', pillText: '#fff',
-    alertEn: 'Appointment locked in. Video room opens 15 min before the session.',
-    alertMm: 'ချိန်းဆိုမှု အတည်ပြုပြီး။ ဗီဒီယိုခန်းကို session မစမီ မိနစ် ၁၅ ခန့်တွင် ဖွင့်ပေးမည်။',
+    alertEn: 'Appointment confirmed. The doctor will initiate the video call — please be ready at your scheduled time.',
+    alertMm: 'ချိန်းဆိုမှု အတည်ပြုပြီး။ ဆရာဝန်မှ Video call ခေါ်ဆိုမည်ဖြစ်သောကြောင့် ချိန်းဆိုချိန်တွင် အဆင်သင့်နေပေးပါ။',
   },
   ready: {
     badgeEn: 'Ready to Join',      badgeMm: 'ဝင်ရောက်ရန် အသင့်ဖြစ်သည်',
     pillBg: PRIMARY, pillText: '#fff',
-    alertEn: 'Your doctor is online. The live session is open — join immediately.',
-    alertMm: 'ဆရာဝန် online ဝင်ရောက်နေပြီ။ Live session ဖွင့်ထားသည် — ချက်ချင်းဝင်ပါ။',
+    alertEn: 'Your doctor is online and will call you now. Please accept the incoming video call.',
+    alertMm: 'ဆရာဝန် online ဝင်ရောက်နေပြီ။ ယခု video call ခေါ်ဆိုမည် — incoming call ကို လက်ခံပေးပါ။',
   },
 };
 
@@ -188,30 +190,40 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
         </div>
         {/* Alert */}
         <p className="text-xs text-gray-400 leading-relaxed">{mm ? cfg.alertMm : cfg.alertEn}</p>
-        {/* Status pill + action buttons */}
+        {/* Status badge — own row */}
+        <span className="self-start px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+          style={{ backgroundColor: cfg.pillBg, color: cfg.pillText }}>
+          {mm ? cfg.badgeMm : cfg.badgeEn}
+        </span>
+        {/* Action buttons row */}
         <div className="flex items-center justify-between gap-2">
-          <span className="px-3 py-1.5 rounded-full text-xs font-semibold"
-            style={{ backgroundColor: cfg.pillBg, color: cfg.pillText }}>
-            {mm ? cfg.badgeMm : cfg.badgeEn}
-          </span>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             {appt.status === 'ready' && (
-              <a href="#" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
+              <a href="#" className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
                 style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
                 <Video className="w-3.5 h-3.5" />{mm ? 'ဝင်ရောက်မည်' : 'Join Now'}
               </a>
             )}
             {appt.status === 'confirmed' && (
-              <button disabled className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 border border-gray-100 cursor-not-allowed">
+              <button disabled className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-300 border border-gray-100 cursor-not-allowed">
                 <Video className="w-3.5 h-3.5" />{mm ? 'မဖွင့်ရသေး' : 'Not Open'}
               </button>
             )}
             {appt.status === 'pending_payment' && (
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-400 border border-red-200 hover:bg-red-50 transition-colors">
+              <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-red-400 border border-red-200 active:bg-red-50">
                 <X className="w-3.5 h-3.5" />{mm ? 'ပယ်ဖျက်မည်' : 'Cancel'}
               </button>
             )}
-            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href={`/patient/appointments/${appt.id}/form`}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border"
+              style={{ color: PRIMARY, borderColor: `${PRIMARY}30`, backgroundColor: `${PRIMARY}08` }}
+            >
+              <FileText className="w-3.5 h-3.5" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
+            </Link>
+            <button className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-300 active:bg-gray-50">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -241,6 +253,13 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
             style={{ backgroundColor: cfg.pillBg, color: cfg.pillText }}>
             {mm ? cfg.badgeMm : cfg.badgeEn}
           </span>
+          <Link
+            href={`/patient/appointments/${appt.id}/form`}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+            style={{ color: PRIMARY, borderColor: `${PRIMARY}30`, backgroundColor: `${PRIMARY}08` }}
+          >
+            <FileText className="w-4 h-4" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
+          </Link>
           {appt.status === 'ready' && (
             <a href="#" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>

@@ -1,4 +1,5 @@
 'use client';
+import { theme } from '../../lib/theme';
 
 import { useState, useRef, Suspense } from 'react';
 import Image from 'next/image';
@@ -9,16 +10,17 @@ import {
   CreditCard, Smartphone, Building2,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
+import IntakeForm from './IntakeForm';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
-const ACCENT    = '#4facfe';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
+const ACCENT    = 'var(--color-accent)';
 
 const PAYMENT_METHODS = [
-  { id: 'kpay',    icon: '🟣', label: 'KPay',          number: '09 xxx xxx xxx' },
-  { id: 'wavepay', icon: '🔵', label: 'Wave Pay',       number: '09 xxx xxx xxx' },
-  { id: 'aya',     icon: '🏦', label: 'AYA Pay',        number: '09 xxx xxx xxx' },
-  { id: 'cb',      icon: '🏦', label: 'CB Pay',         number: '09 xxx xxx xxx' },
+  { id: 'kpay',    img: '/payment/Kpay.jpg',       label: 'KPay',     number: '09 xxx xxx xxx' },
+  { id: 'wavepay', img: '/payment/waveMoney.png',  label: 'Wave Pay', number: '09 xxx xxx xxx' },
+  { id: 'aya',     img: '/payment/ayaPay.png',     label: 'AYA Pay',  number: '09 xxx xxx xxx' },
+  { id: 'cb',      img: '/payment/cbPay.jpg',      label: 'CB Pay',   number: '09 xxx xxx xxx' },
 ];
 
 export default function BookingPage() {
@@ -47,12 +49,14 @@ function BookingContent() {
   const slotEnd      = params.get('end')         ?? '';
   const duration     = params.get('duration')    ?? '';
   const fee          = params.get('fee')         ?? '22,000';
+  const sessions     = Number(params.get('sessions')  ?? '1');
+  const basePrice    = Number(params.get('basePrice') ?? '22000');
 
   /* ── local state ── */
   const [payMethod,  setPayMethod]  = useState<string>('kpay');
   const [receipt,    setReceipt]    = useState<{ file: File; url: string } | null>(null);
   const [dragOver,   setDragOver]   = useState(false);
-  const [submitted,  setSubmitted]  = useState(false);
+  const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
   const [note,       setNote]       = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -73,11 +77,22 @@ function BookingContent() {
 
   function handleSubmit() {
     if (!receipt) return;
-    setSubmitted(true);
+    setStep('intake');
+  }
+
+  /* ── Intake form screen ── */
+  if (step === 'intake') {
+    return (
+      <div className="min-h-full bg-gray-50">
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          <IntakeForm mm={mm} onDone={() => setStep('done')} />
+        </div>
+      </div>
+    );
   }
 
   /* ── Success screen ── */
-  if (submitted) {
+  if (step === 'done') {
     return (
       <div className="min-h-full bg-gray-50 flex flex-col items-center justify-center px-6 py-16 gap-6">
         <div
@@ -152,7 +167,8 @@ function BookingContent() {
 
           <div className="p-6 flex flex-col gap-5">
             <BookingInfoCard mm={mm} doctorName={doctorName} doctorNameMm={doctorNameMm}
-              spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel} fee={fee} />
+              spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel}
+              fee={fee} sessions={sessions} basePrice={basePrice} />
             <NoteCard mm={mm} note={note} setNote={setNote} />
             <PaymentCard mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
               receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
@@ -197,7 +213,8 @@ function BookingContent() {
 
         <div className="px-4 pt-5 flex flex-col gap-4">
           <BookingInfoCard mm={mm} doctorName={doctorName} doctorNameMm={doctorNameMm}
-            spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel} fee={fee} />
+            spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel}
+            fee={fee} sessions={sessions} basePrice={basePrice} />
           <NoteCard mm={mm} note={note} setNote={setNote} />
           <PaymentCard mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
             receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
@@ -233,10 +250,11 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
   );
 }
 
-function BookingInfoCard({ mm, doctorName, doctorNameMm, spec, specMm, img, date, timeLabel, fee }: {
+function BookingInfoCard({ mm, doctorName, doctorNameMm, spec, specMm, img, date, timeLabel, fee, sessions, basePrice }: {
   mm: boolean; doctorName: string; doctorNameMm: string; spec: string; specMm: string;
-  img: string; date: string; timeLabel: string; fee: string;
+  img: string; date: string; timeLabel: string; fee: string; sessions: number; basePrice: number;
 }) {
+  const isMulti = sessions > 1;
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
       {/* Doctor row */}
@@ -251,6 +269,7 @@ function BookingInfoCard({ mm, doctorName, doctorNameMm, spec, specMm, img, date
           <p className="text-sm text-gray-500 mt-0.5">{mm ? specMm : spec}</p>
         </div>
       </div>
+
       {/* Details */}
       <div className="px-5 py-4 flex flex-col gap-3.5">
         <Row icon={<Calendar className="w-4 h-4" style={{ color: PRIMARY }} />}
@@ -260,17 +279,32 @@ function BookingInfoCard({ mm, doctorName, doctorNameMm, spec, specMm, img, date
         <Row icon={<Stethoscope className="w-4 h-4" style={{ color: PRIMARY }} />}
           label={mm ? 'ကုသမှုအမျိုးအစား' : 'Consultation'} value={mm ? 'ဆရာဝန်နှင့် တိုင်ပင်ခြင်း' : 'Doctor Consultation'} />
       </div>
-      {/* Fee banner */}
-      <div
-        className="mx-4 mb-4 px-4 py-3 rounded-xl flex items-center justify-between"
-        style={{ backgroundColor: '#eff6ff' }}
-      >
-        <span className="text-sm font-semibold" style={{ color: PRIMARY }}>
-          {mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation Fee'}
-        </span>
-        <span className="text-lg font-bold" style={{ color: PRIMARY }}>
-          {fee} <span className="text-xs font-semibold text-gray-400">MMK</span>
-        </span>
+
+      {/* Fee breakdown */}
+      <div className="mx-4 mb-4 rounded-xl overflow-hidden border" style={{ borderColor: `${PRIMARY}20` }}>
+        {isMulti && (
+          <div className="px-4 py-2.5 flex flex-col gap-1.5 border-b" style={{ borderColor: `${PRIMARY}15`, backgroundColor: `${PRIMARY}06` }}>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>{mm ? 'Session တစ်ခုခ' : 'Per session'}</span>
+              <span className="font-semibold">{basePrice.toLocaleString()} MMK</span>
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>{mm ? 'Session အရေအတွက်' : 'Sessions'}</span>
+              <span className="font-semibold">× {sessions} <span className="text-gray-400">({sessions * 15} min)</span></span>
+            </div>
+          </div>
+        )}
+        <div
+          className="px-4 py-3 flex items-center justify-between"
+          style={{ backgroundColor: `${PRIMARY}10` }}
+        >
+          <span className="text-sm font-semibold" style={{ color: PRIMARY }}>
+            {mm ? 'စုစုပေါင်းခ' : 'Total Fee'}
+          </span>
+          <span className="text-xl font-bold" style={{ color: PRIMARY }}>
+            {fee} <span className="text-xs font-semibold text-gray-400">MMK</span>
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -338,12 +372,14 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
                 onClick={() => setPayMethod(pm.id)}
                 className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all"
                 style={{
-                  backgroundColor: active ? '#eff6ff' : '#fafafa',
+                  backgroundColor: active ? `${PRIMARY}10` : '#fafafa',
                   borderColor: active ? PRIMARY : '#e5e7eb',
                   boxShadow: active ? `0 0 0 1px ${PRIMARY}` : 'none',
                 }}
               >
-                <span className="text-xl leading-none">{pm.icon}</span>
+                <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
+                  <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold" style={{ color: active ? PRIMARY : '#374151' }}>{pm.label}</p>
                   <p className="text-[10px] text-gray-400 truncate">{pm.number}</p>
@@ -360,23 +396,26 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
       </div>
 
       {/* QR / account info for selected method */}
-      <div
-        className="px-4 py-3 rounded-xl flex items-center gap-3"
-        style={{ backgroundColor: '#f8faff', border: '1px dashed #bfdbfe' }}
-      >
-        <Smartphone className="w-5 h-5 shrink-0" style={{ color: SECONDARY }} />
-        <div>
-          <p className="text-xs font-bold" style={{ color: PRIMARY }}>
-            {PAYMENT_METHODS.find(p => p.id === payMethod)?.label}
-          </p>
-          <p className="text-xs text-gray-500">
-            {mm ? 'ဤနံပါတ်သို့ ငွေလွှဲပေးပါ → ' : 'Transfer to → '}
-            <span className="font-bold text-gray-700">
-              {PAYMENT_METHODS.find(p => p.id === payMethod)?.number}
-            </span>
-          </p>
-        </div>
-      </div>
+      {(() => {
+        const selected = PAYMENT_METHODS.find(p => p.id === payMethod)!;
+        return (
+          <div
+            className="px-4 py-3 rounded-xl flex items-center gap-3"
+            style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}
+          >
+            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
+              <Image src={selected.img} alt={selected.label} width={40} height={40} className="object-contain w-full h-full" />
+            </div>
+            <div>
+              <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
+              <p className="text-xs text-gray-500">
+                {mm ? 'ဤနံပါတ်သို့ ငွေလွှဲပေးပါ → ' : 'Transfer to → '}
+                <span className="font-bold text-gray-700">{selected.number}</span>
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Receipt upload */}
       <div>

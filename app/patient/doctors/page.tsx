@@ -1,4 +1,5 @@
 'use client';
+import { theme } from '../../lib/theme';
 
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -8,9 +9,9 @@ import { Heart, Search, SlidersHorizontal, Clock, Star, BriefcaseMedical, Stetho
 import { useLang } from '../../lib/LanguageContext';
 import { ALL_DOCTORS, type Doctor } from '../../lib/doctors';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
-const ACCENT    = '#4facfe';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
+const ACCENT    = 'var(--color-accent)';
 
 /* ─── Mobile card (horizontal) ─── */
 function DoctorCardMobile({ doc, mm, favorited, onToggleFav }: {

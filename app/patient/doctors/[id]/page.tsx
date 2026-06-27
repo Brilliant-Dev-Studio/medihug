@@ -1,4 +1,5 @@
 'use client';
+import { theme } from '../../../lib/theme';
 
 import { useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -7,9 +8,9 @@ import Link from 'next/link';
 import { Heart, ChevronLeft, GraduationCap, Languages, MapPin, Stethoscope, BriefcaseMedical, CheckCircle2, Hospital, Images, X, Sunrise, Sun, Sunset, Calendar, Clock } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
-const ACCENT    = '#4facfe';
+const PRIMARY   = 'var(--color-primary)';
+const SECONDARY = 'var(--color-primary-dark)';
+const ACCENT    = 'var(--color-accent)';
 
 type Doctor = {
   id: number;
@@ -226,6 +227,13 @@ export default function DoctorDetailPage() {
       </div>
     );
   }
+
+  /* ── Computed session count & total fee ── */
+  const _toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const sessionCount = selectionMode === 'range' && rangeStart && rangeEnd
+    ? Math.round((Math.abs(_toMin(rangeEnd) - _toMin(rangeStart)) + 15) / 15)
+    : 1;
+  const totalFee = doctor.price * sessionCount;
 
   /* ── Gallery grid (shared) ── */
   const GALLERY_MAX = 8;
@@ -723,18 +731,25 @@ export default function DoctorDetailPage() {
       ? [rangeStart, rangeEnd].sort((a, b) => toMin2(a) - toMin2(b))
       : [selectedSlot ?? '', ''];
 
+    const sessionCount = selectionMode === 'range' && rangeStart && rangeEnd
+      ? Math.round((Math.abs(toMin2(rangeEnd) - toMin2(rangeStart)) + 15) / 15)
+      : 1;
+    const totalFee = doctor.price * sessionCount;
+
     const q = new URLSearchParams({
-      doctorId: String(doctor.id),
-      name:     doctor.name_en,
-      nameMm:   doctor.name_mm,
-      spec:     doctor.spec_en,
-      specMm:   doctor.spec_mm,
-      img:      doctor.img,
-      date:     dayLabel2,
-      start:    sorted[0],
-      end:      sorted[1],
-      duration: selectionMode === 'range' && rangeStart && rangeEnd ? fmtDur(rangeStart, rangeEnd) : '',
-      fee:      doctor.price.toLocaleString(),
+      doctorId:     String(doctor.id),
+      name:         doctor.name_en,
+      nameMm:       doctor.name_mm,
+      spec:         doctor.spec_en,
+      specMm:       doctor.spec_mm,
+      img:          doctor.img,
+      date:         dayLabel2,
+      start:        sorted[0],
+      end:          sorted[1],
+      duration:     selectionMode === 'range' && rangeStart && rangeEnd ? fmtDur(rangeStart, rangeEnd) : '',
+      fee:          totalFee.toLocaleString(),
+      sessions:     String(sessionCount),
+      basePrice:    String(doctor.price),
     });
     router.push(`/patient/booking?${q.toString()}`);
   }
@@ -905,8 +920,13 @@ export default function DoctorDetailPage() {
 
             <div>
               <p className="text-xs text-gray-400 mb-1">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation Fee'}</p>
+              {sessionCount > 1 && (
+                <p className="text-[11px] text-gray-400 mb-0.5">
+                  {doctor.price.toLocaleString()} × {sessionCount} sessions
+                </p>
+              )}
               <p className="text-2xl font-bold" style={{ color: PRIMARY }}>
-                {doctor.price.toLocaleString()} <span className="text-sm font-semibold text-gray-400">MMK</span>
+                {totalFee.toLocaleString()} <span className="text-sm font-semibold text-gray-400">MMK</span>
               </p>
             </div>
             <button
@@ -986,7 +1006,12 @@ export default function DoctorDetailPage() {
           <div className="flex items-center justify-center gap-2 mb-3">
             <span className="text-sm text-gray-500">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation Fee'}</span>
             <span className="text-sm text-gray-400">-</span>
-            <span className="text-xl font-bold" style={{ color: PRIMARY }}>{doctor.price.toLocaleString()} MMK</span>
+            <div className="flex flex-col items-end">
+              {sessionCount > 1 && (
+                <span className="text-[10px] text-gray-400">{doctor.price.toLocaleString()} × {sessionCount}</span>
+              )}
+              <span className="text-xl font-bold" style={{ color: PRIMARY }}>{totalFee.toLocaleString()} MMK</span>
+            </div>
           </div>
           <button onClick={goToBooking} className="block w-full text-center text-base font-bold py-4 rounded-2xl text-white active:scale-95 transition-transform" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
             {mm ? 'ချိန်းဆိုမည်' : 'Book Appointment'}

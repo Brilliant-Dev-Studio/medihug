@@ -1,13 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Settings,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
+import { ThemeProvider } from '../lib/ThemeContext';
 import NotificationDropdown from '../components/NotificationDropdown';
 
 const navItems = [
@@ -15,10 +17,11 @@ const navItems = [
   { href: '/patient/doctors',      icon: Stethoscope,     mm: 'ဆရာဝန်များ',        en: 'Doctors' },
   { href: '/patient/records',      icon: ShoppingBag,     mm: 'Products များ',      en: 'Products' },
   { href: '/patient/appointments', icon: Calendar,        mm: 'ချိန်းဆိုမှု',      en: 'Appointments' },
+  { href: '/patient/settings',     icon: Settings,        mm: 'ဆက်တင်',            en: 'Settings' },
 ];
 
-const PRIMARY = '#0d2b6e';
-const ACCENT  = '#4facfe';
+const PRIMARY = 'var(--color-primary)';
+const ACCENT  = 'var(--color-accent)';
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -42,36 +45,42 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
 
   return (
+    <ThemeProvider>
     <div className="min-h-screen bg-gray-50 flex">
 
       {/* ── Sidebar (desktop lg+) ── */}
       <aside
         className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-50 transition-all duration-300 ${sidebarW}`}
       >
-        {/* Logo + Toggle */}
-        <div className="px-4 py-5 border-b border-gray-100 flex items-center justify-between gap-2 min-h-18">
+        {/* Logo */}
+        <div className="px-4 py-5 border-b border-gray-100 flex items-center justify-start min-h-18">
           {!collapsed && (
-            <Link href="/" className="text-xl font-bold truncate">
-              <span style={{ color: PRIMARY }}>Medi</span>
-              <span style={{ color: ACCENT }}>Hug</span>
+            <Link href="/" className="flex items-center gap-3">
+              <Image src="/medihug-logo.png" alt="MediHug" width={48} height={48} className="object-contain h-12 w-auto" priority />
+              <div className="flex flex-col leading-snug">
+                <span className="text-[12px] font-semibold tracking-wide" style={{ color: PRIMARY }}>Compassionate</span>
+                <span className="text-[12px] font-semibold tracking-wide" style={{ color: ACCENT }}>Healthcare</span>
+              </div>
             </Link>
           )}
           {collapsed && (
-            <Link href="/" className="mx-auto text-xl font-bold">
-              <span style={{ color: PRIMARY }}>M</span>
+            <Link href="/" className="mx-auto flex items-center justify-center">
+              <Image src="/medihug-logo.png" alt="MediHug" width={56} height={56} className="object-contain" priority />
             </Link>
           )}
-          <button
-            onClick={() => setCollapsed(prev => !prev)}
-            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed
-              ? <PanelLeftOpen  className="w-4 h-4" />
-              : <PanelLeftClose className="w-4 h-4" />
-            }
-          </button>
         </div>
+
+        {/* Floating toggle button on right edge */}
+        <button
+          onClick={() => setCollapsed(prev => !prev)}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white border border-gray-200 shadow-md flex items-center justify-center text-gray-400 hover:text-gray-600 hover:shadow-lg transition-all z-10"
+        >
+          {collapsed
+            ? <PanelLeftOpen  className="w-3.5 h-3.5" />
+            : <PanelLeftClose className="w-3.5 h-3.5" />
+          }
+        </button>
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-4 flex flex-col gap-1 overflow-y-auto">
@@ -148,9 +157,16 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.08)' : 'none',
             }}
           >
-            <Link href="/" className="text-xl font-bold">
-              <span style={{ color: scrolled ? PRIMARY : '#ffffff' }}>Medi</span>
-              <span style={{ color: scrolled ? ACCENT  : 'rgba(255,255,255,0.8)' }}>Hug</span>
+            <Link href="/" className="flex items-center">
+              <Image
+                src="/medihug-logo.png"
+                alt="MediHug"
+                width={130}
+                height={44}
+                className="object-contain h-11 w-auto transition-all duration-300"
+                style={{ filter: scrolled ? 'none' : 'brightness(0) invert(1)' }}
+                priority
+              />
             </Link>
             <div className="flex items-center gap-2">
               <NotificationDropdown />
@@ -246,7 +262,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
       {/* ── Bottom Nav (mobile only) ── */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100">
-        <div className="grid grid-cols-4 h-16">
+        <div className="grid grid-cols-5 h-16">
           {navItems.map(({ href, icon: Icon, mm: labelMm, en: labelEn }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
             return (
@@ -271,5 +287,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       </nav>
 
     </div>
+    </ThemeProvider>
   );
 }
