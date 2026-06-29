@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
-  PanelLeftClose, PanelLeftOpen, Settings,
+  PanelLeftClose, PanelLeftOpen, UserCircle,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
@@ -17,7 +17,7 @@ const navItems = [
   { href: '/patient/doctors',      icon: Stethoscope,     mm: 'ဆရာဝန်များ',        en: 'Doctors' },
   { href: '/patient/records',      icon: ShoppingBag,     mm: 'Products များ',      en: 'Products' },
   { href: '/patient/appointments', icon: Calendar,        mm: 'ချိန်းဆိုမှု',      en: 'Appointments' },
-  { href: '/patient/settings',     icon: Settings,        mm: 'ဆက်တင်',            en: 'Settings' },
+  { href: '/patient/settings',     icon: UserCircle,      mm: 'ပရိုဖိုင်',           en: 'Profile' },
 ];
 
 const PRIMARY = 'var(--color-primary)';
@@ -43,6 +43,16 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   const sidebarW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
+
+  // Main nav pages get transparent→white header; everything else gets primary gradient always
+  const MAIN_PAGES = ['/patient/dashboard', '/patient/doctors', '/patient/records', '/patient/appointments', '/patient/settings'];
+  const isDetailPage = !MAIN_PAGES.includes(pathname);
+  const headerBg = isDetailPage
+    ? `linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)`
+    : scrolled
+      ? '#ffffff'
+      : 'transparent';
+  const logoWhite = !scrolled || isDetailPage;
 
   return (
     <ThemeProvider>
@@ -153,7 +163,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
           <div
             className="sticky top-0 z-40 px-4 py-4 flex items-center justify-between transition-all duration-300"
             style={{
-              background: scrolled ? '#ffffff' : 'transparent',
+              background: headerBg,
               boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.08)' : 'none',
             }}
           >
@@ -164,7 +174,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
                 width={130}
                 height={44}
                 className="object-contain h-11 w-auto transition-all duration-300"
-                style={{ filter: scrolled ? 'none' : 'brightness(0) invert(1)' }}
+                style={{ filter: logoWhite ? 'brightness(0) invert(1)' : 'none' }}
                 priority
               />
             </Link>
@@ -172,7 +182,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               <NotificationDropdown />
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all duration-300"
-                style={{ backgroundColor: scrolled ? PRIMARY : 'rgba(255,255,255,0.2)' }}
+                style={{ backgroundColor: (scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)' }}
               >
                 P
               </div>
@@ -192,8 +202,8 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             {/* Language dropdown */}
             {(() => {
               const LANGS = [
-                { code: 'mm' as const, label: 'မြန်မာ',  flag: '🇲🇲', sub: 'Myanmar'  },
-                { code: 'en' as const, label: 'English', flag: '🇬🇧', sub: 'English'   },
+                { code: 'mm' as const, label: 'မြန်မာ',  flag: '/flags/myanmar.png', sub: 'Myanmar'  },
+                { code: 'en' as const, label: 'English', flag: '/flags/english.jpg',  sub: 'English'  },
               ];
               const current = LANGS.find(l => l.code === lang)!;
               return (
@@ -202,16 +212,14 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
                     onClick={() => setLangOpen(o => !o)}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors"
                   >
-                    <span className="text-lg leading-none">{current.flag}</span>
+                    <Image src={current.flag} alt={current.label} width={20} height={20} className="rounded-full object-cover w-5 h-5" />
                     <span className="text-sm font-semibold" style={{ color: PRIMARY }}>{current.label}</span>
                     <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${langOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
 
                   {langOpen && (
                     <>
-                      {/* backdrop */}
                       <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
-                      {/* dropdown */}
                       <div className="absolute right-0 top-full mt-2 z-50 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden w-44"
                         style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.10)' }}>
                         <div className="px-3 py-2 border-b border-gray-50">
@@ -223,7 +231,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
                             onClick={() => { setLang(l.code); setLangOpen(false); }}
                             className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors"
                           >
-                            <span className="text-2xl leading-none">{l.flag}</span>
+                            <Image src={l.flag} alt={l.label} width={28} height={28} className="rounded-full object-cover w-7 h-7 shrink-0" />
                             <div className="flex-1 text-left">
                               <p className="text-sm font-semibold text-gray-700">{l.label}</p>
                               <p className="text-[10px] text-gray-400">{l.sub}</p>

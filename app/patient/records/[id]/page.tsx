@@ -459,12 +459,15 @@ export default function ProductDetailPage() {
 
       {/* ══ MOBILE ══ */}
       <div className="lg:hidden">
-        {/* Back button */}
-        <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100">
-          <button onClick={() => router.back()} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-            <ChevronLeft className="w-4 h-4 text-gray-600" />
+        {/* Sub-header */}
+        <div
+          className="flex items-center gap-3 px-4 py-3"
+          style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
+        >
+          <button onClick={() => router.back()} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <ChevronLeft className="w-4 h-4 text-white" />
           </button>
-          <span className="text-sm font-semibold truncate" style={{ color: PRIMARY }}>{product.name}</span>
+          <span className="text-sm font-semibold text-white truncate">{product.name}</span>
         </div>
 
         {/* Image */}

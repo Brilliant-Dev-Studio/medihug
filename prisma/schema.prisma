@@ -7,48 +7,9 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  phone     String   @unique
-  password  String
-  role      Role     @default(PATIENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  appointments Appointment[]
-}
-
-model Doctor {
-  id           String   @id @default(cuid())
-  name         String
-  nameEn       String?
-  specialty    String
-  specialtyEn  String?
-  bio          String?
-  imageUrl     String?
-  experience   Int      @default(0)
-  rating       Float    @default(0)
-  isAvailable  Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  appointments Appointment[]
-}
-
-model Appointment {
-  id        String            @id @default(cuid())
-  userId    String
-  doctorId  String
-  date      DateTime
-  status    AppointmentStatus @default(PENDING)
-  note      String?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-}
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
 
 enum Role {
   PATIENT
@@ -57,9 +18,233 @@ enum Role {
   PARTNER
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
   COMPLETED
   CANCELLED
+}
+
+enum ClinicType {
+  CLINIC
+  PHARMACY
+  HOSPITAL
+}
+
+// ─────────────────────────────────────────────
+// User (Patient)
+// ─────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  phone        String    @unique
+  password     String
+  role         Role      @default(PATIENT)
+  gender       Gender?
+  birthday     DateTime?
+  state        String?
+  township     String?
+  profileImage String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  appointments Appointment[]
+  doctor       Doctor?
+}
+
+// ─────────────────────────────────────────────
+// Doctor
+// ─────────────────────────────────────────────
+
+model Doctor {
+  id             String   @id @default(cuid())
+  userId         String?  @unique
+  name           String
+  nameEn         String?
+  specialty      String
+  specialtyEn    String?
+  bio            String?
+  phone          String?
+  imageUrl       String?
+  experience     Int      @default(0)
+  rating         Float    @default(0)
+  reviewCount    Int      @default(0)
+  price          Int      @default(0)
+  isAvailable    Boolean  @default(true)
+  isActive       Boolean  @default(true)
+  qualifications String?
+  careerMm       String?
+  careerEn       String?
+  clinicNote     String?
+  clinicNoteEn   String?
+  clinicTypesMm  String[]
+  clinicTypesEn  String[]
+  languages      String[]
+  location       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user          User?          @relation(fields: [userId], references: [id])
+  appointments  Appointment[]
+  clinicDoctors ClinicDoctor[]
+  slots         DoctorSlot[]
+  gallery       DoctorGallery[]
+}
+
+// ─────────────────────────────────────────────
+// Doctor Gallery
+// ─────────────────────────────────────────────
+
+model DoctorGallery {
+  id        String   @id @default(cuid())
+  doctorId  String
+  imageUrl  String
+  captionMm String?
+  captionEn String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// Doctor Slots (weekly recurring schedule)
+// ─────────────────────────────────────────────
+
+model DoctorSlot {
+  id         String   @id @default(cuid())
+  doctorId   String
+  dayOfWeek  Int      // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
+  startTime  String   // "09:00"
+  endTime    String   // "12:00"
+  duration   Int      @default(30) // minutes per appointment
+  maxPerSlot Int      @default(1)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────
+// Clinic / Pharmacy (မိတ်ဖက် ဆေးဆိုင် / ဆေးခန်း)
+// ─────────────────────────────────────────────
+
+model Clinic {
+  id        String     @id @default(cuid())
+  name      String
+  nameEn    String?
+  type      ClinicType @default(CLINIC)
+  address   String?
+  state     String?
+  township  String?
+  phone     String?
+  imageUrl  String?
+  openTime  String?
+  closeTime String?
+  isActive  Boolean    @default(true)
+  isPartner Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  doctors      ClinicDoctor[]
+  appointments Appointment[]
+}
+
+model ClinicDoctor {
+  id       String @id @default(cuid())
+  clinicId String
+  doctorId String
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, doctorId])
+}
+
+// ─────────────────────────────────────────────
+// Appointment
+// ─────────────────────────────────────────────
+
+model Appointment {
+  id        String            @id @default(cuid())
+  userId    String
+  doctorId  String
+  clinicId  String?
+  date      DateTime
+  time      String?
+  reason    String?
+  note      String?
+  status    AppointmentStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+}
+
+// ─────────────────────────────────────────────
+// Product
+// ─────────────────────────────────────────────
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  nameEn      String?
+  description String?
+  price       Int      @default(0)
+  stock       Int      @default(0)
+  imageUrl    String?
+  category    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Specialty
+// ─────────────────────────────────────────────
+
+model Specialty {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String?
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Blog Category
+// ─────────────────────────────────────────────
+
+model BlogCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String?
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Blog
+// ─────────────────────────────────────────────
+
+model Blog {
+  id          String    @id @default(cuid())
+  title       String
+  titleEn     String?
+  slug        String    @unique
+  content     String
+  excerpt     String?
+  imageUrl    String?
+  category    String?
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

@@ -1,22 +1,30 @@
 'use client';
 
-import { useRef } from 'react';
-import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Star, Briefcase } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, Star, Briefcase, Stethoscope } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
-const doctors = [
-  { id: 1, name: 'Dr. Aung Kyaw Zin', experience: '12', rating: 4.9, reviews: 320, category: 'Cardiology',       color: '#0d2b6e', img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=300&h=300&fit=crop' },
-  { id: 2, name: 'Dr. Thida Oo',       experience: '8',  rating: 4.8, reviews: 215, category: 'Dermatology',     color: '#f59e0b', img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&h=300&fit=crop' },
-  { id: 3, name: 'Dr. Zaw Myo Htun',   experience: '15', rating: 4.9, reviews: 510, category: 'General Medicine', color: '#22c55e', img: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=300&h=300&fit=crop' },
-  { id: 4, name: 'Dr. Khin Yadanar',   experience: '6',  rating: 4.7, reviews: 178, category: 'Pediatrics',      color: '#a855f7', img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=300&h=300&fit=crop' },
-  { id: 5, name: 'Dr. Nay Lin Tun',    experience: '10', rating: 4.8, reviews: 290, category: 'Orthopedics',     color: '#ef4444', img: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?w=300&h=300&fit=crop' },
-  { id: 6, name: 'Dr. Su Myat Noe',    experience: '9',  rating: 4.6, reviews: 145, category: 'Gynecology',      color: '#ec4899', img: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=300&h=300&fit=crop' },
-];
+const AVATAR_COLORS = ['#0d2b6e', '#f59e0b', '#22c55e', '#a855f7', '#ef4444', '#ec4899', '#2ab5ad', '#3b82f6', '#10b981'];
+
+interface Doctor {
+  id: string; name: string; nameEn: string | null;
+  specialty: string; experience: number; rating: number;
+  reviewCount: number; price: number; imageUrl: string | null;
+}
 
 export default function OurDoctors() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { tr } = useLang();
+  const scrollRef            = useRef<HTMLDivElement>(null);
+  const { tr, lang }         = useLang();
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/doctors?limit=10')
+      .then(r => r.json())
+      .then(d => { setDoctors(d.doctors ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
   const scroll = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -32,9 +40,9 @@ export default function OurDoctors() {
             <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.doctorsSubtitle}</p>
           </div>
           <div className="flex items-center gap-3">
-            <a href="#" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: '#0d2b6e', borderColor: '#0d2b6e' }}>
+            <Link href="/patient/doctors" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: '#0d2b6e', borderColor: '#0d2b6e' }}>
               {tr.seeAll}
-            </a>
+            </Link>
             <div className="flex gap-2">
               <button onClick={() => scroll('left')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                 <ChevronLeft className="w-4 h-4 text-gray-500" />
@@ -46,33 +54,68 @@ export default function OurDoctors() {
           </div>
         </div>
 
-        <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-          {doctors.map(({ id, name, experience, rating, reviews, category, color, img }) => (
-            <div key={id} className="shrink-0 w-72 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
-              <div className="w-full h-48 relative overflow-hidden bg-gray-100">
-                <Image src={img} alt={name} fill className="object-cover object-top" />
-              </div>
-              <div className="p-4 flex flex-col gap-2.5">
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800 leading-snug">{name}</h3>
-                  <span className="text-xs font-medium mt-0.5 inline-block" style={{ color }}>{category}</span>
+        {loading ? (
+          <div className="flex gap-4 overflow-hidden">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="shrink-0 w-72 h-72 rounded-2xl bg-gray-100 animate-pulse" />
+            ))}
+          </div>
+        ) : doctors.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
+            <Stethoscope className="w-10 h-10 text-gray-200" />
+            <p className="text-sm">No doctors available yet.</p>
+          </div>
+        ) : (
+          <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
+            {doctors.map((d, i) => {
+              const displayName = lang === 'mm' ? d.name : (d.nameEn ?? d.name);
+              return (
+                <div key={d.id} className="shrink-0 w-72 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
+                  <div className="w-full h-48 relative overflow-hidden bg-gray-100 flex items-center justify-center"
+                    style={{ backgroundColor: `${AVATAR_COLORS[i % AVATAR_COLORS.length]}15` }}>
+                    {d.imageUrl ? (
+                      <img src={d.imageUrl} alt={displayName} className="w-full h-full object-cover object-top" />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white"
+                        style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                        {d.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 flex flex-col gap-2.5">
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-800 leading-snug">{displayName}</h3>
+                      <span className="text-xs font-medium mt-0.5 inline-block" style={{ color: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                        {d.specialty}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                      {d.experience} {tr.experience}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                        <span className="text-xs font-semibold text-gray-700">{d.rating.toFixed(1)}</span>
+                        <span className="text-xs text-gray-400">({d.reviewCount} {tr.reviews})</span>
+                      </div>
+                      <span className="text-xs font-bold" style={{ color: '#0d2b6e' }}>
+                        {d.price.toLocaleString()} MMK
+                      </span>
+                    </div>
+                    <Link
+                      href={`/patient/doctors/${d.id}`}
+                      className="w-full mt-1 py-2.5 rounded-xl text-xs font-semibold text-white text-center"
+                      style={{ backgroundColor: '#0d2b6e' }}
+                    >
+                      {tr.bookConsultation}
+                    </Link>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <Briefcase className="w-3.5 h-3.5 text-gray-400" />
-                  {experience} {tr.experience}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs font-semibold text-gray-700">{rating}</span>
-                  <span className="text-xs text-gray-400">({reviews} {tr.reviews})</span>
-                </div>
-                <button className="w-full mt-1 py-2.5 rounded-xl text-xs font-semibold text-white" style={{ backgroundColor: '#0d2b6e' }}>
-                  {tr.bookConsultation}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </section>
   );

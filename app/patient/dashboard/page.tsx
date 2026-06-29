@@ -111,20 +111,28 @@ const specialtyCategories = [
   { icon: Thermometer, mm: 'ကူးစက်ရောဂါ\nအထူးကု',                  en: 'Infectious Disease',        color: '#16a34a', bg: '#f0fdf4', href: '/patient/doctors' },
 ];
 
-const doctors = [
-  { id: 2, name_mm: 'ဒေါ်ကျော်ကျော်သိန်း', name_en: 'Dr. Kyaw Kyaw Thein', spec_mm: 'နှလုံးအထူးကု',   spec_en: 'Cardiologist',  rating: 4.9, price: 15000, img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face' },
-  { id: 4, name_mm: 'ဦးမောင်မောင်ဝင်း',     name_en: 'Dr. Maung Maung Win',  spec_mm: 'အရေပြားအထူးကု', spec_en: 'Dermatologist', rating: 4.8, price: 12000, img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face' },
-  { id: 3, name_mm: 'ဒေါ်သန်းသန်းမြင့်',   name_en: 'Dr. Than Than Myint',  spec_mm: 'ကလေးအထူးကု',   spec_en: 'Pediatrician',  rating: 4.7, price: 10000, img: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&crop=face' },
-];
+interface DoctorItem {
+  id: string; name: string; nameEn: string | null;
+  specialty: string; rating: number; price: number; imageUrl: string | null;
+}
 
 const upcomingAppointments: {
   doctor_mm: string; doctor_en: string; spec_mm: string; spec_en: string;
   date: string; time: string; img: string;
 }[] = [];
 
+const AVATAR_COLORS = ['#2ab5ad', '#8b5cf6', '#f59e0b', '#3b82f6', '#10b981', '#ef4444'];
+
 export default function PatientDashboard() {
   const { lang } = useLang();
   const mm = lang === 'mm';
+  const [doctors, setDoctors] = useState<DoctorItem[]>([]);
+
+  useEffect(() => {
+    fetch('/api/doctors?limit=9')
+      .then(r => r.json())
+      .then(d => setDoctors(d.doctors ?? []));
+  }, []);
 
   return (
     <div className="bg-gray-50 min-h-full w-full lg:bg-gray-100 lg:min-h-screen">
@@ -362,6 +370,59 @@ export default function PatientDashboard() {
             </div>
           </div>
 
+          {/* Recommended Doctors — mobile slide */}
+          <div className="lg:hidden">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-bold text-base" style={{ color: PRIMARY }}>
+                {mm ? 'အကြံပြုသော ဆရာဝန်များ' : 'Recommended Doctors'}
+              </h2>
+              <Link href="/patient/doctors" className="text-xs font-semibold flex items-center gap-0.5" style={{ color: ACCENT }}>
+                {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
+              {doctors.map((d, i) => {
+                const displayName = mm ? d.name : (d.nameEn ?? d.name);
+                return (
+                  <div key={d.id} className="shrink-0 w-40 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
+                    <div className="relative w-full h-36 flex items-center justify-center"
+                      style={{ backgroundColor: `${AVATAR_COLORS[i % AVATAR_COLORS.length]}18` }}>
+                      {d.imageUrl ? (
+                        <img src={d.imageUrl} alt={displayName} className="w-full h-full object-cover object-top" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white"
+                          style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                          {d.name.charAt(0)}
+                        </div>
+                      )}
+                      <span className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-green-400 border-2 border-white" />
+                    </div>
+                    <div className="p-2.5 flex flex-col gap-1 flex-1">
+                      <p className="text-xs font-bold leading-snug line-clamp-2" style={{ color: PRIMARY }}>
+                        {displayName}
+                      </p>
+                      <p className="text-[11px] text-gray-400 leading-tight">{d.specialty}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <span className="text-[11px] font-bold text-gray-600">{d.rating.toFixed(1)}</span>
+                      </div>
+                      <p className="text-[11px] font-bold mt-auto" style={{ color: PRIMARY }}>
+                        {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
+                      </p>
+                      <Link
+                        href={`/patient/doctors/${d.id}`}
+                        className="mt-1 w-full py-1.5 rounded-xl text-[11px] font-bold text-white text-center"
+                        style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
+                      >
+                        {mm ? 'ချိန်းဆိုရန်' : 'Book'}
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Best Selling Products */}
           <BestSellingProducts />
 
@@ -418,36 +479,46 @@ export default function PatientDashboard() {
               </Link>
             </div>
             <div className="flex flex-col divide-y divide-gray-100">
-              {doctors.map((d, i) => (
-                <div key={i} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                  <div className="relative shrink-0">
-                    <div className="w-12 h-12 rounded-full overflow-hidden" style={{ boxShadow: `0 0 0 2px #e8eeff, 0 0 0 3px #fff` }}>
-                      <Image src={d.img} alt={d.name_en} width={48} height={48} className="w-full h-full object-cover" />
+              {doctors.slice(0, 6).map((d, i) => {
+                const displayName = mm ? d.name : (d.nameEn ?? d.name);
+                return (
+                  <div key={d.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <div className="relative shrink-0">
+                      <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center"
+                        style={{ backgroundColor: `${AVATAR_COLORS[i % AVATAR_COLORS.length]}20`, boxShadow: '0 0 0 2px #e8eeff, 0 0 0 3px #fff' }}>
+                        {d.imageUrl ? (
+                          <img src={d.imageUrl} alt={displayName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-base font-bold" style={{ color: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                            {d.name.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+                      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: '#22c55e' }} />
                     </div>
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: '#22c55e' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm truncate" style={{ color: PRIMARY }}>{mm ? d.name_mm : d.name_en}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#eff6ff', color: SECONDARY }}>
-                        {mm ? d.spec_mm : d.spec_en}
-                      </span>
-                      <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                      <span className="text-xs font-bold text-amber-700">{d.rating}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm truncate" style={{ color: PRIMARY }}>{displayName}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#eff6ff', color: SECONDARY }}>
+                          {d.specialty}
+                        </span>
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <span className="text-xs font-bold text-amber-700">{d.rating.toFixed(1)}</span>
+                      </div>
+                      <p className="text-xs font-semibold mt-0.5" style={{ color: PRIMARY }}>
+                        {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
+                      </p>
                     </div>
-                    <p className="text-xs font-semibold mt-0.5" style={{ color: PRIMARY }}>
-                      {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
-                    </p>
+                    <Link
+                      href={`/patient/doctors/${d.id}`}
+                      className="text-xs font-bold px-3 py-2 rounded-full shrink-0 text-white"
+                      style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
+                    >
+                      {mm ? 'ကြည့်ရန်' : 'View'}
+                    </Link>
                   </div>
-                  <Link
-                    href={`/patient/doctors/${d.id}`}
-                    className="text-xs font-bold px-3 py-2 rounded-full shrink-0 text-white"
-                    style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
-                  >
-                    {mm ? 'ကြည့်ရန်' : 'View'}
-                  </Link>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
