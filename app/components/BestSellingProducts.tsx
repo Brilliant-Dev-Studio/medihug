@@ -1,76 +1,102 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronRight, ChevronLeft, Star } from 'lucide-react';
+import { ChevronRight, Star, ShoppingCart, Tag, Flame } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
-const PRIMARY   = '#0d2b6e';
-const SECONDARY = '#1a6bcc';
-const ACCENT    = '#4facfe';
+const PRIMARY = 'var(--color-primary)';
+const ACCENT  = 'var(--color-accent)';
 
-const products = [
-  { id: 1, name: 'Paracetamol 500mg',        category_mm: 'ဖျားနာ & နာကျင်မှုသက်သာရေး', category_en: 'Fever & Pain Relief',   price: '1,500',  rating: 4.8, reviews: 320,
-    imgs: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=300&h=300&fit=crop'] },
-  { id: 2, name: 'Vitamin C 1000mg',          category_mm: 'ကျန်းမာရေး ဖြည့်စွက်',        category_en: 'Fitness & Supplements', price: '3,200',  rating: 4.9, reviews: 512,
-    imgs: ['https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop'] },
-  { id: 3, name: 'Cetaphil Face Wash',        category_mm: 'အရေပြားပြုစုခြင်း',           category_en: 'Skin Care',             price: '12,500', rating: 4.7, reviews: 198,
-    imgs: ['https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=300&h=300&fit=crop'] },
-  { id: 4, name: 'Dettol Antiseptic',         category_mm: 'ပထမဆုံး အကူအညီ',              category_en: 'First Aid',             price: '2,800',  rating: 4.6, reviews: 275,
-    imgs: ['https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop'] },
-  { id: 5, name: 'Omega-3 Fish Oil',          category_mm: 'ကျန်းမာရေး ဖြည့်စွက်',        category_en: 'Fitness & Supplements', price: '8,900',  rating: 4.8, reviews: 430,
-    imgs: ['https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=300&h=300&fit=crop'] },
-  { id: 6, name: 'Baby Dove Body Lotion',     category_mm: 'မိခင်နှင့်ကလေးပြုစု',          category_en: 'Mother & Baby Care',    price: '5,500',  rating: 4.9, reviews: 610,
-    imgs: ['https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=300&fit=crop'] },
-  { id: 7, name: 'Strepsils Throat Lozenges', category_mm: 'ချောင်းဆိုး & အအေးမိ',        category_en: 'Cough, Cold & Flu',     price: '1,800',  rating: 4.5, reviews: 160,
-    imgs: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop&sat=-100','https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300&h=300&fit=crop'] },
-  { id: 8, name: 'Glucometer Device',         category_mm: 'ဆေးပစ္စည်းများ',               category_en: 'Medical Devices',       price: '45,000', rating: 4.7, reviews: 88,
-    imgs: ['https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1551190822-a9333d879b1f?w=300&h=300&fit=crop'] },
-];
+interface Product {
+  id: string; name: string; nameEn: string | null;
+  imageUrl: string | null; price: number; reviewCount: number;
+  packSize: string | null; category: string | null;
+}
 
-type Product = typeof products[0];
-
-function ProductCard({ p, mm }: { p: Product; mm: boolean }) {
-  const [slide, setSlide] = useState(0);
-  const total = p.imgs.length;
-  const prev = (e: React.MouseEvent) => { e.stopPropagation(); setSlide(s => (s - 1 + total) % total); };
-  const next = (e: React.MouseEvent) => { e.stopPropagation(); setSlide(s => (s + 1) % total); };
-
+function SkeletonCard() {
   return (
-    <Link href={`/patient/records/${p.id}`} className="shrink-0 w-44 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col active:scale-95 transition-all hover:border-gray-200 hover:shadow-sm">
-      {/* Slider */}
-      <div className="relative overflow-hidden bg-gray-50" style={{ height: 140 }}>
-        {p.imgs.map((src, i) => (
-          <div key={i} className="absolute inset-0 transition-opacity duration-300" style={{ opacity: i === slide ? 1 : 0, zIndex: i === slide ? 1 : 0 }}>
-            <Image src={src} alt={p.name} fill className="object-cover" />
-          </div>
-        ))}
-        <button onClick={prev} className="absolute left-1 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center">
-          <ChevronLeft className="w-3.5 h-3.5 text-white" />
-        </button>
-        <button onClick={next} className="absolute right-1 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-black/30 flex items-center justify-center">
-          <ChevronRight className="w-3.5 h-3.5 text-white" />
-        </button>
-        <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1">
-          {p.imgs.map((_, i) => (
-            <button key={i} onClick={e => { e.stopPropagation(); setSlide(i); }}
-              className="rounded-full transition-all"
-              style={{ width: i === slide ? 12 : 4, height: 4, backgroundColor: i === slide ? '#fff' : 'rgba(255,255,255,0.5)' }} />
-          ))}
+    <div className="shrink-0 w-44 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col">
+      <div className="bg-gray-200 animate-pulse" style={{ height: 160 }} />
+      <div className="p-3 flex flex-col gap-2">
+        <div className="h-3 bg-gray-200 rounded-lg animate-pulse w-4/5" />
+        <div className="h-2 bg-gray-100 rounded-lg animate-pulse w-1/2" />
+        <div className="flex items-center gap-1">
+          <div className="h-3 bg-gray-100 rounded animate-pulse w-16" />
         </div>
+        <div className="h-8 bg-gray-100 rounded-xl animate-pulse mt-1" />
+      </div>
+    </div>
+  );
+}
+
+function ProductCard({ p, mm, rank }: { p: Product; mm: boolean; rank: number }) {
+  const name = mm ? p.name : (p.nameEn ?? p.name);
+  const isHot = rank < 3;
+  return (
+    <Link href={`/patient/records/${p.id}`}
+      className="shrink-0 w-44 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col active:scale-95 transition-all hover:shadow-md group">
+
+      {/* image */}
+      <div className="relative overflow-hidden bg-gray-50" style={{ height: 160 }}>
+        {p.imageUrl
+          ? <Image src={p.imageUrl} alt={name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+          : <div className="w-full h-full flex items-center justify-center text-5xl">💊</div>
+        }
+        {/* gradient overlay */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.18) 0%, transparent 50%)' }} />
+
+        {/* hot badge */}
+        {isHot && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+            style={{ backgroundColor: '#ef4444' }}>
+            <Flame className="w-2.5 h-2.5" />
+            {mm ? 'ရေပန်းစား' : 'Hot'}
+          </div>
+        )}
+
+        {/* category badge */}
+        {p.category && (
+          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+            style={{ backgroundColor: `${PRIMARY}dd`, color: '#fff' }}>
+            {p.category}
+          </div>
+        )}
       </div>
 
-      {/* Info */}
+      {/* info */}
       <div className="p-3 flex flex-col gap-1.5 flex-1">
-        <h3 className="text-xs font-semibold text-gray-800 leading-snug lg:text-sm">{p.name}</h3>
+        <h3 className="text-xs font-bold text-gray-800 leading-snug lg:text-sm line-clamp-2">{name}</h3>
+
+        {p.packSize && (
+          <div className="flex items-center gap-1">
+            <Tag className="w-3 h-3 text-gray-300" />
+            <span className="text-[10px] text-gray-400">{p.packSize}</span>
+          </div>
+        )}
+
+        {/* rating row */}
         <div className="flex items-center gap-1">
-          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-          <span className="text-xs font-semibold text-gray-700">{p.rating}</span>
-          <span className="text-[10px] text-gray-400">({p.reviews})</span>
+          {[1,2,3,4,5].map(s => (
+            <Star key={s} className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+          ))}
+          <span className="text-[10px] font-semibold text-gray-600 ml-0.5">4.8</span>
+          {p.reviewCount > 0 && (
+            <span className="text-[10px] text-gray-400">({p.reviewCount})</span>
+          )}
         </div>
-        <div className="mt-auto pt-1">
-          <span className="text-sm font-bold" style={{ color: PRIMARY }}>{p.price} Ks</span>
+
+        {/* price + cart */}
+        <div className="mt-auto pt-2 flex items-center justify-between border-t border-gray-50">
+          <div>
+            <p className="text-[10px] text-gray-400">{mm ? 'တစ်ထုပ်' : 'per pack'}</p>
+            <span className="text-sm font-extrabold" style={{ color: PRIMARY }}>{p.price.toLocaleString()} Ks</span>
+          </div>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white shrink-0"
+            style={{ backgroundColor: PRIMARY }}>
+            <ShoppingCart className="w-3.5 h-3.5" />
+          </div>
         </div>
       </div>
     </Link>
@@ -80,6 +106,15 @@ function ProductCard({ p, mm }: { p: Product; mm: boolean }) {
 export default function BestSellingProducts() {
   const { lang } = useLang();
   const mm = lang === 'mm';
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading,  setLoading]  = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/products?isActive=true&pageSize=8')
+      .then(r => r.json())
+      .then(d => { setProducts(d.products ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
   return (
     <div>
@@ -92,13 +127,19 @@ export default function BestSellingProducts() {
             {mm ? 'သုံးစွဲသူများ အကြိုက်ဆုံးများ' : 'Most loved by our customers'}
           </p>
         </div>
-        <Link href="/patient/records" className="text-xs font-semibold flex items-center gap-0.5 lg:text-sm" style={{ color: ACCENT }}>
+        <Link href="/patient/records"
+          className="text-xs font-semibold flex items-center gap-0.5 lg:text-sm" style={{ color: ACCENT }}>
           {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-3 lg:overflow-x-visible lg:pb-0" style={{ scrollbarWidth: 'none' }}>
-        {products.map(p => <ProductCard key={p.id} p={p} mm={mm} />)}
+        {loading
+          ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+          : products.length === 0
+            ? <p className="text-sm text-gray-400 py-4">{mm ? 'ကုန်ပစ္စည်း မရှိသေး' : 'No products yet'}</p>
+            : products.map((p, i) => <ProductCard key={p.id} p={p} mm={mm} rank={i} />)
+        }
       </div>
     </div>
   );

@@ -72,6 +72,8 @@ model Doctor {
   specialtyEn    String?
   bio            String?
   phone          String?
+  phoneSecondary String?
+  viber          String?
   imageUrl       String?
   experience     Int      @default(0)
   rating         Float    @default(0)
@@ -137,24 +139,35 @@ model DoctorSlot {
 // ─────────────────────────────────────────────
 
 model Clinic {
-  id        String     @id @default(cuid())
-  name      String
-  nameEn    String?
-  type      ClinicType @default(CLINIC)
-  address   String?
-  state     String?
-  township  String?
-  phone     String?
-  imageUrl  String?
-  openTime  String?
-  closeTime String?
-  isActive  Boolean    @default(true)
-  isPartner Boolean    @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  name        String
+  nameEn      String?
+  type        ClinicType @default(CLINIC)
+  address     String?
+  addressEn   String?
+  state       String?
+  township    String?
+  phone       String?
+  website     String?
+  imageUrl    String?
+  coverUrl    String?
+  openTime    String?
+  closeTime   String?
+  aboutMm     String?
+  aboutEn     String?
+  tagsMm      String[]
+  tagsEn      String[]
+  verified    Boolean    @default(false)
+  rating      Float      @default(0)
+  reviewCount Int        @default(0)
+  isActive    Boolean    @default(true)
+  isPartner   Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   doctors      ClinicDoctor[]
   appointments Appointment[]
+  products     ClinicProduct[]
 }
 
 model ClinicDoctor {
@@ -166,6 +179,17 @@ model ClinicDoctor {
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@unique([clinicId, doctorId])
+}
+
+model ClinicProduct {
+  id        String @id @default(cuid())
+  clinicId  String
+  productId String
+
+  clinic  Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, productId])
 }
 
 // ─────────────────────────────────────────────
@@ -203,9 +227,30 @@ model Product {
   stock       Int      @default(0)
   imageUrl    String?
   category    String?
+  brand       String?
+  type        String?
+  strength    String?
+  packSize    String?
+  tags        String[]
+  keyBenefits String[]
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  clinics ClinicProduct[]
+}
+
+// ─────────────────────────────────────────────
+// Product Category
+// ─────────────────────────────────────────────
+
+model ProductCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String?
+  createdAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────────
@@ -227,6 +272,7 @@ model BlogCategory {
   id        String   @id @default(cuid())
   name      String   @unique
   nameEn    String?
+  imageUrl  String?
   createdAt DateTime @default(now())
 }
 

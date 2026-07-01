@@ -19,6 +19,7 @@ interface Gallery { id?: string; imageUrl: string; captionMm: string; captionEn:
 interface Doctor  {
   id: string; name: string; nameEn: string | null;
   specialty: string; bio: string | null; phone: string | null;
+  phoneSecondary: string | null; viber: string | null;
   imageUrl: string | null; experience: number; rating: number;
   price: number; isAvailable: boolean; isActive: boolean;
   qualifications: string | null; careerMm: string | null; careerEn: string | null;
@@ -65,7 +66,8 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
     setInfoForm({
       name: doctor.name, nameEn: doctor.nameEn ?? '',
       specialty: doctor.specialty, bio: doctor.bio ?? '',
-      phone: doctor.phone ?? '', experience: doctor.experience,
+      phone: doctor.phone ?? '', phoneSecondary: doctor.phoneSecondary ?? '',
+      viber: doctor.viber ?? '', experience: doctor.experience,
       price: doctor.price, isAvailable: doctor.isAvailable, isActive: doctor.isActive,
       qualifications: doctor.qualifications ?? '',
       careerMm: doctor.careerMm ?? '', careerEn: doctor.careerEn ?? '',
@@ -229,11 +231,16 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
               <input className={inp} value={infoForm.nameEn ?? ''} onChange={e => setInfoForm(f => ({ ...f, nameEn: e.target.value }))} /></div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className={lbl}>Specialty</label>
-              <input className={inp} value={infoForm.specialty ?? ''} onChange={e => setInfoForm(f => ({ ...f, specialty: e.target.value }))} /></div>
-            <div><label className={lbl}>Phone</label>
-              <input className={inp} value={infoForm.phone ?? ''} onChange={e => setInfoForm(f => ({ ...f, phone: e.target.value }))} /></div>
+          <div><label className={lbl}>Specialty</label>
+            <input className={inp} value={infoForm.specialty ?? ''} onChange={e => setInfoForm(f => ({ ...f, specialty: e.target.value }))} /></div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className={lbl}>Main Phone</label>
+              <input type="tel" className={inp} value={infoForm.phone ?? ''} onChange={e => setInfoForm(f => ({ ...f, phone: e.target.value }))} placeholder="09XXXXXXXXX" /></div>
+            <div><label className={lbl}>Secondary Phone</label>
+              <input type="tel" className={inp} value={infoForm.phoneSecondary ?? ''} onChange={e => setInfoForm(f => ({ ...f, phoneSecondary: e.target.value }))} placeholder="09XXXXXXXXX" /></div>
+            <div><label className={lbl}>Viber</label>
+              <input type="tel" className={inp} value={infoForm.viber ?? ''} onChange={e => setInfoForm(f => ({ ...f, viber: e.target.value }))} placeholder="09XXXXXXXXX" /></div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -329,12 +336,14 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       )}
 
       {/* Info cards row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { icon: Clock,      label: 'Experience', value: `${doctor.experience} years` },
           { icon: DollarSign, label: 'Price',      value: `${doctor.price.toLocaleString()} MMK` },
           { icon: Star,       label: 'Rating',     value: `${doctor.rating.toFixed(1)} / 5` },
-          { icon: Phone,      label: 'Phone',      value: doctor.phone ?? '—' },
+          { icon: Phone, label: 'Main Phone',      value: doctor.phone          ?? '—' },
+          { icon: Phone, label: 'Secondary Phone', value: doctor.phoneSecondary ?? '—' },
+          { icon: Phone, label: 'Viber',           value: doctor.viber          ?? '—' },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-2">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#e6f7f7' }}>

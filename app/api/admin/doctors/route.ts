@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       name, nameEn, specialty, specialtyEn, bio,
-      phone, password, imageUrl, experience, price,
+      phone, phoneSecondary, viber, password, imageUrl, experience, price,
       isAvailable, slots,
     } = body;
 
@@ -87,7 +87,9 @@ export async function POST(req: NextRequest) {
           specialtyEn: specialtyEn || null,
           bio:         bio         || null,
           phone,
-          imageUrl:    imageUrl    || null,
+          phoneSecondary: phoneSecondary || null,
+          viber:          viber          || null,
+          imageUrl:       imageUrl       || null,
           experience:  experience  ?? 0,
           price:       price       ?? 0,
           isAvailable: isAvailable ?? true,

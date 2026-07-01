@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Check, X, Loader2, Stethoscope, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
 
-interface Specialty { id: string; name: string; nameEn: string | null; createdAt: string; }
+interface Category { id: string; name: string; nameEn: string | null; createdAt: string; }
 
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
-export default function AdminSpecialtiesPage() {
-  const [specialties,  setSpecialties]  = useState<Specialty[]>([]);
+export default function ProductCategoriesPage() {
+  const [categories,   setCategories]   = useState<Category[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [total,        setTotal]        = useState(0);
   const [page,         setPage]         = useState(1);
@@ -27,28 +27,35 @@ export default function AdminSpecialtiesPage() {
   const [editId,     setEditId]     = useState<string | null>(null);
   const [editName,   setEditName]   = useState('');
   const [editNameEn, setEditNameEn] = useState('');
+
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const load = useCallback(async (p = page) => {
     setLoading(true);
-    const q = new URLSearchParams({ page: String(p) });
+    const q   = new URLSearchParams({ page: String(p) });
     if (search) q.set('search', search);
-    const res  = await fetch(`/api/admin/specialties?${q}`);
-    const data = await res.json();
-    setSpecialties(data.specialties ?? []);
-    setTotal(data.total ?? 0);
-    setPage(data.page ?? 1);
-    setTotalPages(data.totalPages ?? 1);
+    const res = await fetch(`/api/admin/product-categories?${q}`);
+    const d   = await res.json();
+    setCategories(d.categories ?? []);
+    setTotal(d.total ?? 0);
+    setPage(d.page ?? 1);
+    setTotalPages(d.totalPages ?? 1);
     setLoading(false);
-  }, [page, search]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [page, search]);
 
   useEffect(() => { load(1); }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(page); }, [page]);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleSearchSubmit = () => {
+    setSearch(searchInput);
+    setPage(1);
+  };
+
   const handleCreate = async () => {
-    if (!newName.trim()) { setCreateError('Myanmar name လိုအပ်သည်'); return; }
+    if (!newName.trim()) { setCreateError('Myanmar name is required.'); return; }
     setSavingNew(true); setCreateError('');
-    const res  = await fetch('/api/admin/specialties', {
+    const res  = await fetch('/api/admin/product-categories', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName.trim(), nameEn: newNameEn.trim() }),
     });
@@ -58,23 +65,25 @@ export default function AdminSpecialtiesPage() {
     load(1);
   };
 
-  const startEdit = (s: Specialty) => {
-    setEditId(s.id); setEditName(s.name); setEditNameEn(s.nameEn ?? '');
+  const startEdit = (c: Category) => {
+    setEditId(c.id); setEditName(c.name); setEditNameEn(c.nameEn ?? '');
   };
 
   const handleEdit = async (id: string) => {
     if (!editName.trim()) return;
-    const res = await fetch(`/api/admin/specialties/${id}`, {
+    const res = await fetch(`/api/admin/product-categories/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: editName.trim(), nameEn: editNameEn.trim() }),
     });
     if (res.ok) { setEditId(null); load(page); }
   };
 
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    await fetch(`/api/admin/specialties/${id}`, { method: 'DELETE' });
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeletingId(deleteTarget.id);
+    await fetch(`/api/admin/product-categories/${deleteTarget.id}`, { method: 'DELETE' });
     setDeletingId(null);
+    setDeleteTarget(null);
     load(page);
   };
 
@@ -84,8 +93,8 @@ export default function AdminSpecialtiesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Specialties</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{total} specialties</p>
+          <h1 className="text-xl font-bold text-gray-800">Product Categories</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{total} categories</p>
         </div>
         {!creating && (
           <button
@@ -93,7 +102,7 @@ export default function AdminSpecialtiesPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
             style={{ backgroundColor: PRIMARY }}
           >
-            <Plus className="w-4 h-4" /> New Specialty
+            <Plus className="w-4 h-4" /> New Category
           </button>
         )}
       </div>
@@ -104,10 +113,10 @@ export default function AdminSpecialtiesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad]"
-            placeholder="Search specialties..."
+            placeholder="Search categories..."
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(1); } }}
+            onKeyDown={e => { if (e.key === 'Enter') handleSearchSubmit(); }}
           />
         </div>
         {searchInput && (
@@ -123,7 +132,7 @@ export default function AdminSpecialtiesPage() {
       {/* Create form */}
       {creating && (
         <div className="bg-white rounded-2xl border-2 p-4 flex flex-col gap-3" style={{ borderColor: PRIMARY }}>
-          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PRIMARY }}>New Specialty</p>
+          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PRIMARY }}>New Category</p>
           <div className="flex gap-2">
             <input
               autoFocus
@@ -177,16 +186,16 @@ export default function AdminSpecialtiesPage() {
                 <tr><td colSpan={5} className="py-16 text-center">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" />
                 </td></tr>
-              ) : specialties.length === 0 ? (
+              ) : categories.length === 0 ? (
                 <tr><td colSpan={5} className="py-16 text-center">
-                  <Stethoscope className="w-8 h-8 mx-auto text-gray-200 mb-2" />
-                  <p className="text-sm text-gray-400">No specialties yet. Create one above.</p>
+                  <Layers className="w-8 h-8 mx-auto text-gray-200 mb-2" />
+                  <p className="text-sm text-gray-400">No categories found.</p>
                 </td></tr>
-              ) : specialties.map((s, i) => (
-                <tr key={s.id} className="hover:bg-gray-50/60 transition-colors">
+              ) : categories.map((c, i) => (
+                <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-5 py-3.5 text-xs text-gray-400">{(page - 1) * 15 + i + 1}</td>
 
-                  {editId === s.id ? (
+                  {editId === c.id ? (
                     <>
                       <td className="px-5 py-3.5" colSpan={2}>
                         <div className="flex gap-2">
@@ -194,18 +203,18 @@ export default function AdminSpecialtiesPage() {
                             autoFocus
                             value={editName}
                             onChange={e => setEditName(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleEdit(s.id); if (e.key === 'Escape') setEditId(null); }}
+                            onKeyDown={e => { if (e.key === 'Enter') handleEdit(c.id); if (e.key === 'Escape') setEditId(null); }}
                             placeholder="Myanmar name *"
                             className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-teal-400"
                           />
                           <input
                             value={editNameEn}
                             onChange={e => setEditNameEn(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleEdit(s.id); if (e.key === 'Escape') setEditId(null); }}
+                            onKeyDown={e => { if (e.key === 'Enter') handleEdit(c.id); if (e.key === 'Escape') setEditId(null); }}
                             placeholder="English name"
                             className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-teal-400"
                           />
-                          <button onClick={() => handleEdit(s.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
+                          <button onClick={() => handleEdit(c.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
                             <Check className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={() => setEditId(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 shrink-0">
@@ -220,31 +229,30 @@ export default function AdminSpecialtiesPage() {
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#e6f7f7' }}>
-                            <Stethoscope className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
+                            <Layers className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
                           </div>
-                          <span className="text-sm font-semibold text-gray-700">{s.name}</span>
+                          <span className="text-sm font-semibold text-gray-700">{c.name}</span>
                         </div>
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className="text-sm text-gray-500">{s.nameEn || <span className="text-gray-300 text-xs italic">—</span>}</span>
+                        <span className="text-sm text-gray-500">{c.nameEn || <span className="text-gray-300 text-xs italic">—</span>}</span>
                       </td>
                       <td className="px-5 py-3.5 text-xs text-gray-400 whitespace-nowrap">
-                        {new Date(s.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        {new Date(c.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1.5 justify-end">
                           <button
-                            onClick={() => startEdit(s)}
+                            onClick={() => startEdit(c)}
                             className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(s.id)}
-                            disabled={deletingId === s.id}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors disabled:opacity-40"
+                            onClick={() => setDeleteTarget(c)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-400 transition-colors"
                           >
-                            {deletingId === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -275,7 +283,9 @@ export default function AdminSpecialtiesPage() {
                   key={p}
                   onClick={() => setPage(p)}
                   className="w-8 h-8 rounded-lg text-xs font-semibold transition-colors"
-                  style={p === page ? { backgroundColor: PRIMARY, color: '#fff' } : { color: '#6b7280' }}
+                  style={p === page
+                    ? { backgroundColor: PRIMARY, color: '#fff' }
+                    : { color: '#6b7280' }}
                 >
                   {p}
                 </button>
@@ -291,6 +301,30 @@ export default function AdminSpecialtiesPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirm modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDeleteTarget(null)} />
+          <div className="relative bg-white rounded-2xl p-6 w-80 shadow-2xl">
+            <h3 className="font-bold text-gray-800 mb-2">Delete category?</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              <span className="font-medium text-gray-700">"{deleteTarget.name}"</span> will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2 rounded-xl border text-sm font-medium text-gray-600 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={handleDelete} disabled={!!deletingId}
+                className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 disabled:opacity-60 flex items-center justify-center gap-2">
+                {deletingId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,8 +17,10 @@ import doctorLottie from '../../../public/lottie/Live chatbot.json';
 import SpecialOffersBanner from '../../components/SpecialOffersBanner';
 import AdSlider from '../../components/AdSlider';
 import HealthBlogSlider from '../../components/HealthBlogSlider';
+import BlogCategoryCircles from '../../components/BlogCategoryCircles';
 import PartnerClinicsSlider from '../../components/PartnerClinicsSlider';
 import BestSellingProducts from '../../components/BestSellingProducts';
+import SpecialistDoctorsSection from '../../components/SpecialistDoctorsSection';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -305,70 +307,14 @@ export default function PatientDashboard() {
             )}
           </div>
 
+          {/* Blog Categories */}
+          <BlogCategoryCircles />
+
           {/* Health Blog */}
           <HealthBlogSlider />
 
-          {/* Desktop-only: Specialty Categories section */}
-          <div className="hidden lg:block">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-xl" style={{ color: PRIMARY }}>
-                {mm ? 'အထူးကုဆရာဝန်များ' : 'Specialist Doctors'}
-              </h2>
-              <Link href="/patient/specialists" className="text-sm font-semibold flex items-center gap-0.5" style={{ color: ACCENT }}>
-                {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {specialtyCategories.slice(0, 8).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
-                <Link
-                  key={labelEn}
-                  href={href}
-                  className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3.5 active:scale-[0.98] transition-all hover:border-gray-200 hover:shadow-sm"
-                >
-                  <span className="text-sm font-semibold text-gray-700 whitespace-pre-line leading-snug">
-                    {mm ? labelMm : labelEn}
-                  </span>
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: bg, border: `1.5px solid ${color}30` }}
-                  >
-                    <Icon style={{ width: 24, height: 24, color }} />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Mobile-only: Specialty Categories */}
-          <div className="lg:hidden">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-base" style={{ color: PRIMARY }}>
-                {mm ? 'အထူးကုဆရာဝန်များ' : 'Specialist Doctors'}
-              </h2>
-              <Link href="/patient/specialists" className="text-xs font-semibold flex items-center gap-0.5" style={{ color: ACCENT }}>
-                {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {specialtyCategories.slice(0, 8).map(({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href }) => (
-                <Link
-                  key={labelEn}
-                  href={href}
-                  className="flex items-center justify-between gap-2 bg-white rounded-2xl border border-gray-100 px-3 py-3 active:scale-[0.98] transition-all"
-                >
-                  <span className="text-xs font-semibold text-gray-700 whitespace-pre-line leading-snug flex-1">
-                    {mm ? labelMm : labelEn}
-                  </span>
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: bg, border: `1.5px solid ${color}30` }}
-                  >
-                    <Icon style={{ width: 20, height: 20, color }} />
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          {/* Specialist Doctors */}
+          <SpecialistDoctorsSection />
 
           {/* Recommended Doctors — mobile slide */}
           <div className="lg:hidden">

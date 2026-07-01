@@ -3,15 +3,16 @@ import { db } from '@/lib/db';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id }           = await params;
-    const { name, nameEn, imageUrl } = await req.json();
+    const { id }        = await params;
+    const { name, nameEn } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
-    const category = await db.blogCategory.update({
+    const category = await db.productCategory.update({
       where: { id },
-      data:  { name: name.trim(), nameEn: nameEn?.trim() || null, imageUrl: imageUrl?.trim() || null },
+      data:  { name: name.trim(), nameEn: nameEn?.trim() || null },
     });
     return NextResponse.json({ category });
-  } catch {
+  } catch (e) {
+    console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -19,9 +20,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await db.blogCategory.delete({ where: { id } });
+    await db.productCategory.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

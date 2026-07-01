@@ -41,6 +41,7 @@ interface SpecialtyItem { id: string; name: string; }
 
 const EMPTY_FORM = {
   name:'', nameEn:'', specialty:'', bio:'', phone:'', password:'',
+  phoneSecondary:'', viber:'',
   imageUrl:'', experience: 0, price: 0, isAvailable: true,
 };
 
@@ -159,10 +160,20 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
               </button>
             </div>
 
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Contact</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lbl}>Main Phone *</label>
+                <input type="tel" className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="09XXXXXXXXX" /></div>
+              <div><label className={lbl}>Secondary Phone</label>
+                <input type="tel" className={inp} value={form.phoneSecondary} onChange={e => set('phoneSecondary', e.target.value)} placeholder="09XXXXXXXXX" /></div>
+            </div>
+            <div><label className={lbl}>Viber</label>
+              <input type="tel" className={inp} value={form.viber} onChange={e => set('viber', e.target.value)} placeholder="09XXXXXXXXX (Viber)" /></div>
+
             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Login Account</p>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={lbl}>Phone *</label>
-                <input type="tel" className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="09XXXXXXXXX" /></div>
+              <div><label className={lbl}>Login Phone *</label>
+                <input type="tel" value={form.phone} readOnly className={inp + ' bg-gray-100 text-gray-400 cursor-not-allowed'} /></div>
               <div><label className={lbl}>Password *</label>
                 <input type="password" className={inp} value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min 6 chars" /></div>
             </div>

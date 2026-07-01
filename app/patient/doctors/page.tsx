@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Heart, Search, SlidersHorizontal, Clock, Star,
   BriefcaseMedical, Stethoscope, Banknote, Check,
-  RotateCcw, ListFilter, Loader2,
+  RotateCcw, ListFilter, ChevronDown,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 
@@ -25,6 +25,58 @@ interface Doctor {
 }
 
 type ExpRange = 'all' | '0-10' | '11-20' | '21+';
+
+/* ─── Skeleton shimmer ─── */
+function Sh({ w, h, r = 'rounded-lg' }: { w: string; h: string; r?: string }) {
+  return <div className={`${w} ${h} ${r} bg-gray-200 animate-pulse`} />;
+}
+
+function SkeletonCardMobile() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="p-4">
+        <div className="flex gap-3">
+          <Sh w="w-20" h="h-20" r="rounded-xl" />
+          <div className="flex-1 flex flex-col gap-2 pt-1">
+            <Sh w="w-3/4" h="h-4" />
+            <Sh w="w-1/2" h="h-3" />
+            <Sh w="w-2/5" h="h-3" />
+            <Sh w="w-1/3" h="h-4" />
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-gray-100 px-4 py-2.5 flex justify-between">
+        <Sh w="w-16" h="h-3" />
+        <Sh w="w-20" h="h-3" />
+      </div>
+      <div className="px-4 pb-4 flex gap-2">
+        <Sh w="flex-1" h="h-10" r="rounded-full" />
+        <Sh w="flex-1" h="h-10" r="rounded-full" />
+      </div>
+    </div>
+  );
+}
+
+function SkeletonCardDesktop() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
+      <Sh w="w-full" h="h-[200px]" r="rounded-none" />
+      <div className="p-4 flex flex-col gap-2.5 flex-1">
+        <Sh w="w-4/5" h="h-4" />
+        <Sh w="w-1/2" h="h-3" />
+        <Sh w="w-2/3" h="h-3" />
+        <Sh w="w-1/3" h="h-3" />
+        <div className="mt-auto pt-3 border-t border-gray-50 flex flex-col gap-3">
+          <Sh w="w-1/2" h="h-5" />
+          <div className="flex gap-2">
+            <Sh w="flex-1" h="h-9" r="rounded-full" />
+            <Sh w="flex-1" h="h-9" r="rounded-full" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function nextSlotLabel(slots: Slot[]): string {
   if (!slots.length) return '—';
@@ -192,6 +244,9 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
   const [priceMin,    setPriceMin]    = useState(0);
   const [priceMax,    setPriceMax]    = useState(50000);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [openExp,  setOpenExp]  = useState(true);
+  const [openSpec, setOpenSpec] = useState(true);
+  const [openFee,  setOpenFee]  = useState(true);
 
   useEffect(() => {
     fetch('/api/doctors?limit=100')
@@ -248,87 +303,109 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
   const filterInner = (mobile = false) => (
     <>
       {/* Experience */}
-      <div className={`px-${mobile?4:3} py-3 border-b border-gray-100`}>
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <BriefcaseMedical className="w-3 h-3 text-gray-400" />
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{mm ? 'အတွေ့အကြုံ' : 'Experience'}</p>
-        </div>
-        {([
-          { value: 'all',   labelMm: 'အားလုံး',     labelEn: 'All levels' },
-          { value: '0-10',  labelMm: '၁–၁၀ နှစ်',   labelEn: '1–10 years' },
-          { value: '11-20', labelMm: '၁၁–၂၀ နှစ်',  labelEn: '11–20 years' },
-          { value: '21+',   labelMm: '၂၁ နှစ်အထက်', labelEn: '21+ years' },
-        ] as { value: ExpRange; labelMm: string; labelEn: string }[]).map(o => (
-          <RadioRow key={o.value} active={filterExp === o.value}
-            label={mm ? o.labelMm : o.labelEn} count={expCount(o.value)}
-            onClick={() => setFilterExp(o.value)} />
-        ))}
+      <div className={`border-b border-gray-100`}>
+        <button
+          onClick={() => setOpenExp(p => !p)}
+          className={`w-full flex items-center justify-between gap-1.5 px-${mobile?4:3} py-3`}>
+          <div className="flex items-center gap-1.5">
+            <BriefcaseMedical className="w-3 h-3 text-gray-400" />
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{mm ? 'အတွေ့အကြုံ' : 'Experience'}</p>
+          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openExp ? 'rotate-180' : ''}`} />
+        </button>
+        {openExp && (
+          <div className={`px-${mobile?4:3} pb-3`}>
+            {([
+              { value: 'all',   labelMm: 'အားလုံး',     labelEn: 'All levels' },
+              { value: '0-10',  labelMm: '၁–၁၀ နှစ်',   labelEn: '1–10 years' },
+              { value: '11-20', labelMm: '၁၁–၂၀ နှစ်',  labelEn: '11–20 years' },
+              { value: '21+',   labelMm: '၂၁ နှစ်အထက်', labelEn: '21+ years' },
+            ] as { value: ExpRange; labelMm: string; labelEn: string }[]).map(o => (
+              <RadioRow key={o.value} active={filterExp === o.value}
+                label={mm ? o.labelMm : o.labelEn} count={expCount(o.value)}
+                onClick={() => setFilterExp(o.value)} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Specialty */}
-      <div className={`px-${mobile?4:3} py-3 border-b border-gray-100`}>
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <Stethoscope className="w-3 h-3 text-gray-400" />
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{mm ? 'အထူးကု' : 'Specialty'}</p>
-        </div>
-        {(['all', ...allSpecs]).map(spec => (
-          <RadioRow key={spec} active={filterSpec === spec}
-            label={spec === 'all' ? (mm ? 'အားလုံး' : 'All specialties') : spec}
-            count={specCount(spec)}
-            onClick={() => setFilterSpec(spec)} />
-        ))}
+      <div className={`border-b border-gray-100`}>
+        <button
+          onClick={() => setOpenSpec(p => !p)}
+          className={`w-full flex items-center justify-between gap-1.5 px-${mobile?4:3} py-3`}>
+          <div className="flex items-center gap-1.5">
+            <Stethoscope className="w-3 h-3 text-gray-400" />
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{mm ? 'အထူးကု' : 'Specialty'}</p>
+          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openSpec ? 'rotate-180' : ''}`} />
+        </button>
+        {openSpec && (
+          <div className={`px-${mobile?4:3} pb-3`}>
+            {(['all', ...allSpecs]).map(spec => (
+              <RadioRow key={spec} active={filterSpec === spec}
+                label={spec === 'all' ? (mm ? 'အားလုံး' : 'All specialties') : spec}
+                count={specCount(spec)}
+                onClick={() => setFilterSpec(spec)} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Price */}
-      <div className={`px-${mobile?4:3} pt-2.5 pb-3`}>
-        <div className="flex items-center justify-between mb-2">
+      <div>
+        <button
+          onClick={() => setOpenFee(p => !p)}
+          className={`w-full flex items-center justify-between gap-1.5 px-${mobile?4:3} py-3`}>
           <div className="flex items-center gap-1.5">
             <Banknote className="w-3 h-3 text-gray-400" />
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Fee'}</p>
           </div>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: `${PRIMARY}10`, color: PRIMARY }}>
-            {priceMin > 0 || priceMax < 50000 ? `${(priceMin/1000).toFixed(0)}K–${(priceMax/1000).toFixed(0)}K` : (mm ? 'အားလုံး' : 'Any')}
-          </span>
-        </div>
-        <div className="relative py-2.5 px-1">
-          <div className="h-1 bg-gray-200 rounded-full relative">
-            <div className="absolute h-full rounded-full"
-              style={{ left: `${(priceMin/50000)*100}%`, right: `${100-(priceMax/50000)*100}%`, backgroundColor: PRIMARY }} />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: `${PRIMARY}10`, color: PRIMARY }}>
+              {priceMin > 0 || priceMax < 50000 ? `${(priceMin/1000).toFixed(0)}K–${(priceMax/1000).toFixed(0)}K` : (mm ? 'အားလုံး' : 'Any')}
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openFee ? 'rotate-180' : ''}`} />
           </div>
-          <input type="range" min={0} max={50000} step={1000} value={priceMin}
-            onChange={e => { const v = Number(e.target.value); if (v < priceMax - 2000) setPriceMin(v); }}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            style={{ zIndex: priceMin > 44000 ? 5 : 3 }} />
-          <input type="range" min={0} max={50000} step={1000} value={priceMax}
-            onChange={e => { const v = Number(e.target.value); if (v > priceMin + 2000) setPriceMax(v); }}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" style={{ zIndex: 4 }} />
-          <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
-            style={{ left: `calc(${(priceMin/50000)*100}% - 6px)`, backgroundColor: PRIMARY }} />
-          <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
-            style={{ left: `calc(${(priceMax/50000)*100}% - 6px)`, backgroundColor: PRIMARY }} />
-        </div>
-        <div className="flex justify-between px-1">
-          <span className="text-[10px] text-gray-400">0</span>
-          <span className="text-[10px] text-gray-400">50,000 Ks</span>
-        </div>
+        </button>
+        {openFee && (
+          <div className={`px-${mobile?4:3} pt-0 pb-3`}>
+            <div className="relative py-2.5 px-1">
+              <div className="h-1 bg-gray-200 rounded-full relative">
+                <div className="absolute h-full rounded-full"
+                  style={{ left: `${(priceMin/50000)*100}%`, right: `${100-(priceMax/50000)*100}%`, backgroundColor: PRIMARY }} />
+              </div>
+              <input type="range" min={0} max={50000} step={1000} value={priceMin}
+                onChange={e => { const v = Number(e.target.value); if (v < priceMax - 2000) setPriceMin(v); }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{ zIndex: priceMin > 44000 ? 5 : 3 }} />
+              <input type="range" min={0} max={50000} step={1000} value={priceMax}
+                onChange={e => { const v = Number(e.target.value); if (v > priceMin + 2000) setPriceMax(v); }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" style={{ zIndex: 4 }} />
+              <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
+                style={{ left: `calc(${(priceMin/50000)*100}% - 6px)`, backgroundColor: PRIMARY }} />
+              <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
+                style={{ left: `calc(${(priceMax/50000)*100}% - 6px)`, backgroundColor: PRIMARY }} />
+            </div>
+            <div className="flex justify-between px-1">
+              <span className="text-[10px] text-gray-400">0</span>
+              <span className="text-[10px] text-gray-400">50,000 Ks</span>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
 
-  /* ── empty / loading ── */
+  /* ── empty state (no results, not loading) ── */
   const emptyState = (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      {loading
-        ? <Loader2 className="w-8 h-8 animate-spin mb-3" style={{ color: PRIMARY }} />
-        : <>
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-              <Search className="w-7 h-7 text-gray-300" />
-            </div>
-            <p className="text-sm font-semibold text-gray-400">{mm ? 'ဆရာဝန် မတွေ့ပါ' : 'No doctors found'}</p>
-            <p className="text-xs text-gray-300 mt-1">{mm ? 'Filter ပြောင်းကြည့်ပါ' : 'Try adjusting filters'}</p>
-          </>
-      }
+      <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+        <Search className="w-7 h-7 text-gray-300" />
+      </div>
+      <p className="text-sm font-semibold text-gray-400">{mm ? 'ဆရာဝန် မတွေ့ပါ' : 'No doctors found'}</p>
+      <p className="text-xs text-gray-300 mt-1">{mm ? 'Filter ပြောင်းကြည့်ပါ' : 'Try adjusting filters'}</p>
     </div>
   );
 
@@ -361,7 +438,11 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
 
           {/* Cards */}
           <div className="flex-1 px-6 py-5 pb-8">
-            {(loading || filtered.length === 0) ? emptyState : (
+            {loading ? (
+              <div className="grid grid-cols-3 gap-5">
+                {Array.from({ length: 6 }).map((_, i) => <SkeletonCardDesktop key={i} />)}
+              </div>
+            ) : filtered.length === 0 ? emptyState : (
               <div className="grid grid-cols-3 gap-5">
                 {filtered.map((doc, i) => (
                   <DoctorCardDesktop key={doc.id} doc={doc} idx={i} mm={mm}
@@ -373,7 +454,7 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
         </div>
 
         {/* Right filter */}
-        <div className="shrink-0 w-64">
+        <div className="shrink-0 w-80">
           <div className="sticky top-0 max-h-screen overflow-y-auto pb-4">
             <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               {/* Header */}
@@ -480,7 +561,11 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
         </div>
 
         <div className="px-4 pb-24">
-          {(loading || filtered.length === 0) ? emptyState : (
+          {loading ? (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonCardMobile key={i} />)}
+            </div>
+          ) : filtered.length === 0 ? emptyState : (
             <div className="flex flex-col gap-3">
               {filtered.map((doc, i) => (
                 <DoctorCardMobile key={doc.id} doc={doc} idx={i} mm={mm}
