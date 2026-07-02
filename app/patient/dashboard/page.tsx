@@ -1,7 +1,8 @@
 'use client';
 import { theme } from '../../lib/theme';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -86,6 +87,79 @@ function WeatherWidget() {
   );
 }
 
+/* ── Dashboard hero search box with dropdown autosuggest ── */
+function DashboardDoctorSearchBox({ doctors, mm }: { doctors: DoctorItem[]; mm: boolean }) {
+  const router = useRouter();
+  const [value, setValue] = useState('');
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  const q = value.trim().toLowerCase();
+  const suggestions = q.length === 0 ? [] : doctors.filter(d =>
+    d.name.toLowerCase().includes(q) ||
+    (d.nameEn ?? '').toLowerCase().includes(q) ||
+    d.specialty.toLowerCase().includes(q)
+  ).slice(0, 6);
+
+  return (
+    <div ref={boxRef} className="relative w-full">
+      <div className="flex items-center gap-3 rounded-2xl px-5 py-4 w-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+        <Search className="w-5 h-5 shrink-0 text-white/70" />
+        <input
+          value={value}
+          onChange={e => { setValue(e.target.value); setOpen(true); setHi(0); }}
+          onFocus={() => { if (value.trim()) setOpen(true); }}
+          onKeyDown={e => {
+            if (!open || suggestions.length === 0) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, suggestions.length - 1)); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)); }
+            else if (e.key === 'Enter' && suggestions[hi]) { e.preventDefault(); setOpen(false); router.push(`/patient/doctors/${suggestions[hi].id}`); }
+            else if (e.key === 'Escape') { setOpen(false); }
+          }}
+          placeholder={mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search doctors...'}
+          className="flex-1 min-w-0 bg-transparent text-base outline-none placeholder:text-white/60 text-white"
+        />
+      </div>
+
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden py-1.5">
+          {suggestions.map((d, i) => {
+            const name = mm ? d.name : (d.nameEn ?? d.name);
+            return (
+              <Link key={d.id} href={`/patient/doctors/${d.id}`}
+                onClick={() => setOpen(false)}
+                onMouseEnter={() => setHi(i)}
+                className="flex items-center gap-3 px-3.5 py-2.5 transition-colors"
+                style={{ backgroundColor: i === hi ? '#f3f4f6' : 'transparent' }}
+              >
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                  {d.imageUrl
+                    ? <img src={d.imageUrl} alt={name} className="w-full h-full object-cover" />
+                    : <span className="text-xs font-bold" style={{ color: PRIMARY }}>{d.name.charAt(0)}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
+                  <p className="text-xs text-gray-400 truncate">{d.specialty}</p>
+                </div>
+                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{d.price.toLocaleString()} MMK</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
 const categories = [
@@ -133,7 +207,7 @@ export default function PatientDashboard() {
   const [favCount, setFavCount] = useState(0);
 
   useEffect(() => {
-    fetch('/api/doctors?limit=9')
+    fetch('/api/doctors?limit=100')
       .then(r => r.json())
       .then(d => setDoctors(d.doctors ?? []));
   }, []);
@@ -173,14 +247,7 @@ export default function PatientDashboard() {
             </div>
             <WeatherWidget />
           </div>
-          <Link
-            href="/patient/doctors"
-            className="flex items-center gap-3 rounded-2xl px-5 py-4 w-full"
-            style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
-          >
-            <Search className="w-5 h-5 shrink-0 text-white/70" />
-            <span className="text-base text-white/60">{mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search doctors...'}</span>
-          </Link>
+          <DashboardDoctorSearchBox doctors={doctors} mm={mm} />
         </div>
 
         {/* ── Left content (overlaps hero bottom) ── */}

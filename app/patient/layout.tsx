@@ -57,7 +57,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     : scrolled
       ? '#ffffff'
       : 'transparent';
-  const logoWhite = !scrolled || isDetailPage;
 
   return (
     <ThemeProvider>
@@ -179,7 +178,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
                 width={130}
                 height={44}
                 className="object-contain h-11 w-auto transition-all duration-300"
-                style={{ filter: logoWhite ? 'brightness(0) invert(1)' : 'none' }}
                 priority
               />
             </Link>

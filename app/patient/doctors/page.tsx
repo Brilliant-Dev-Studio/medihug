@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Heart, Search, SlidersHorizontal, Clock, Star,
@@ -90,6 +90,80 @@ function nextSlotLabel(slots: Slot[]): string {
 
 function avatarInitial(name: string) {
   return name.trim().charAt(0).toUpperCase();
+}
+
+/* ─── Search box with dropdown autosuggest ─── */
+function DoctorSearchBox({ doctors, value, onChange, mm, placeholder, pillClassName }: {
+  doctors: Doctor[]; value: string; onChange: (v: string) => void; mm: boolean;
+  placeholder: string; pillClassName: string;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  const q = value.trim().toLowerCase();
+  const suggestions = q.length === 0 ? [] : doctors.filter(d =>
+    d.name.toLowerCase().includes(q) ||
+    (d.nameEn ?? '').toLowerCase().includes(q) ||
+    d.specialty.toLowerCase().includes(q)
+  ).slice(0, 6);
+
+  return (
+    <div ref={boxRef} className="relative flex-1 min-w-0">
+      <div className={pillClassName}>
+        <Search className="w-4 h-4 shrink-0 text-white/60" />
+        <input
+          value={value}
+          onChange={e => { onChange(e.target.value); setOpen(true); setHi(0); }}
+          onFocus={() => { if (value.trim()) setOpen(true); }}
+          onKeyDown={e => {
+            if (!open || suggestions.length === 0) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, suggestions.length - 1)); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)); }
+            else if (e.key === 'Enter' && suggestions[hi]) { e.preventDefault(); setOpen(false); router.push(`/patient/doctors/${suggestions[hi].id}`); }
+            else if (e.key === 'Escape') { setOpen(false); }
+          }}
+          placeholder={placeholder}
+          className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-white/50 text-white" />
+      </div>
+
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden py-1.5">
+          {suggestions.map((d, i) => {
+            const name = mm ? d.name : (d.nameEn ?? d.name);
+            return (
+              <Link key={d.id} href={`/patient/doctors/${d.id}`}
+                onClick={() => setOpen(false)}
+                onMouseEnter={() => setHi(i)}
+                className="flex items-center gap-3 px-3.5 py-2.5 transition-colors"
+                style={{ backgroundColor: i === hi ? '#f3f4f6' : 'transparent' }}
+              >
+                <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                  {d.imageUrl
+                    ? <img src={d.imageUrl} alt={name} className="w-full h-full object-cover" />
+                    : <span className="text-xs font-bold" style={{ color: PRIMARY }}>{avatarInitial(d.name)}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
+                  <p className="text-xs text-gray-400 truncate">{d.specialty}</p>
+                </div>
+                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{d.price.toLocaleString()} MMK</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ─── Radio row ─── */
@@ -415,12 +489,10 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
           <div className="px-8 pt-8 pb-6 rounded-t-2xl shrink-0"
             style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
             <h1 className="text-2xl font-bold text-white mb-4">{mm ? 'ဆရာဝန်များ' : 'Our Doctors'}</h1>
-            <div className="flex items-center gap-2 rounded-2xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <Search className="w-4 h-4 shrink-0 text-white/60" />
-              <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder={mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search by name or specialty...'}
-                className="flex-1 bg-transparent text-sm outline-none placeholder:text-white/50 text-white" />
-            </div>
+            <DoctorSearchBox doctors={allDoctors} value={search} onChange={setSearch} mm={mm}
+              placeholder={mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search by name or specialty...'}
+              pillClassName="flex items-center gap-2 rounded-2xl px-4 py-3 w-full bg-white/15"
+            />
           </div>
 
           {/* Count row */}
@@ -529,12 +601,10 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
           style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)`, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
           <h1 className="text-xl font-bold text-white mb-3">{mm ? 'ဆရာဝန်များ' : 'Our Doctors'}</h1>
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 rounded-xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <Search className="w-4 h-4 shrink-0 text-white/60" />
-              <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder={mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search...'}
-                className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-white/50 text-white" />
-            </div>
+            <DoctorSearchBox doctors={allDoctors} value={search} onChange={setSearch} mm={mm}
+              placeholder={mm ? 'ဆရာဝန် ရှာဖွေပါ...' : 'Search...'}
+              pillClassName="flex items-center gap-2 rounded-xl px-4 py-3 bg-white/15"
+            />
             <button onClick={() => setShowMobileFilter(true)}
               className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>

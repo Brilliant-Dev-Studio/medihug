@@ -17,7 +17,7 @@ interface Product {
 
 function SkeletonCard() {
   return (
-    <div className="shrink-0 w-44 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col">
+    <div className="shrink-0 w-52 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col">
       <div className="bg-gray-200 animate-pulse" style={{ height: 160 }} />
       <div className="p-3 flex flex-col gap-2">
         <div className="h-3 bg-gray-200 rounded-lg animate-pulse w-4/5" />
@@ -36,7 +36,7 @@ function ProductCard({ p, mm, rank }: { p: Product; mm: boolean; rank: number })
   const isHot = rank < 3;
   return (
     <Link href={`/patient/records/${p.id}`}
-      className="shrink-0 w-44 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col active:scale-95 transition-all hover:shadow-md group">
+      className="shrink-0 w-52 lg:w-auto rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col active:scale-95 transition-all hover:shadow-md group">
 
       {/* image */}
       <div className="relative overflow-hidden bg-gray-50" style={{ height: 160 }}>

@@ -1,7 +1,8 @@
 'use client';
 import { theme } from '../../lib/theme'; void theme;
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -29,6 +30,81 @@ type Product = {
   isActive: boolean;
 };
 type Category = { id: string; name: string; nameEn: string | null };
+
+/* ── Search box with dropdown autosuggest ── */
+function ProductSearchBox({ products, value, onChange, mm, placeholder, pillClassName }: {
+  products: Product[]; value: string; onChange: (v: string) => void; mm: boolean;
+  placeholder: string; pillClassName: string;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [hi, setHi] = useState(0);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  const q = value.trim().toLowerCase();
+  const suggestions = q.length === 0 ? [] : products.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    (p.nameEn ?? '').toLowerCase().includes(q) ||
+    (p.category ?? '').toLowerCase().includes(q)
+  ).slice(0, 6);
+
+  return (
+    <div ref={boxRef} className="relative flex-1 min-w-0">
+      <div className={pillClassName}>
+        <Search className="w-4 h-4 shrink-0 text-white/60" />
+        <input
+          type="text"
+          value={value}
+          onChange={e => { onChange(e.target.value); setOpen(true); setHi(0); }}
+          onFocus={() => { if (value.trim()) setOpen(true); }}
+          onKeyDown={e => {
+            if (!open || suggestions.length === 0) return;
+            if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, suggestions.length - 1)); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)); }
+            else if (e.key === 'Enter' && suggestions[hi]) { e.preventDefault(); setOpen(false); router.push(`/patient/records/${suggestions[hi].id}`); }
+            else if (e.key === 'Escape') { setOpen(false); }
+          }}
+          placeholder={placeholder}
+          className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-white/50 text-white" />
+      </div>
+
+      {open && suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden py-1.5">
+          {suggestions.map((p, i) => {
+            const name = mm ? p.name : (p.nameEn ?? p.name);
+            return (
+              <Link key={p.id} href={`/patient/records/${p.id}`}
+                onClick={() => setOpen(false)}
+                onMouseEnter={() => setHi(i)}
+                className="flex items-center gap-3 px-3.5 py-2.5 transition-colors"
+                style={{ backgroundColor: i === hi ? '#f3f4f6' : 'transparent' }}
+              >
+                <div className="w-9 h-9 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                  {p.imageUrl
+                    ? <img src={p.imageUrl} alt={name} className="w-full h-full object-cover" />
+                    : <Package className="w-4 h-4 text-gray-300" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
+                  <p className="text-xs text-gray-400 truncate">{p.category ?? ''}</p>
+                </div>
+                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{p.price.toLocaleString()} Ks</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /* ── Radio row ── */
 function RadioRow({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
@@ -313,12 +389,10 @@ export default function ProductsPage() {
         <div className="flex-1 overflow-y-auto rounded-2xl bg-gray-50 flex flex-col">
           <div className="px-8 pt-8 pb-6 rounded-t-2xl shrink-0" style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
             <h1 className="text-2xl font-bold text-white mb-4">{mm ? 'Products များ' : 'Products'}</h1>
-            <div className="flex items-center gap-2 rounded-2xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <Search className="w-4 h-4 shrink-0 text-white/60" />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}
-                className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-white/50 text-white" />
-            </div>
+            <ProductSearchBox products={allProducts} value={search} onChange={setSearch} mm={mm}
+              placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}
+              pillClassName="flex items-center gap-2 rounded-2xl px-4 py-3 w-full bg-white/15"
+            />
           </div>
           <div className="px-6 pt-4 pb-2 flex items-center justify-between shrink-0">
             <p className="text-sm font-semibold" style={{ color: PRIMARY }}>{mm ? 'ကုန်ပစ္စည်းများ' : 'All Products'}</p>
@@ -393,12 +467,10 @@ export default function ProductsPage() {
           style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)`, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
           <h1 className="text-xl font-bold text-white mb-3">{mm ? 'Products များ' : 'Products'}</h1>
           <div className="flex items-center gap-2 w-full">
-            <div className="flex-1 flex items-center gap-2 rounded-xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
-              <Search className="w-4 h-4 shrink-0 text-white/60" />
-              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}
-                className="flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-white/50 text-white" />
-            </div>
+            <ProductSearchBox products={allProducts} value={search} onChange={setSearch} mm={mm}
+              placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}
+              pillClassName="flex items-center gap-2 rounded-xl px-4 py-3 bg-white/15"
+            />
             <button onClick={() => setShowMobileFilter(true)}
               className="relative w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
