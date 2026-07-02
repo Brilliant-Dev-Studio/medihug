@@ -21,6 +21,7 @@ import BlogCategoryCircles from '../../components/BlogCategoryCircles';
 import PartnerClinicsSlider from '../../components/PartnerClinicsSlider';
 import BestSellingProducts from '../../components/BestSellingProducts';
 import SpecialistDoctorsSection from '../../components/SpecialistDoctorsSection';
+import OurSuggestingDoctorsSection from '../../components/OurSuggestingDoctorsSection';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -129,11 +130,22 @@ export default function PatientDashboard() {
   const { lang } = useLang();
   const mm = lang === 'mm';
   const [doctors, setDoctors] = useState<DoctorItem[]>([]);
+  const [favCount, setFavCount] = useState(0);
 
   useEffect(() => {
     fetch('/api/doctors?limit=9')
       .then(r => r.json())
       .then(d => setDoctors(d.doctors ?? []));
+  }, []);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('medihug_patient');
+    if (!raw) return;
+    const { phone } = JSON.parse(raw) as { phone: string };
+    Promise.all([
+      fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
+      fetch(`/api/patient/favorites/products?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
+    ]).then(([d, p]) => setFavCount((d.ids?.length ?? 0) + (p.ids?.length ?? 0))).catch(() => {});
   }, []);
 
   return (
@@ -143,7 +155,7 @@ export default function PatientDashboard() {
       <div className="lg:px-6 lg:py-6 lg:flex lg:gap-5 lg:h-screen lg:overflow-hidden">
 
       {/* ════════════════ LEFT COLUMN ════════════════ */}
-      <div className="flex-1 lg:overflow-y-auto lg:rounded-2xl lg:bg-gray-50">
+      <div className="flex-1 min-w-0 lg:overflow-y-auto lg:rounded-2xl lg:bg-gray-50">
 
         {/* ── Hero ── */}
         <div
@@ -316,58 +328,8 @@ export default function PatientDashboard() {
           {/* Specialist Doctors */}
           <SpecialistDoctorsSection />
 
-          {/* Recommended Doctors — mobile slide */}
-          <div className="lg:hidden">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-base" style={{ color: PRIMARY }}>
-                {mm ? 'အကြံပြုသော ဆရာဝန်များ' : 'Recommended Doctors'}
-              </h2>
-              <Link href="/patient/doctors" className="text-xs font-semibold flex items-center gap-0.5" style={{ color: ACCENT }}>
-                {mm ? 'အားလုံး' : 'See all'} <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
-              {doctors.map((d, i) => {
-                const displayName = mm ? d.name : (d.nameEn ?? d.name);
-                return (
-                  <div key={d.id} className="shrink-0 w-40 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
-                    <div className="relative w-full h-36 flex items-center justify-center"
-                      style={{ backgroundColor: `${AVATAR_COLORS[i % AVATAR_COLORS.length]}18` }}>
-                      {d.imageUrl ? (
-                        <img src={d.imageUrl} alt={displayName} className="w-full h-full object-cover object-top" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white"
-                          style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
-                          {d.name.charAt(0)}
-                        </div>
-                      )}
-                      <span className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-green-400 border-2 border-white" />
-                    </div>
-                    <div className="p-2.5 flex flex-col gap-1 flex-1">
-                      <p className="text-xs font-bold leading-snug line-clamp-2" style={{ color: PRIMARY }}>
-                        {displayName}
-                      </p>
-                      <p className="text-[11px] text-gray-400 leading-tight">{d.specialty}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="text-[11px] font-bold text-gray-600">{d.rating.toFixed(1)}</span>
-                      </div>
-                      <p className="text-[11px] font-bold mt-auto" style={{ color: PRIMARY }}>
-                        {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
-                      </p>
-                      <Link
-                        href={`/patient/doctors/${d.id}`}
-                        className="mt-1 w-full py-1.5 rounded-xl text-[11px] font-bold text-white text-center"
-                        style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
-                      >
-                        {mm ? 'ချိန်းဆိုရန်' : 'Book'}
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          {/* Our Suggesting Doctors */}
+          <OurSuggestingDoctorsSection />
 
           {/* Best Selling Products */}
           <BestSellingProducts />
@@ -401,16 +363,21 @@ export default function PatientDashboard() {
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label_mm: 'ချိန်းဆိုမှု', label_en: 'Appointments',  value: '0', color: PRIMARY,   bg: '#eff6ff' },
-                { label_mm: 'မှတ်တမ်း',      label_en: 'Records',       value: '0', color: '#8b5cf6', bg: '#f5f3ff' },
-                { label_mm: 'ဆေးညွှန်း',     label_en: 'Prescriptions', value: '0', color: '#f59e0b', bg: '#fffbeb' },
-                { label_mm: 'ကြိုက်သော',     label_en: 'Favourites',    value: '0', color: '#ec4899', bg: '#fdf2f8' },
-              ].map(s => (
-                <div key={s.label_en} className="rounded-xl p-4" style={{ backgroundColor: s.bg }}>
-                  <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{mm ? s.label_mm : s.label_en}</p>
-                </div>
-              ))}
+                { label_mm: 'ချိန်းဆိုမှု', label_en: 'Appointments',  value: '0', color: PRIMARY,   bg: '#eff6ff', href: '/patient/appointments' },
+                { label_mm: 'မှတ်တမ်း',      label_en: 'Records',       value: '0', color: '#8b5cf6', bg: '#f5f3ff', href: null },
+                { label_mm: 'ဆေးညွှန်း',     label_en: 'Prescriptions', value: '0', color: '#f59e0b', bg: '#fffbeb', href: null },
+                { label_mm: 'ကြိုက်သော',     label_en: 'Favourites',    value: String(favCount), color: '#ec4899', bg: '#fdf2f8', href: '/patient/favourites' },
+              ].map(s => {
+                const card = (
+                  <div className="rounded-xl p-4" style={{ backgroundColor: s.bg }}>
+                    <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{mm ? s.label_mm : s.label_en}</p>
+                  </div>
+                );
+                return s.href
+                  ? <Link key={s.label_en} href={s.href} className="hover:opacity-80 transition-opacity">{card}</Link>
+                  : <div key={s.label_en}>{card}</div>;
+              })}
             </div>
           </div>
 
@@ -425,7 +392,7 @@ export default function PatientDashboard() {
               </Link>
             </div>
             <div className="flex flex-col divide-y divide-gray-100">
-              {doctors.slice(0, 6).map((d, i) => {
+              {doctors.slice(0, 5).map((d, i) => {
                 const displayName = mm ? d.name : (d.nameEn ?? d.name);
                 return (
                   <div key={d.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">

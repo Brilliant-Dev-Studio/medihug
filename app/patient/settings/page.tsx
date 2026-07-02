@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Camera, Check, ChevronDown, User, MapPin, Calendar, Shield, Bell, Palette } from 'lucide-react';
+import Link from 'next/link';
+import { Camera, Check, ChevronDown, User, MapPin, Calendar, Shield, Bell, Palette, Heart, Stethoscope, Package, ChevronRight } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import { useTheme } from '../../lib/ThemeContext';
 import { themes, ThemeId } from '../../lib/theme';
+
+interface FavDoctor { id: string; name: string; nameEn: string | null; imageUrl: string | null; }
+interface FavProduct { id: string; name: string; nameEn: string | null; imageUrl: string | null; }
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -34,8 +38,23 @@ export default function ProfilePage() {
   const [state, setState]       = useState('ချင်းပြည်နယ်');
   const [township, setTownship] = useState('jdjdjd');
   const [saved, setSaved]       = useState(false);
+  const [favDoctors, setFavDoctors]   = useState<FavDoctor[]>([]);
+  const [favProducts, setFavProducts] = useState<FavProduct[]>([]);
 
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('medihug_patient');
+    if (!raw) return;
+    const { phone } = JSON.parse(raw) as { phone: string };
+    Promise.all([
+      fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(phone)}&full=true`).then(r => r.json()),
+      fetch(`/api/patient/favorites/products?phone=${encodeURIComponent(phone)}&full=true`).then(r => r.json()),
+    ]).then(([d, p]) => {
+      setFavDoctors(d.doctors ?? []);
+      setFavProducts(p.products ?? []);
+    }).catch(() => {});
+  }, []);
 
   const handleAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -155,6 +174,83 @@ export default function ProfilePage() {
               placeholder={mm ? 'မြို့နယ် ထည့်ပါ' : 'Enter township'} />
           </div>
         </div>
+      </div>
+
+      {/* Favourites */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `color-mix(in srgb, var(--color-primary) 12%, white)` }}>
+              <Heart className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
+            </div>
+            <p className="text-sm font-bold text-gray-700">{mm ? 'ကြိုက်နှစ်သက်သည်များ' : 'My Favourites'}</p>
+          </div>
+          <Link href="/patient/favourites" className="flex items-center gap-0.5 text-xs font-semibold" style={{ color: PRIMARY }}>
+            {mm ? 'အားလုံးကြည့်ရန်' : 'View all'} <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {favDoctors.length === 0 && favProducts.length === 0 ? (
+          <p className="text-xs text-gray-400 text-center py-4">
+            {mm ? 'ကြိုက်နှစ်သက်သည် မရှိသေးပါ' : 'No favourites yet'}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {favDoctors.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Stethoscope className="w-3.5 h-3.5 text-gray-400" />
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    {mm ? 'ဆရာဝန်' : 'Doctors'} ({favDoctors.length})
+                  </p>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                  {favDoctors.slice(0, 6).map(d => {
+                    const name = mm ? d.name : (d.nameEn ?? d.name);
+                    return (
+                      <Link key={d.id} href={`/patient/doctors/${d.id}`}
+                        className="shrink-0 flex flex-col items-center gap-1 w-16">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
+                          {d.imageUrl
+                            ? <img src={d.imageUrl} alt={name} className="w-full h-full object-cover" />
+                            : <span className="text-sm font-bold" style={{ color: PRIMARY }}>{d.name.charAt(0)}</span>}
+                        </div>
+                        <p className="text-[10px] text-gray-500 text-center truncate w-full">{name}</p>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {favProducts.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Package className="w-3.5 h-3.5 text-gray-400" />
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    {mm ? 'ကုန်ပစ္စည်း' : 'Products'} ({favProducts.length})
+                  </p>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                  {favProducts.slice(0, 6).map(p => {
+                    const name = mm ? p.name : (p.nameEn ?? p.name);
+                    return (
+                      <Link key={p.id} href={`/patient/records/${p.id}`}
+                        className="shrink-0 flex flex-col items-center gap-1 w-16">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
+                          {p.imageUrl
+                            ? <img src={p.imageUrl} alt={name} className="w-full h-full object-cover" />
+                            : <Package className="w-4 h-4 text-gray-300" />}
+                        </div>
+                        <p className="text-[10px] text-gray-500 text-center truncate w-full">{name}</p>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Theme */}

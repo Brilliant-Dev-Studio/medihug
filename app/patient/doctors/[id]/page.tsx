@@ -11,6 +11,8 @@ import {
   Sunrise, Sun, Sunset, Calendar, Clock,
 } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
+import { useFavorites } from '../../../lib/useFavorites';
+import IdentifyModal from '../../../components/IdentifyModal';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -83,7 +85,7 @@ export default function DoctorDetailPage() {
 
   const [doctor,        setDoctor]        = useState<Doctor | null>(null);
   const [loading,       setLoading]       = useState(true);
-  const [favorited,     setFavorited]     = useState(false);
+  const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('doctor');
   const [tab,           setTab]           = useState<Tab>(searchParams.get('tab') === 'schedule' ? 'schedule' : 'profile');
   const [lightbox,      setLightbox]      = useState<number | null>(null);
   const [selectedDay,   setSelectedDay]   = useState(0);
@@ -118,6 +120,7 @@ export default function DoctorDetailPage() {
   );
 
   const displayName = mm ? doctor.name : (doctor.nameEn ?? doctor.name);
+  const favorited = favorites.has(doctor.id);
 
   /* ── Schedule helpers ── */
   const today    = new Date();
@@ -186,7 +189,7 @@ export default function DoctorDetailPage() {
       spec:     doctor.specialty,
       specMm:   doctor.specialty,
       img:      doctor.imageUrl ?? '',
-      date:     dl, start: sorted[0], end: sorted[1],
+      date:     dl, dateIso: d_s.toISOString(), start: sorted[0], end: sorted[1],
       duration: selectionMode === 'range' && rangeStart && rangeEnd ? fmtDuration(rangeStart, rangeEnd) : '',
       fee:      tf.toLocaleString(), sessions: String(sc), basePrice: String(doctor.price),
     });
@@ -580,7 +583,7 @@ export default function DoctorDetailPage() {
                 <span className="text-sm font-semibold text-white">{mm ? 'နောက်သို့' : 'Back'}</span>
               </button>
               <h1 className="text-base font-bold text-white">{mm ? 'ဆရာဝန်အကြောင်း' : 'Doctor Info'}</h1>
-              <button onClick={() => setFavorited(p => !p)}
+              <button onClick={() => toggleFav(doctor.id)}
                 className="w-9 h-9 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
                 style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
                 <Heart className="w-5 h-5" style={{ color: favorited ? '#fca5a5' : 'rgba(255,255,255,0.8)', fill: favorited ? '#fca5a5' : 'transparent' }} />
@@ -666,7 +669,7 @@ export default function DoctorDetailPage() {
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
               {mm ? 'ချိန်းဆိုမည်' : 'Book Appointment'}
             </button>
-            <button onClick={() => setFavorited(p => !p)}
+            <button onClick={() => toggleFav(doctor.id)}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all"
               style={{ borderColor: favorited ? '#fca5a5' : '#e5e7eb', color: favorited ? '#ef4444' : '#6b7280', backgroundColor: favorited ? '#fef2f2' : 'transparent' }}>
               <Heart className="w-4 h-4" style={{ fill: favorited ? '#ef4444' : 'transparent', color: favorited ? '#ef4444' : '#6b7280' }} />
@@ -686,7 +689,7 @@ export default function DoctorDetailPage() {
               <span className="text-sm font-semibold text-white">{mm ? 'နောက်သို့' : 'Back'}</span>
             </button>
             <h1 className="text-base font-bold text-white">{mm ? 'ဆရာဝန်အကြောင်း' : 'Doctor Info'}</h1>
-            <button onClick={() => setFavorited(p => !p)} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+            <button onClick={() => toggleFav(doctor.id)} className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
               <Heart className="w-5 h-5" style={{ color: favorited ? '#fca5a5' : 'rgba(255,255,255,0.8)', fill: favorited ? '#fca5a5' : 'transparent' }} />
             </button>
           </div>
@@ -777,6 +780,7 @@ export default function DoctorDetailPage() {
         </div>
       )}
 
+      {needsIdentity && <IdentifyModal mm={mm} onClose={closeIdentity} onSubmit={submitIdentity} />}
     </div>
   );
 }

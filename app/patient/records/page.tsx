@@ -10,6 +10,8 @@ import {
   ChevronLeft, ChevronRight, Package, Loader2,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
+import { useFavorites } from '../../lib/useFavorites';
+import IdentifyModal from '../../components/IdentifyModal';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -118,7 +120,7 @@ export default function ProductsPage() {
   const [filterSize,  setFilterSize]            = useState('all');
   const [priceMin,    setPriceMin]              = useState(0);
   const [priceMax,    setPriceMax]              = useState(50000);
-  const [favorites,   setFavorites]             = useState<Set<string>>(new Set());
+  const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('product');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   useEffect(() => {
@@ -154,9 +156,6 @@ export default function ProductsPage() {
     categories.forEach(c => { map[c.name] = allProducts.filter(p => p.category === c.name).length; });
     return map;
   }, [allProducts, categories]);
-
-  const toggleFav = (id: string) =>
-    setFavorites(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const hasFilter  = filterCat !== 'all' || filterSize !== 'all' || priceMin > 0 || priceMax < dynamicMaxPrice;
   const activeCount = (filterCat !== 'all' ? 1 : 0) + (filterSize !== 'all' ? 1 : 0) + (priceMin > 0 || priceMax < dynamicMaxPrice ? 1 : 0);
@@ -433,6 +432,8 @@ export default function ProductsPage() {
       </div>
       {/* Unused imports suppressor */}
       {false && <span><ChevronLeft /><ChevronRight /></span>}
+
+      {needsIdentity && <IdentifyModal mm={mm} onClose={closeIdentity} onSubmit={submitIdentity} />}
     </div>
   );
 }

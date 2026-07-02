@@ -1,29 +1,27 @@
 'use client';
-import { theme } from '../../lib/theme';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Calendar, Clock, Video, X, ChevronRight,
-  CheckCircle2, Star, RotateCcw, Ban, AlertCircle, FileText,
+  CheckCircle2, Star, RotateCcw, Ban, FileText, CalendarX2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
-const ACCENT    = 'var(--color-accent)';
 
 /* ─────────────────── types ─────────────────── */
-type Status = 'pending_payment' | 'waiting_doctor' | 'confirmed' | 'ready';
-type PastStatus = 'completed' | 'cancelled' | 'no_show';
+type Status = 'pending_payment' | 'confirmed' | 'ready';
+type PastStatus = 'completed' | 'cancelled';
 
 type Appointment = {
-  id: number;
+  id: string;
   doctor: string;
   specialty_en: string;
   specialty_mm: string;
-  avatar: string;
+  avatar: string | null;
   time_en: string;
   time_mm: string;
   status: Status;
@@ -31,11 +29,11 @@ type Appointment = {
 };
 
 type PastAppointment = {
-  id: number;
+  id: string;
   doctor: string;
   specialty_en: string;
   specialty_mm: string;
-  avatar: string;
+  avatar: string | null;
   date_en: string;
   date_mm: string;
   status: PastStatus;
@@ -45,84 +43,71 @@ type PastAppointment = {
   note_mm?: string;
 };
 
-/* ─────────────────── data ─────────────────── */
-const UPCOMING: Appointment[] = [
-  {
-    id: 1,
-    doctor: 'Dr. Khin Maung',
-    specialty_en: 'Cardiologist',       specialty_mm: 'နှလုံးရောဂါ အထူးကု',
-    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=80&h=80&fit=crop&crop=face',
-    time_en: 'Tomorrow at 10:00 AM',    time_mm: 'မနက်ဖြန် နံနက် ၁၀:၀၀',
-    status: 'pending_payment',
-    fee: '15,000 Ks',
-  },
-  {
-    id: 2,
-    doctor: 'Dr. Aung Myo',
-    specialty_en: 'Neurologist',        specialty_mm: 'အာရုံကြောရောဂါ အထူးကု',
-    avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=80&h=80&fit=crop&crop=face',
-    time_en: 'June 28, 2026 at 01:00 PM', time_mm: 'ဇွန် ၂၈၊ ၂၀၂၆ နေ့လည် ၁:၀၀',
-    status: 'waiting_doctor',
-    fee: '20,000 Ks',
-  },
-  {
-    id: 3,
-    doctor: 'Dr. Thura Nyi',
-    specialty_en: 'Senior Physiotherapist', specialty_mm: 'ရုပ်ပိုင်းဆိုင်ရာ ကုသရေး အထူးကု',
-    avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face',
-    time_en: 'Next Monday at 02:00 PM', time_mm: 'နောက်တနင်္လာနေ့ နေ့လည် ၂:၀၀',
-    status: 'confirmed',
-    fee: '12,000 Ks',
-  },
-  {
-    id: 4,
-    doctor: 'Dr. Su Su Lwin',
-    specialty_en: 'General Practitioner', specialty_mm: 'ယေဘုယျ ဆေးကုသ',
-    avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=80&h=80&fit=crop&crop=face',
-    time_en: 'Today at 03:30 PM',       time_mm: 'ယနေ့ ညနေ ၃:၃၀',
-    status: 'ready',
-    fee: '8,000 Ks',
-  },
-];
+/* ─────────────────── raw API shape ─────────────────── */
+interface RawAppointment {
+  id: string;
+  date: string;
+  time: string | null;
+  reason: string | null;
+  note: string | null;
+  fee: number | null;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
+}
 
-const PAST: PastAppointment[] = [
-  {
-    id: 101,
-    doctor: 'Dr. Khin Maung',
-    specialty_en: 'Cardiologist',       specialty_mm: 'နှလုံးရောဂါ အထူးကု',
-    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=80&h=80&fit=crop&crop=face',
-    date_en: 'Jun 10, 2026 • 10:00 AM', date_mm: 'ဇွန် ၁၀၊ ၂၀၂၆ • နံနက် ၁၀:၀၀',
-    status: 'completed', rating: 5, fee: '15,000 Ks',
-    note_en: 'ECG follow-up. Prescribed Amlodipine 5mg.',
-    note_mm: 'ECG စစ်ဆေးမှု ဆက်လက်ကုသ။ Amlodipine 5mg ညွှန်ကြားသည်။',
-  },
-  {
-    id: 102,
-    doctor: 'Dr. Aung Myo',
-    specialty_en: 'Neurologist',        specialty_mm: 'အာရုံကြောရောဂါ အထူးကု',
-    avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=80&h=80&fit=crop&crop=face',
-    date_en: 'May 22, 2026 • 02:00 PM', date_mm: 'မေ ၂၂၊ ၂၀၂၆ • နေ့လည် ၂:၀၀',
-    status: 'completed', rating: 4, fee: '20,000 Ks',
-    note_en: 'Migraine assessment. CT scan recommended.',
-    note_mm: 'ခေါင်းတဆတ်ဆတ်နာ စစ်ဆေးမှု။ CT scan ပြုလုပ်ရန် ညွှန်ကြားသည်။',
-  },
-  {
-    id: 103,
-    doctor: 'Dr. Thura Nyi',
-    specialty_en: 'Senior Physiotherapist', specialty_mm: 'ရုပ်ပိုင်းဆိုင်ရာ ကုသရေး အထူးကု',
-    avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop&crop=face',
-    date_en: 'May 5, 2026 • 11:00 AM',  date_mm: 'မေ ၅၊ ၂၀၂၆ • နံနက် ၁၁:၀၀',
-    status: 'cancelled', fee: '12,000 Ks',
-  },
-  {
-    id: 104,
-    doctor: 'Dr. Su Su Lwin',
-    specialty_en: 'General Practitioner', specialty_mm: 'ယေဘုယျ ဆေးကုသ',
-    avatar: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=80&h=80&fit=crop&crop=face',
-    date_en: 'Apr 18, 2026 • 09:30 AM', date_mm: 'ဧပြီ ၁၈၊ ၂၀၂၆ • နံနက် ၉:၃၀',
-    status: 'no_show', fee: '8,000 Ks',
-  },
-];
+function fmtFee(fee: number | null): string {
+  return fee ? `${fee.toLocaleString()} Ks` : '—';
+}
+
+function fmtDateTime(dateIso: string, time: string | null): string {
+  const d = new Date(dateIso);
+  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return time ? `${dateStr} • ${time}` : dateStr;
+}
+
+function isToday(dateIso: string): boolean {
+  const d = new Date(dateIso);
+  const now = new Date();
+  return d.toDateString() === now.toDateString();
+}
+
+/* ─────────────────── raw → view model ─────────────────── */
+function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; past: PastAppointment[] } {
+  const upcoming: Appointment[] = [];
+  const past: PastAppointment[] = [];
+
+  for (const a of raw) {
+    const dt = fmtDateTime(a.date, a.time);
+    const doctorName = a.doctor.nameEn ?? a.doctor.name;
+    const specEn = a.doctor.specialtyEn ?? a.doctor.specialty;
+
+    if (a.status === 'COMPLETED' || a.status === 'CANCELLED') {
+      past.push({
+        id: a.id,
+        doctor: doctorName,
+        specialty_en: specEn, specialty_mm: a.doctor.specialty,
+        avatar: a.doctor.imageUrl,
+        date_en: dt, date_mm: dt,
+        status: a.status === 'COMPLETED' ? 'completed' : 'cancelled',
+        fee: fmtFee(a.fee),
+        note_en: a.note ?? a.reason ?? undefined,
+        note_mm: a.note ?? a.reason ?? undefined,
+      });
+    } else {
+      upcoming.push({
+        id: a.id,
+        doctor: doctorName,
+        specialty_en: specEn, specialty_mm: a.doctor.specialty,
+        avatar: a.doctor.imageUrl,
+        time_en: dt, time_mm: dt,
+        status: a.status === 'PENDING' ? 'pending_payment' : (isToday(a.date) ? 'ready' : 'confirmed'),
+        fee: fmtFee(a.fee),
+      });
+    }
+  }
+
+  return { upcoming, past };
+}
 
 /* ─────────────────── status config ─────────────────── */
 const STATUS_CONFIG: Record<Status, {
@@ -134,12 +119,6 @@ const STATUS_CONFIG: Record<Status, {
     pillBg: '#f59e0b', pillText: '#fff',
     alertEn: 'Super Admin is actively verifying your 10% mobile wallet deposit slip.',
     alertMm: 'Admin မှ သင်၏ ငွေပေးချေမှု ၁၀% ဖုန်းဘဏ် ငွေသွင်းဂါမြောက်ကို စစ်ဆေးနေသည်။',
-  },
-  waiting_doctor: {
-    badgeEn: 'Waiting for Doctor', badgeMm: 'ဆရာဝန် လက်ခံမှု စောင့်ဆိုင်းနေသည်',
-    pillBg: '#3b82f6', pillText: '#fff',
-    alertEn: 'Payment verified by Admin. Waiting for the doctor to accept this schedule slot.',
-    alertMm: 'Admin မှ ငွေပေးချေမှု အတည်ပြုပြီး။ ဆရာဝန် ချိန်းဆိုချိန် လက်ခံမှုကို စောင့်ဆိုင်းနေသည်။',
   },
   confirmed: {
     badgeEn: 'Confirmed',          badgeMm: 'အတည်ပြုပြီး',
@@ -156,12 +135,63 @@ const STATUS_CONFIG: Record<Status, {
 };
 
 const PAST_CONFIG: Record<PastStatus, { en: string; mm: string; pillBg: string; pillText: string; icon: React.ElementType }> = {
-  completed: { en: 'Completed', mm: 'ပြီးဆုံးသည်',   pillBg: '#10b981', pillText: '#fff', icon: CheckCircle2 },
-  cancelled:  { en: 'Cancelled', mm: 'ပယ်ဖျက်သည်',   pillBg: '#9ca3af', pillText: '#fff', icon: Ban          },
-  no_show:    { en: 'No Show',   mm: 'မပေါ်လာခဲ့ပါ', pillBg: '#ef4444', pillText: '#fff', icon: AlertCircle  },
+  completed: { en: 'Completed', mm: 'ပြီးဆုံးသည်', pillBg: '#10b981', pillText: '#fff', icon: CheckCircle2 },
+  cancelled: { en: 'Cancelled', mm: 'ပယ်ဖျက်သည်', pillBg: '#9ca3af', pillText: '#fff', icon: Ban          },
 };
 
 /* ─────────────────── sub-components ─────────────────── */
+
+function Avatar({ src, name, size }: { src: string | null; name: string; size: number }) {
+  if (src) {
+    return <Image src={src} alt={name} width={size} height={size} className="object-cover w-full h-full" />;
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: PRIMARY, fontSize: size * 0.35 }}>
+      {name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden animate-pulse">
+      {/* Mobile */}
+      <div className="lg:hidden px-4 py-4 flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 shrink-0" />
+          <div className="flex-1 flex flex-col gap-2">
+            <div className="h-3.5 w-32 bg-gray-100 rounded" />
+            <div className="h-3 w-24 bg-gray-100 rounded" />
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="h-3 w-28 bg-gray-100 rounded" />
+          <div className="h-3 w-16 bg-gray-100 rounded" />
+        </div>
+        <div className="h-6 w-28 bg-gray-100 rounded-full" />
+      </div>
+      {/* Desktop */}
+      <div className="hidden lg:flex flex-1 px-6 py-5 items-center gap-5">
+        <div className="w-14 h-14 rounded-2xl bg-gray-100 shrink-0" />
+        <div className="flex-1 flex flex-col gap-2">
+          <div className="h-4 w-48 bg-gray-100 rounded" />
+          <div className="h-3 w-64 bg-gray-100 rounded" />
+        </div>
+        <div className="w-24 h-7 bg-gray-100 rounded-full shrink-0" />
+        <div className="w-24 h-9 bg-gray-100 rounded-lg shrink-0" />
+      </div>
+    </div>
+  );
+}
+
+function EmptyList({ mm }: { mm: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+      <CalendarX2 className="w-8 h-8 text-gray-200" />
+      <p className="text-sm text-gray-400">{mm ? 'ချိန်းဆိုမှု မရှိပါ' : 'No appointments here.'}</p>
+    </div>
+  );
+}
 
 function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
   const cfg = STATUS_CONFIG[appt.status];
@@ -174,7 +204,7 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
         {/* Top row: avatar + name */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
-            <Image src={appt.avatar} alt={appt.doctor} width={48} height={48} className="object-cover w-full h-full" />
+            <Avatar src={appt.avatar} name={appt.doctor} size={48} />
           </div>
           <div className="min-w-0">
             <p className="text-base font-bold text-gray-800 leading-tight">{appt.doctor}</p>
@@ -233,7 +263,7 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
       {/* ── Desktop layout ── */}
       <div className="hidden lg:flex flex-1 px-6 py-5 items-center gap-5 min-w-0">
         <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
-          <Image src={appt.avatar} alt={appt.doctor} width={56} height={56} className="object-cover w-full h-full" />
+          <Avatar src={appt.avatar} name={appt.doctor} size={56} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -296,7 +326,7 @@ function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
         {/* Top row: avatar + name */}
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
-            <Image src={appt.avatar} alt={appt.doctor} width={48} height={48} className="object-cover w-full h-full" />
+            <Avatar src={appt.avatar} name={appt.doctor} size={48} />
           </div>
           <div className="min-w-0">
             <p className="text-base font-bold text-gray-800 leading-tight">{appt.doctor}</p>
@@ -345,7 +375,7 @@ function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
       {/* ── Desktop layout ── */}
       <div className="hidden lg:flex flex-1 px-6 py-5 items-center gap-5 min-w-0">
         <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-gray-100">
-          <Image src={appt.avatar} alt={appt.doctor} width={56} height={56} className="object-cover w-full h-full" />
+          <Avatar src={appt.avatar} name={appt.doctor} size={56} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -391,8 +421,77 @@ function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
 /* ─────────────────── page ─────────────────── */
 export default function AppointmentsPage() {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
+  const [loading, setLoading] = useState(true);
+  const [hasPhone, setHasPhone] = useState(true);
+  const [UPCOMING, setUpcoming] = useState<Appointment[]>([]);
+  const [PAST, setPast] = useState<PastAppointment[]>([]);
   const { lang } = useLang();
   const mm = lang === 'mm';
+
+  useEffect(() => {
+    const stored = localStorage.getItem('medihug_patient');
+    if (!stored) { setHasPhone(false); setLoading(false); return; }
+    const { phone } = JSON.parse(stored) as { phone: string };
+    fetch(`/api/patient/appointments?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(d => {
+        const { upcoming, past } = splitAppointments(d.appointments ?? []);
+        setUpcoming(upcoming);
+        setPast(past);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-full bg-slate-50 lg:bg-gray-100">
+        {/* Desktop */}
+        <div className="hidden lg:flex gap-5 h-screen overflow-hidden px-6 py-6">
+          <div className="flex-1 overflow-y-auto rounded-2xl bg-gray-50 flex flex-col min-w-0">
+            <div className="px-6 pt-6 pb-5 rounded-t-2xl shrink-0 animate-pulse"
+              style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+              <div className="h-5 w-40 bg-white/25 rounded mb-2" />
+              <div className="h-3 w-56 bg-white/15 rounded" />
+            </div>
+            <div className="flex-1 px-6 py-4 pb-8 flex flex-col gap-3">
+              {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          </div>
+          <div className="shrink-0 w-64 flex flex-col gap-4">
+            <div className="bg-white rounded-2xl border border-gray-100 h-40 animate-pulse" />
+            <div className="bg-white rounded-2xl border border-gray-100 h-32 animate-pulse" />
+          </div>
+        </div>
+        {/* Mobile */}
+        <div className="lg:hidden">
+          <div className="-mt-18 pt-21 pb-5 px-4 w-full animate-pulse"
+            style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)`, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+            <div className="h-5 w-40 bg-white/25 rounded mb-2" />
+            <div className="h-3 w-52 bg-white/15 rounded mb-4" />
+            <div className="h-16 bg-white/10 rounded-xl" />
+          </div>
+          <div className="px-4 pt-4 pb-28 flex flex-col gap-3">
+            {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasPhone) {
+    return (
+      <div className="min-h-full flex flex-col items-center justify-center gap-4 py-24 px-6 text-center">
+        <CalendarX2 className="w-10 h-10 text-gray-300" />
+        <div>
+          <p className="text-sm font-bold text-gray-600">{mm ? 'ချိန်းဆိုမှု မရှိသေးပါ' : 'No appointments yet'}</p>
+          <p className="text-xs text-gray-400 mt-1">{mm ? 'ဆရာဝန်နှင့် ပထမဆုံး ချိန်းဆိုမှု ပြုလုပ်ပါ' : 'Book your first consultation to see it here'}</p>
+        </div>
+        <Link href="/patient/doctors" className="px-4 py-2 rounded-xl text-sm font-bold text-white" style={{ backgroundColor: PRIMARY }}>
+          {mm ? 'ဆရာဝန်များ ကြည့်ရန်' : 'Browse Doctors'}
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-slate-50 lg:bg-gray-100">
@@ -432,8 +531,8 @@ export default function AppointmentsPage() {
           {/* List */}
           <div className="flex-1 px-6 py-4 pb-8 flex flex-col gap-3">
             {tab === 'upcoming'
-              ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} />)
-              : PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} />)
+              ? (UPCOMING.length ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
+              : (PAST.length ? PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
             }
           </div>
         </div>
@@ -450,7 +549,6 @@ export default function AppointmentsPage() {
               { en: 'Upcoming',  mm: 'လာမည့်',       value: UPCOMING.length,                               color: PRIMARY,   bg: `${PRIMARY}10` },
               { en: 'Completed', mm: 'ပြီးဆုံးသည်',  value: PAST.filter(p=>p.status==='completed').length, color: '#10b981', bg: '#d1fae5'       },
               { en: 'Cancelled', mm: 'ပယ်ဖျက်သည်',  value: PAST.filter(p=>p.status==='cancelled').length, color: '#6b7280', bg: '#f3f4f6'       },
-              { en: 'No Show',   mm: 'မပေါ်လာခဲ့',   value: PAST.filter(p=>p.status==='no_show').length,   color: '#ef4444', bg: '#fee2e2'       },
             ].map(s => (
               <div key={s.en} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0">
                 <div className="flex items-center gap-2.5">
@@ -468,7 +566,7 @@ export default function AppointmentsPage() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">{mm ? 'နောက်ထပ် ချိန်းဆိုမှု' : 'Next Appointment'}</p>
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0">
-                  <Image src={UPCOMING[0].avatar} alt={UPCOMING[0].doctor} width={40} height={40} className="object-cover" />
+                  <Avatar src={UPCOMING[0].avatar} name={UPCOMING[0].doctor} size={40} />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-800 leading-tight">{UPCOMING[0].doctor}</p>
@@ -536,8 +634,8 @@ export default function AppointmentsPage() {
         {/* List */}
         <div className="px-4 pt-4 pb-28 flex flex-col gap-3">
           {tab === 'upcoming'
-            ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} />)
-            : PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} />)
+            ? (UPCOMING.length ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
+            : (PAST.length ? PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
           }
         </div>
       </div>

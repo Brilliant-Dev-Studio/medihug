@@ -10,7 +10,7 @@ import {
   CreditCard, Smartphone, Building2,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
-import IntakeForm from './IntakeForm';
+import IntakeForm, { IntakeData } from './IntakeForm';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -45,6 +45,7 @@ function BookingContent() {
   const specMm       = params.get('specMm')      ?? 'ကလေးကျန်းမာရေးအထူးကု';
   const img          = params.get('img')         ?? 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop&crop=face';
   const date         = params.get('date')        ?? 'Fri 27 Jun';
+  const dateIso      = params.get('dateIso')     ?? '';
   const slotStart    = params.get('start')       ?? '09:00';
   const slotEnd      = params.get('end')         ?? '';
   const duration     = params.get('duration')    ?? '';
@@ -58,6 +59,8 @@ function BookingContent() {
   const [dragOver,   setDragOver]   = useState(false);
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
   const [note,       setNote]       = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitErr,  setSubmitErr]  = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const timeLabel = slotEnd
@@ -80,12 +83,52 @@ function BookingContent() {
     setStep('intake');
   }
 
+  async function handleIntakeDone(intake: IntakeData) {
+    setSubmitting(true);
+    setSubmitErr('');
+    try {
+      const res = await fetch('/api/patient/bookings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: intake.name,
+          phone: intake.phone,
+          doctorId,
+          date: dateIso || new Date().toISOString(),
+          time: timeLabel,
+          reason: intake.mainComplaint,
+          note,
+          paymentMethod: payMethod,
+          fee: basePrice * sessions,
+          intake,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setSubmitErr(data.error ?? (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong')); setSubmitting(false); return; }
+      localStorage.setItem('medihug_patient', JSON.stringify({ name: intake.name, phone: intake.phone }));
+      setSubmitting(false);
+      setStep('done');
+    } catch {
+      setSubmitErr(mm ? 'ဆာဗာအမှား' : 'Server error');
+      setSubmitting(false);
+    }
+  }
+
   /* ── Intake form screen ── */
   if (step === 'intake') {
     return (
       <div className="min-h-full bg-gray-50">
-        <div className="max-w-2xl mx-auto px-4 py-6">
-          <IntakeForm mm={mm} onDone={() => setStep('done')} />
+        <div className="max-w-2xl lg:max-w-5xl mx-auto px-4 lg:px-8 py-6">
+          {submitErr && (
+            <p className="mb-3 text-center text-xs text-red-500 font-semibold">{submitErr}</p>
+          )}
+          <IntakeForm mm={mm} onDone={handleIntakeDone} />
+          {submitting && (
+            <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+              <div className="bg-white rounded-2xl px-6 py-4 text-sm font-semibold" style={{ color: PRIMARY }}>
+                {mm ? 'တင်ပြနေသည်...' : 'Submitting...'}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

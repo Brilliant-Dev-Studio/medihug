@@ -1,0 +1,1 @@
+ALTER TABLE "Doctor" ADD COLUMN "isSuggested" BOOLEAN NOT NULL DEFAULT false;

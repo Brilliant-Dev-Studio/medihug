@@ -30,7 +30,12 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const [scrolled, setScrolled]       = useState(false);
   const [collapsed, setCollapsed]     = useState(false);
   const [langOpen, setLangOpen]       = useState(false);
+  const [todayStr, setTodayStr]       = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setTodayStr(new Date().toLocaleDateString(mm ? 'my-MM' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
+  }, [mm]);
 
   useEffect(() => {
     setScrolled(false);
@@ -152,7 +157,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       </aside>
 
       {/* ── Main content ── */}
-      <div className={`flex-1 ${mainML} flex flex-col transition-all duration-300`}>
+      <div className={`flex-1 min-w-0 ${mainML} flex flex-col transition-all duration-300`}>
 
         {/* Mobile scroll container */}
         <div
@@ -195,7 +200,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         {/* Desktop top bar */}
         <div className="hidden lg:flex items-center justify-between px-6 py-3 bg-white border-b border-gray-100 shrink-0">
           <p className="text-sm text-gray-400">
-            {new Date().toLocaleDateString(mm ? 'my-MM' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {todayStr}
           </p>
           <div className="flex items-center gap-3">
 
@@ -265,7 +270,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         </div>
 
         {/* Desktop */}
-        <main className="hidden lg:block flex-1 overflow-y-auto">{children}</main>
+        <main className="hidden lg:block flex-1 min-w-0 overflow-y-auto">{children}</main>
       </div>
 
       {/* ── Bottom Nav (mobile only) ── */}

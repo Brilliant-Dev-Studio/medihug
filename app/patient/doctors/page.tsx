@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -9,6 +9,8 @@ import {
   RotateCcw, ListFilter, ChevronDown,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
+import { useFavorites } from '../../lib/useFavorites';
+import IdentifyModal from '../../components/IdentifyModal';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -237,7 +239,7 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
 
   const [allDoctors,  setAllDoctors]  = useState<Doctor[]>([]);
   const [loading,     setLoading]     = useState(true);
-  const [favorites,   setFavorites]   = useState<Set<string>>(new Set());
+  const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('doctor');
   const [search,      setSearch]      = useState('');
   const [filterExp,   setFilterExp]   = useState<ExpRange>('all');
   const [filterSpec,  setFilterSpec]  = useState<string>(initialSpec);
@@ -253,14 +255,6 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
       .then(r => r.json())
       .then(d => { setAllDoctors(d.doctors ?? []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
-
-  const toggleFav = useCallback((id: string) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
   }, []);
 
   /* ── derived filter counts ── */
@@ -575,6 +569,8 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
           )}
         </div>
       </div>
+
+      {needsIdentity && <IdentifyModal mm={mm} onClose={closeIdentity} onSubmit={submitIdentity} />}
     </div>
   );
 }

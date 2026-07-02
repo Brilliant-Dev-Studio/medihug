@@ -25,7 +25,7 @@ interface Doctor {
   specialty: string; specialtyEn: string | null;
   phone: string | null; imageUrl: string | null;
   experience: number; rating: number; price: number;
-  isAvailable: boolean; isActive: boolean;
+  isAvailable: boolean; isActive: boolean; isSuggested: boolean;
   createdAt: string; slots: Slot[];
 }
 
@@ -460,6 +460,12 @@ export default function AdminDoctorsPage() {
                         <Star className="w-3 h-3"/>
                         {d.isAvailable ? 'Available':'Unavailable'}
                       </span>
+                      {d.isSuggested && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full w-fit bg-amber-50 text-amber-500">
+                          <Star className="w-3 h-3 fill-amber-400"/>
+                          Suggested
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3.5">

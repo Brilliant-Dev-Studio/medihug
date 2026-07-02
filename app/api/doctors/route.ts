@@ -6,10 +6,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const specialty = searchParams.get('specialty') ?? '';
     const search    = searchParams.get('search')    ?? '';
+    const suggested = searchParams.get('suggested') ?? '';
     const limit     = parseInt(searchParams.get('limit') ?? '20');
 
     const where: Record<string, unknown> = { isActive: true, isAvailable: true };
 
+    if (suggested === 'true') where.isSuggested = true;
     if (specialty) where.specialty = { contains: specialty, mode: 'insensitive' };
     if (search)    where.OR = [
       { name:   { contains: search, mode: 'insensitive' } },

@@ -55,8 +55,10 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  appointments Appointment[]
-  doctor       Doctor?
+  appointments     Appointment[]
+  doctor           Doctor?
+  favoriteDoctors  FavoriteDoctor[]
+  favoriteProducts FavoriteProduct[]
 }
 
 // ─────────────────────────────────────────────
@@ -81,6 +83,7 @@ model Doctor {
   price          Int      @default(0)
   isAvailable    Boolean  @default(true)
   isActive       Boolean  @default(true)
+  isSuggested    Boolean  @default(false)
   qualifications String?
   careerMm       String?
   careerEn       String?
@@ -98,6 +101,7 @@ model Doctor {
   clinicDoctors ClinicDoctor[]
   slots         DoctorSlot[]
   gallery       DoctorGallery[]
+  favoritedBy   FavoriteDoctor[]
 }
 
 // ─────────────────────────────────────────────
@@ -197,17 +201,20 @@ model ClinicProduct {
 // ─────────────────────────────────────────────
 
 model Appointment {
-  id        String            @id @default(cuid())
-  userId    String
-  doctorId  String
-  clinicId  String?
-  date      DateTime
-  time      String?
-  reason    String?
-  note      String?
-  status    AppointmentStatus @default(PENDING)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id            String            @id @default(cuid())
+  userId        String
+  doctorId      String
+  clinicId      String?
+  date          DateTime
+  time          String?
+  reason        String?
+  note          String?
+  paymentMethod String?
+  fee           Int?
+  intake        Json?
+  status        AppointmentStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctor Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
@@ -239,7 +246,8 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  clinics ClinicProduct[]
+  clinics     ClinicProduct[]
+  favoritedBy FavoriteProduct[]
 }
 
 // ─────────────────────────────────────────────
@@ -293,4 +301,32 @@ model Blog {
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Favorites
+// ─────────────────────────────────────────────
+
+model FavoriteDoctor {
+  id        String   @id @default(cuid())
+  userId    String
+  doctorId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, doctorId])
+}
+
+model FavoriteProduct {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
 }

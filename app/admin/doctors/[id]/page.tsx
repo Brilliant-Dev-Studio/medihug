@@ -21,7 +21,7 @@ interface Doctor  {
   specialty: string; bio: string | null; phone: string | null;
   phoneSecondary: string | null; viber: string | null;
   imageUrl: string | null; experience: number; rating: number;
-  price: number; isAvailable: boolean; isActive: boolean;
+  price: number; isAvailable: boolean; isActive: boolean; isSuggested: boolean;
   qualifications: string | null; careerMm: string | null; careerEn: string | null;
   clinicNote: string | null; clinicNoteEn: string | null;
   clinicTypesMm: string[]; clinicTypesEn: string[];
@@ -69,6 +69,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       phone: doctor.phone ?? '', phoneSecondary: doctor.phoneSecondary ?? '',
       viber: doctor.viber ?? '', experience: doctor.experience,
       price: doctor.price, isAvailable: doctor.isAvailable, isActive: doctor.isActive,
+      isSuggested: doctor.isSuggested,
       qualifications: doctor.qualifications ?? '',
       careerMm: doctor.careerMm ?? '', careerEn: doctor.careerEn ?? '',
       clinicNote: doctor.clinicNote ?? '', clinicNoteEn: doctor.clinicNoteEn ?? '',
@@ -93,6 +94,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       price:         infoForm.price,
       isAvailable:   infoForm.isAvailable,
       isActive:      infoForm.isActive,
+      isSuggested:   infoForm.isSuggested,
       qualifications: infoForm.qualifications,
       careerMm:      infoForm.careerMm,
       careerEn:      infoForm.careerEn,
@@ -211,6 +213,12 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
               <Star className="w-3 h-3" />
               {doctor.isAvailable ? 'Available' : 'Unavailable'}
             </span>
+            {doctor.isSuggested && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-500">
+                <Star className="w-3 h-3 fill-amber-400" />
+                Suggested
+              </span>
+            )}
           </div>
         </div>
         <button onClick={startEditInfo}
@@ -315,6 +323,15 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
                   style={{ left: infoForm.isActive ? '1.25rem' : '0.125rem' }} />
               </button>
               <span className="text-sm text-gray-600">Active</span>
+            </label>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <button onClick={() => setInfoForm(f => ({ ...f, isSuggested: !f.isSuggested }))}
+                className="w-10 h-6 rounded-full transition-all relative shrink-0"
+                style={{ backgroundColor: infoForm.isSuggested ? '#f59e0b' : '#d1d5db' }}>
+                <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+                  style={{ left: infoForm.isSuggested ? '1.25rem' : '0.125rem' }} />
+              </button>
+              <span className="text-sm text-gray-600">Suggested</span>
             </label>
           </div>
 

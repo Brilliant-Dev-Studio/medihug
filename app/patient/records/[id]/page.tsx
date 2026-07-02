@@ -9,6 +9,8 @@ import {
   CheckCircle2, ZoomIn, X, Loader2,
 } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
+import { useFavorites } from '../../../lib/useFavorites';
+import IdentifyModal from '../../../components/IdentifyModal';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -43,7 +45,7 @@ export default function ProductDetailPage() {
   const [product,   setProduct]   = useState<Product | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [notFound,  setNotFound]  = useState(false);
-  const [favorited, setFavorited] = useState(false);
+  const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('product');
   const [zoom,      setZoom]      = useState(false);
 
   useEffect(() => {
@@ -72,6 +74,8 @@ export default function ProductDetailPage() {
       </div>
     );
   }
+
+  const favorited = favorites.has(product.id);
 
   // Build specs from real fields
   const specs = [
@@ -112,7 +116,7 @@ export default function ProductDetailPage() {
         </div>
       )}
       {/* Favorite */}
-      <button onClick={e => { e.stopPropagation(); setFavorited(f => !f); }}
+      <button onClick={e => { e.stopPropagation(); toggleFav(product.id); }}
         className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center">
         <Heart className="w-4.5 h-4.5" fill={favorited ? '#ef4444' : 'none'} stroke={favorited ? '#ef4444' : '#9ca3af'} />
       </button>
@@ -308,7 +312,7 @@ export default function ProductDetailPage() {
 
                 {viberButton}
 
-                <button onClick={() => setFavorited(f => !f)}
+                <button onClick={() => toggleFav(product.id)}
                   className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border font-semibold text-sm transition-all"
                   style={{ borderColor: favorited ? '#ef4444' : '#e5e7eb', color: favorited ? '#ef4444' : '#9ca3af', backgroundColor: favorited ? '#fff5f5' : '#fafafa' }}>
                   <Heart className="w-4 h-4" fill={favorited ? '#ef4444' : 'none'} />
@@ -334,7 +338,7 @@ export default function ProductDetailPage() {
           <div className="px-4 py-5 pb-36 flex flex-col gap-5">{productInfo}</div>
 
           <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-100 px-4 py-3 flex gap-3">
-            <button onClick={() => setFavorited(f => !f)}
+            <button onClick={() => toggleFav(product.id)}
               className="w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 transition-all"
               style={{ borderColor: favorited ? '#ef4444' : '#e5e7eb' }}>
               <Heart className="w-5 h-5" fill={favorited ? '#ef4444' : 'none'} stroke={favorited ? '#ef4444' : '#9ca3af'} />
@@ -348,6 +352,8 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {needsIdentity && <IdentifyModal mm={mm} onClose={closeIdentity} onSubmit={submitIdentity} />}
     </>
   );
 }
