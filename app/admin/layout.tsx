@@ -7,7 +7,7 @@ import Image from 'next/image';
 import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
-  ShieldCheck, Menu, X, ChevronRight, Bell, Building2, Tags, BookOpen, Layers,
+  ShieldCheck, Menu, X, ChevronRight, Bell, Building2, Tags, BookOpen, Layers, Megaphone,
 } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
@@ -32,6 +32,7 @@ const navGroups = [
       { href: '/admin/product-categories', icon: Layers,      mm: 'Category',           en: 'Categories' },
       { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs' },
       { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories' },
+      { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers' },
       { href: '/admin/reports',          icon: BarChart2,  mm: 'အစီရင်ခံစာ',            en: 'Reports' },
       { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records' },
     ],

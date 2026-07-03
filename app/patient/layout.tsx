@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
-  PanelLeftClose, PanelLeftOpen, UserCircle,
+  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
@@ -18,6 +18,11 @@ const navItems = [
   { href: '/patient/records',      icon: ShoppingBag,     mm: 'Products များ',      en: 'Products' },
   { href: '/patient/appointments', icon: Calendar,        mm: 'ချိန်းဆိုမှု',      en: 'Appointments' },
   { href: '/patient/settings',     icon: UserCircle,      mm: 'ပရိုဖိုင်',           en: 'Profile' },
+];
+
+// Shown only in the desktop sidebar, not the mobile bottom nav
+const desktopOnlyNavItems = [
+  { href: '/patient/blog', icon: Newspaper, mm: 'ဆောင်းပါးများ', en: 'Blog' },
 ];
 
 const PRIMARY = 'var(--color-primary)';
@@ -116,6 +121,27 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               </Link>
             );
           })}
+
+          <div className="my-1 border-t border-gray-100" />
+
+          {desktopOnlyNavItems.map(({ href, icon: Icon, mm: labelMm, en: labelEn }) => {
+            const active = pathname === href || pathname.startsWith(href + '/');
+            return (
+              <Link
+                key={href}
+                href={href}
+                title={collapsed ? (mm ? labelMm : labelEn) : undefined}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${collapsed ? 'justify-center' : ''}`}
+                style={{
+                  backgroundColor: active ? PRIMARY : 'transparent',
+                  color: active ? '#fff' : '#6b7280',
+                }}
+              >
+                <Icon style={{ width: 20, height: 20, flexShrink: 0 }} />
+                {!collapsed && <span className="truncate">{mm ? labelMm : labelEn}</span>}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* User + Sign Out */}
@@ -161,7 +187,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         {/* Mobile scroll container */}
         <div
           ref={scrollRef}
-          className="lg:hidden h-screen overflow-y-auto pb-16 flex flex-col w-screen max-w-full"
+          className="lg:hidden h-screen overflow-y-auto overscroll-y-contain pb-16 flex flex-col w-screen max-w-full"
         >
           {/* Sticky mobile header */}
           <div

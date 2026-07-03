@@ -21,4 +21,5 @@ body {
   background: #ffffff;
   color: #171717;
   font-family: var(--font-poppins), sans-serif;
+  overscroll-behavior-y: none;
 }

@@ -6,64 +6,50 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
-const offers = [
-  {
-    id: 1,
-    bg: 'linear-gradient(135deg, #0d2b6e 0%, #1a6bcc 100%)',
-    img: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1200&h=400&fit=crop&q=90',
-    badge_mm: 'အထူးလျှော့စျေး',
-    badge_en: 'Special Discount',
-    title_mm: 'ပထမဆုံး Consultation ၅၀% လျှော့ပေးမည်',
-    title_en: '50% Off Your First Consultation',
-    desc_mm: 'ယနေ့ပင် ဆရာဝန်နှင့် ဆက်သွယ်ပြီး ကျန်းမာရေး စစ်ဆေးပါ',
-    desc_en: 'Connect with a doctor today and get your health checked',
-    cta_mm: 'ယခုပင် ချိန်းဆိုရန်',
-    cta_en: 'Book Now',
-    ctaBg: '#ffffff',
-    ctaColor: '#0d2b6e',
-  },
-  {
-    id: 2,
-    bg: 'linear-gradient(135deg, #065f46 0%, #10b981 100%)',
-    img: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=1200&h=400&fit=crop&q=90',
-    badge_mm: 'ဆေးဝါး အစီအစဉ်',
-    badge_en: 'Medicine Deal',
-    title_mm: 'ဆေးဝါး မှာယူခြင်း အခမဲ့ ပို့ဆောင်',
-    title_en: 'Free Delivery on All Medicine Orders',
-    desc_mm: 'ကျပ် ၅,၀၀၀ နှင့် အထက် မှာယူသောအခါ အိမ်တိုင်ရောက် ပို့ဆောင်ပေးမည်',
-    desc_en: 'Free home delivery for orders above 5,000 Ks',
-    cta_mm: 'ဆေးမှာရန်',
-    cta_en: 'Order Now',
-    ctaBg: '#ffffff',
-    ctaColor: '#065f46',
-  },
-  {
-    id: 3,
-    bg: 'linear-gradient(135deg, #7c2d12 0%, #f97316 100%)',
-    img: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=1200&h=400&fit=crop&q=90',
-    badge_mm: 'မိတ်ဖက် ဆေးရုံ',
-    badge_en: 'Partner Hospital',
-    title_mm: 'Asia Royal Hospital တွင် ၃၀% လျှော့စျေး',
-    title_en: '30% Discount at Asia Royal Hospital',
-    desc_mm: 'MediHug မှတဆင့် ချိန်းဆိုသောအခါ အထူးလျှော့ပေးမည်',
-    desc_en: 'Get exclusive discount when booking through MediHug',
-    cta_mm: 'ချိန်းဆိုရန်',
-    cta_en: 'Book Appointment',
-    ctaBg: '#ffffff',
-    ctaColor: '#7c2d12',
-  },
-];
+interface Offer {
+  id: string;
+  imageUrl: string;
+  badgeMm: string; badgeEn: string | null;
+  titleMm: string; titleEn: string | null;
+  descMm: string | null; descEn: string | null;
+  ctaMm: string; ctaEn: string | null;
+  ctaLink: string | null;
+  ctaColor: string;
+}
 
 export default function SpecialOffersBanner() {
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
   const { lang, tr } = useLang();
 
   useEffect(() => {
+    fetch('/api/special-offers')
+      .then(r => r.json())
+      .then(d => { setOffers(d.offers ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (offers.length < 2) return;
     const timer = setInterval(() => {
       setCurrent(prev => (prev + 1) % offers.length);
     }, 4500);
     return () => clearInterval(timer);
-  }, []);
+  }, [offers.length]);
+
+  if (loading) {
+    return (
+      <section className="w-full px-4 sm:px-6 pt-0 pb-4 sm:py-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="h-5 w-40 bg-gray-100 rounded animate-pulse mb-3" />
+          <div className="rounded-2xl bg-gray-100 animate-pulse" style={{ minHeight: '120px' }} />
+        </div>
+      </section>
+    );
+  }
+
+  if (offers.length === 0) return null;
 
   const offer = offers[current];
 
@@ -82,7 +68,7 @@ export default function SpecialOffersBanner() {
               transition={{ duration: 0.5 }}
               className="absolute inset-0"
             >
-              <Image src={offer.img} alt="offer" fill className="object-cover" />
+              <Image src={offer.imageUrl} alt="offer" fill className="object-cover" />
               <div className="absolute inset-0 bg-black/40" />
             </motion.div>
           </AnimatePresence>
@@ -91,38 +77,42 @@ export default function SpecialOffersBanner() {
           <div className="relative z-10 flex items-center justify-between px-4 sm:px-10 py-4 sm:py-8 gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
               <span className="text-[10px] sm:text-xs font-semibold bg-white/20 text-white px-2.5 py-0.5 rounded-full inline-block mb-1.5">
-                {lang === 'mm' ? offer.badge_mm : offer.badge_en}
+                {lang === 'mm' ? offer.badgeMm : (offer.badgeEn ?? offer.badgeMm)}
               </span>
               <h3 className="text-white text-xs sm:text-2xl font-bold leading-snug mb-1">
-                {lang === 'mm' ? offer.title_mm : offer.title_en}
+                {lang === 'mm' ? offer.titleMm : (offer.titleEn ?? offer.titleMm)}
               </h3>
-              <p className="text-white/80 text-[10px] sm:text-sm line-clamp-1">
-                {lang === 'mm' ? offer.desc_mm : offer.desc_en}
-              </p>
+              {(offer.descMm || offer.descEn) && (
+                <p className="text-white/80 text-[10px] sm:text-sm line-clamp-1">
+                  {lang === 'mm' ? (offer.descMm ?? offer.descEn) : (offer.descEn ?? offer.descMm)}
+                </p>
+              )}
             </div>
             <a
-              href="#"
+              href={offer.ctaLink || '#'}
               className="shrink-0 font-semibold text-[10px] sm:text-sm px-3 sm:px-7 py-1.5 sm:py-3 rounded-full hover:opacity-90 transition-opacity"
-              style={{ backgroundColor: offer.ctaBg, color: offer.ctaColor }}
+              style={{ backgroundColor: '#ffffff', color: offer.ctaColor }}
             >
-              {lang === 'mm' ? offer.cta_mm : offer.cta_en}
+              {lang === 'mm' ? offer.ctaMm : (offer.ctaEn ?? offer.ctaMm)}
             </a>
           </div>
 
           {/* Controls */}
-          <div className="relative z-10 flex items-center justify-end gap-1.5 px-3 pb-2">
-            <button onClick={() => setCurrent(prev => (prev - 1 + offers.length) % offers.length)} className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
-              <ChevronLeft className="w-3 h-3 text-white" />
-            </button>
-            <div className="flex gap-1">
-              {offers.map((_, i) => (
-                <button key={i} onClick={() => setCurrent(i)} className="w-1.5 h-1.5 rounded-full transition-all" style={{ backgroundColor: i === current ? '#fff' : 'rgba(255,255,255,0.4)' }} />
-              ))}
+          {offers.length > 1 && (
+            <div className="relative z-10 flex items-center justify-end gap-1.5 px-3 pb-2">
+              <button onClick={() => setCurrent(prev => (prev - 1 + offers.length) % offers.length)} className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+                <ChevronLeft className="w-3 h-3 text-white" />
+              </button>
+              <div className="flex gap-1">
+                {offers.map((_, i) => (
+                  <button key={i} onClick={() => setCurrent(i)} className="w-1.5 h-1.5 rounded-full transition-all" style={{ backgroundColor: i === current ? '#fff' : 'rgba(255,255,255,0.4)' }} />
+                ))}
+              </div>
+              <button onClick={() => setCurrent(prev => (prev + 1) % offers.length)} className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+                <ChevronRight className="w-3 h-3 text-white" />
+              </button>
             </div>
-            <button onClick={() => setCurrent(prev => (prev + 1) % offers.length)} className="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
-              <ChevronRight className="w-3 h-3 text-white" />
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </section>
