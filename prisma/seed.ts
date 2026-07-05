@@ -322,6 +322,67 @@ async function main() {
     doctorCount++;
   }
   console.log(`✅ ${doctorCount} Doctors seeded. (password: doctor123)`);
+
+  /* ── Products ── */
+  const products = [
+    {
+      name: 'ပါရာစီတမော', nameEn: 'Paracetamol 500mg',
+      description: 'အဖျားနှင့် ခေါင်းကိုက်ခြင်းအတွက် အသုံးများသော ဆေးဝါး', price: 2000, stock: 500,
+      imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&h=600&fit=crop',
+      category: 'ဆေးဝါး', brand: 'GPO', type: 'Tablet', strength: '500mg', packSize: '10 tablets/strip',
+      tags: ['500mg', 'Tablet'], keyBenefits: ['Reduces fever effectively', 'Relieves mild to moderate pain'],
+      rating: 4.6, reviewCount: 128, isActive: true,
+    },
+    {
+      name: 'ဗီတာမင် စီ', nameEn: 'Vitamin C 1000mg',
+      description: 'ကိုယ်ခံအား မြှင့်တင်ပေးသော ဗီတာမင်ဆေးပြား', price: 8500, stock: 300,
+      imageUrl: 'https://images.unsplash.com/photo-1550572017-edd951b55104?w=600&h=600&fit=crop',
+      category: 'Supplement', brand: 'Blackmores', type: 'Tablet', strength: '1000mg', packSize: '30 tablets/bottle',
+      tags: ['1000mg', 'Immunity'], keyBenefits: ['Boosts immune system', 'Antioxidant support'],
+      rating: 4.8, reviewCount: 245, isActive: true,
+    },
+    {
+      name: 'စီတာဖီး မျက်နှာသစ်ရည်', nameEn: 'Cetaphil Face Wash',
+      description: 'အရေပြားအမျိုးမျိုးအတွက် ညင်သာသော မျက်နှာသစ်ရည်', price: 12500, stock: 150,
+      imageUrl: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=600&h=600&fit=crop',
+      category: 'အရေပြားထိန်းသိမ်းမှု', brand: 'Cetaphil', type: 'Cleanser', strength: null, packSize: '250ml',
+      tags: ['Sensitive Skin', 'Fragrance Free'], keyBenefits: ['Gentle daily cleansing', 'Non-comedogenic'],
+      rating: 4.7, reviewCount: 198, isActive: true,
+    },
+    {
+      name: 'သွေးဖိအား တိုင်းကိရိယာ', nameEn: 'Digital Blood Pressure Monitor',
+      description: 'အိမ်တွင်း သွေးဖိအားတိုင်းတာနိုင်သော ဒစ်ဂျစ်တယ် ကိရိယာ', price: 45000, stock: 60,
+      imageUrl: 'https://images.unsplash.com/photo-1583912267550-d44c9c9c4b3d?w=600&h=600&fit=crop',
+      category: 'ဆေးကိရိယာများ', brand: 'Omron', type: 'Device', strength: null, packSize: '1 unit',
+      tags: ['Digital', 'Home Use'], keyBenefits: ['Accurate one-touch reading', 'Large display screen'],
+      rating: 4.7, reviewCount: 88, isActive: true,
+    },
+    {
+      name: 'ကလေး ရေချိုးလိမ်းဆီ', nameEn: 'Baby Dove Body Lotion',
+      description: 'ကလေးအရေပြားအတွက် နူးညံ့သော ကာကွယ်ရေးလိမ်းဆီ', price: 5500, stock: 220,
+      imageUrl: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&h=600&fit=crop',
+      category: 'မိခင်နှင့်ကလေး', brand: 'Dove', type: 'Lotion', strength: null, packSize: '200ml',
+      tags: ['Baby Safe', 'Hypoallergenic'], keyBenefits: ['24hr moisture lock', 'Dermatologist tested'],
+      rating: 4.9, reviewCount: 310, isActive: true,
+    },
+    {
+      name: 'အခွံမာသီး ပေါင်းစပ်ရေစို', nameEn: 'Mixed Nuts & Seeds Pack',
+      description: 'ကျန်းမာရေးနှင့်ညီညွတ်သော အာဟာရပြည့်ဝသည့် အခွံမာသီးများ', price: 9800, stock: 180,
+      imageUrl: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=600&h=600&fit=crop',
+      category: 'ကျန်းမာရေးအစားအစာ', brand: "Nature's Way", type: 'Snack', strength: null, packSize: '300g pack',
+      tags: ['Healthy Snack', 'High Protein'], keyBenefits: ['Rich in omega-3 & fiber', 'No added sugar'],
+      rating: 4.5, reviewCount: 76, isActive: true,
+    },
+  ];
+  let productCount = 0;
+  for (const p of products) {
+    const existing = await db.product.findFirst({ where: { name: p.name } });
+    if (!existing) {
+      await db.product.create({ data: p });
+      productCount++;
+    }
+  }
+  console.log(`✅ ${productCount} Products seeded.`);
 }
 
 main()

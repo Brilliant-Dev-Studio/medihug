@@ -1,73 +1,28 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, BadgeCheck, Bookmark, ArrowRight } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
+import { useFavorites } from '../lib/useFavorites';
+import IdentifyModal from './IdentifyModal';
 
-const products = [
-  { id: 1, name: 'Paracetamol 500mg',        category: 'Fever & Pain Relief',   price: '1,500',  rating: 4.8, reviews: 320, color: '#ef4444',
-    imgs: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=300&h=300&fit=crop'] },
-  { id: 2, name: 'Vitamin C 1000mg',          category: 'Fitness & Supplements', price: '3,200',  rating: 4.9, reviews: 512, color: '#22c55e',
-    imgs: ['https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop'] },
-  { id: 3, name: 'Cetaphil Face Wash',        category: 'Skin Care',             price: '12,500', rating: 4.7, reviews: 198, color: '#f59e0b',
-    imgs: ['https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=300&h=300&fit=crop'] },
-  { id: 4, name: 'Dettol Antiseptic',         category: 'First Aid',             price: '2,800',  rating: 4.6, reviews: 275, color: '#e11d48',
-    imgs: ['https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop'] },
-  { id: 5, name: 'Omega-3 Fish Oil',          category: 'Fitness & Supplements', price: '8,900',  rating: 4.8, reviews: 430, color: '#3b82f6',
-    imgs: ['https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1550572017-edd951b55104?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=300&h=300&fit=crop'] },
-  { id: 6, name: 'Baby Dove Body Lotion',     category: 'Mother & Baby Care',    price: '5,500',  rating: 4.9, reviews: 610, color: '#a855f7',
-    imgs: ['https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=300&h=300&fit=crop'] },
-  { id: 7, name: 'Strepsils Throat Lozenges', category: 'Cough, Cold & Flu',     price: '1,800',  rating: 4.5, reviews: 160, color: '#06b6d4',
-    imgs: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=300&h=300&fit=crop&sat=-100','https://images.unsplash.com/photo-1631549916768-4119b2e5f926?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1559757175-5700dde675bc?w=300&h=300&fit=crop'] },
-  { id: 8, name: 'Glucometer Device',         category: 'Medical Devices',       price: '45,000', rating: 4.7, reviews: 88,  color: '#8b5cf6',
-    imgs: ['https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=300&h=300&fit=crop','https://images.unsplash.com/photo-1551190822-a9333d879b1f?w=300&h=300&fit=crop'] },
-];
+const PRIMARY = '#0d2b6e';
 
-type Product = typeof products[0];
+interface Product {
+  id: string; name: string; nameEn: string | null;
+  imageUrl: string | null; price: number;
+  rating: number; reviewCount: number; category: string | null;
+}
 
-function ProductCard({ product }: { product: Product }) {
-  const [slide, setSlide] = useState(0);
-  const total = product.imgs.length;
-  const prev = (e: React.MouseEvent) => { e.stopPropagation(); setSlide(s => (s - 1 + total) % total); };
-  const next = (e: React.MouseEvent) => { e.stopPropagation(); setSlide(s => (s + 1) % total); };
-
+function SkeletonCard() {
   return (
-    <div className="shrink-0 w-72 rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col">
-      {/* Slider */}
-      <div className="relative overflow-hidden bg-gray-50" style={{ height: 176 }}>
-        {product.imgs.map((src, i) => (
-          <div key={i} className="absolute inset-0 transition-opacity duration-300" style={{ opacity: i === slide ? 1 : 0, zIndex: i === slide ? 1 : 0 }}>
-            <Image src={src} alt={product.name} fill className="object-cover" />
-          </div>
-        ))}
-        <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center">
-          <ChevronLeft className="w-4 h-4 text-white" />
-        </button>
-        <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/30 flex items-center justify-center">
-          <ChevronRight className="w-4 h-4 text-white" />
-        </button>
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1">
-          {product.imgs.map((_, i) => (
-            <button key={i} onClick={e => { e.stopPropagation(); setSlide(i); }}
-              className="rounded-full transition-all"
-              style={{ width: i === slide ? 14 : 5, height: 5, backgroundColor: i === slide ? '#fff' : 'rgba(255,255,255,0.5)' }} />
-          ))}
-        </div>
-      </div>
-
-      {/* Info */}
-      <div className="p-4 flex flex-col gap-2 flex-1">
-        <span className="text-xs font-medium" style={{ color: product.color }}>{product.category}</span>
-        <h3 className="text-sm font-semibold text-gray-800 leading-snug">{product.name}</h3>
-        <div className="flex items-center gap-1">
-          <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-          <span className="text-xs font-semibold text-gray-700">{product.rating}</span>
-          <span className="text-xs text-gray-400">({product.reviews})</span>
-        </div>
-        <div className="mt-auto pt-2">
-          <span className="text-sm font-bold" style={{ color: '#0d2b6e' }}>{product.price} Ks</span>
-        </div>
+    <div className="shrink-0 w-64 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="aspect-4/5 bg-gray-100 animate-pulse" />
+      <div className="p-5 flex flex-col gap-2">
+        <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
+        <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-1/2" />
       </div>
     </div>
   );
@@ -75,40 +30,114 @@ function ProductCard({ product }: { product: Product }) {
 
 export default function TopSellingProducts() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { tr } = useLang();
+  const { tr, lang } = useLang();
+  const mm = lang === 'mm';
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('product');
+
+  useEffect(() => {
+    fetch('/api/admin/products?isActive=true&pageSize=8')
+      .then(r => r.json())
+      .then(d => { setProducts(d.products ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
   const scroll = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' });
+    scrollRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
   };
 
-  return (
-    <section className="w-full px-6 py-10">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg sm:text-2xl font-bold" style={{ color: '#0d2b6e' }}>{tr.topProductsTitle}</h2>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.topProductsSubtitle}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <a href="#" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: '#0d2b6e', borderColor: '#0d2b6e' }}>
-              {tr.viewAll}
-            </a>
-            <div className="flex gap-2">
-              <button onClick={() => scroll('left')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <ChevronLeft className="w-4 h-4 text-gray-500" />
-              </button>
-              <button onClick={() => scroll('right')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
-          </div>
-        </div>
+  if (!loading && products.length === 0) return null;
 
-        <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
-          {products.map(p => <ProductCard key={p.id} product={p} />)}
+  return (
+    <section className="relative w-full py-10 overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at top right, rgba(13,43,110,0.06) 0%, transparent 55%), radial-gradient(ellipse at bottom left, rgba(245,158,11,0.08) 0%, transparent 55%)' }}
+      />
+      <div className="relative z-10 max-w-6xl mx-auto px-6 flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-xl sm:text-3xl font-bold text-gray-900">{tr.topProductsTitle}</h2>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.topProductsSubtitle}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/patient/records" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
+            {tr.viewAll}
+          </Link>
+          <div className="flex gap-2">
+            <button onClick={() => scroll('left')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <ChevronLeft className="w-4 h-4 text-gray-500" />
+            </button>
+            <button onClick={() => scroll('right')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Card row — bleeds past the container's right edge */}
+      <div
+        ref={scrollRef}
+        className="relative z-10 flex gap-5 overflow-x-auto pb-2 pl-6 sm:pl-8 pr-6"
+        style={{ scrollbarWidth: 'none', paddingLeft: 'max(1.5rem, calc((100vw - 72rem) / 2 + 1.5rem))' }}
+      >
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : (
+          products.map(p => {
+            const name = mm ? p.name : (p.nameEn ?? p.name);
+            const favorited = favorites.has(p.id);
+
+            return (
+              <div key={p.id} className="shrink-0 w-64 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+
+                {/* Image */}
+                <div className="relative w-full aspect-4/5 overflow-hidden bg-gray-50">
+                  {p.imageUrl ? (
+                    <Image src={p.imageUrl} alt={name} fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-5xl">💊</div>
+                  )}
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <BadgeCheck className="w-3.5 h-3.5 text-white" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white">{mm ? 'အာမခံပစ္စည်း' : 'Verified Product'}</span>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-5 flex flex-col gap-3">
+                  <div>
+                    {p.category && <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{p.category}</p>}
+                    <h3 className="text-base font-semibold text-gray-900 leading-snug mt-1 truncate">{name}</h3>
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      {p.price.toLocaleString()} MMK · {p.rating.toFixed(1)} {mm ? 'ရေးတင်ချက်' : 'rating'}{p.reviewCount > 0 ? ` (${p.reviewCount})` : ''}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      onClick={() => toggleFav(p.id)}
+                      className="w-11 h-11 shrink-0 rounded-full border border-gray-200 flex items-center justify-center transition-colors hover:bg-gray-50"
+                    >
+                      <Bookmark className="w-4 h-4" fill={favorited ? '#111827' : 'none'} stroke={favorited ? '#111827' : '#374151'} />
+                    </button>
+                    <Link
+                      href={`/patient/records/${p.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-gray-900 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-opacity"
+                    >
+                      {mm ? 'ဝယ်ယူရန်' : 'Buy Now'}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {needsIdentity && <IdentifyModal mm={mm} onClose={closeIdentity} onSubmit={submitIdentity} />}
     </section>
   );
 }

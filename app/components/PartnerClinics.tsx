@@ -1,192 +1,183 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, MapPin, Phone, Clock } from 'lucide-react';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, BadgeCheck, Phone, ArrowRight, Star, MapPin } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
-const clinics = [
-  {
-    id: 1,
-    name: 'Asia Royal Hospital',
-    type_mm: 'ဆေးရုံ',
-    type_en: 'Hospital',
-    location_mm: 'မင်္ဂလာတောင်ညွန့်မြို့နယ်၊ ရန်ကုန်',
-    location_en: 'Mingalar Taung Nyunt, Yangon',
-    phone: '09 123 456 789',
-    hours_mm: 'နေ့ ၂၄ နာရီ ဖွင့်',
-    hours_en: 'Open 24 Hours',
-    color: '#0d2b6e',
-    bg: '#eff6ff',
-    img: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=400&h=200&fit=crop',
-    specialties_mm: ['အထွေထွေ', 'နှလုံးရောဂါ', 'ကလေးသူငယ်'],
-    specialties_en: ['General', 'Cardiology', 'Pediatrics'],
-  },
-  {
-    id: 2,
-    name: 'Pun Hlaing Hospital',
-    type_mm: 'ဆေးရုံ',
-    type_en: 'Hospital',
-    location_mm: 'လှိုင်သာယာ၊ ရန်ကုန်',
-    location_en: 'Hlaing Thar Yar, Yangon',
-    phone: '09 987 654 321',
-    hours_mm: 'နံနက် ၈ နာရီ — ည ၁၀ နာရီ',
-    hours_en: '8:00 AM — 10:00 PM',
-    color: '#22c55e',
-    bg: '#f0fdf4',
-    img: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&h=200&fit=crop',
-    specialties_mm: ['အရေပြား', 'မျက်စိ', 'အဆစ်ရောဂါ'],
-    specialties_en: ['Dermatology', 'Ophthalmology', 'Orthopedics'],
-  },
-  {
-    id: 3,
-    name: 'Shwe Minn Thar Clinic',
-    type_mm: 'ဆေးခန်း',
-    type_en: 'Clinic',
-    location_mm: 'ဗဟန်းမြို့နယ်၊ ရန်ကုန်',
-    location_en: 'Bahan Township, Yangon',
-    phone: '09 456 789 123',
-    hours_mm: 'နံနက် ၉ နာရီ — ည ၉ နာရီ',
-    hours_en: '9:00 AM — 9:00 PM',
-    color: '#f59e0b',
-    bg: '#fffbeb',
-    img: 'https://images.unsplash.com/photo-1504439468489-c8920d796a29?w=400&h=200&fit=crop',
-    specialties_mm: ['သွားဘက်', 'ကိုယ်ဝန်', 'ဆေးဝါး'],
-    specialties_en: ['Dentistry', 'Obstetrics', 'Pharmacy'],
-  },
-  {
-    id: 4,
-    name: 'Naypyidaw General Hospital',
-    type_mm: 'ဆေးရုံ',
-    type_en: 'Hospital',
-    location_mm: 'နေပြည်တော်',
-    location_en: 'Naypyidaw',
-    phone: '09 321 654 987',
-    hours_mm: 'နေ့ ၂၄ နာရီ ဖွင့်',
-    hours_en: 'Open 24 Hours',
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
-    img: 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=400&h=200&fit=crop',
-    specialties_mm: ['အထွေထွေ', 'ဦးနှောက်', 'ကင်ဆာ'],
-    specialties_en: ['General', 'Neurology', 'Oncology'],
-  },
-  {
-    id: 5,
-    name: 'Mandalay Specialist Hospital',
-    type_mm: 'ဆေးရုံ',
-    type_en: 'Hospital',
-    location_mm: 'ချမ်းအေးသာစံ၊ မန္တလေး',
-    location_en: 'Chan Aye Thar San, Mandalay',
-    phone: '09 789 123 456',
-    hours_mm: 'နံနက် ၇ နာရီ — ည ၁၁ နာရီ',
-    hours_en: '7:00 AM — 11:00 PM',
-    color: '#ef4444',
-    bg: '#fef2f2',
-    img: 'https://images.unsplash.com/photo-1551190822-a9333d879b1f?w=400&h=200&fit=crop',
-    specialties_mm: ['နှလုံး', 'ကျောက်ကပ်', 'ဆေးဝါး'],
-    specialties_en: ['Cardiology', 'Nephrology', 'Pharmacy'],
-  },
-  {
-    id: 6,
-    name: 'City Care Clinic',
-    type_mm: 'ဆေးခန်း',
-    type_en: 'Clinic',
-    location_mm: 'ဒဂုံမြို့နယ်၊ ရန်ကုန်',
-    location_en: 'Dagon Township, Yangon',
-    phone: '09 654 321 789',
-    hours_mm: 'နံနက် ၈ နာရီ — ညနေ ၆ နာရီ',
-    hours_en: '8:00 AM — 6:00 PM',
-    color: '#06b6d4',
-    bg: '#ecfeff',
-    img: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&h=200&fit=crop',
-    specialties_mm: ['ကလေးသူငယ်', 'မိခင်', 'ဆေးဝါး'],
-    specialties_en: ['Pediatrics', 'Maternity', 'Pharmacy'],
-  },
-];
+const PRIMARY = '#0d2b6e';
+
+interface Clinic {
+  id: string;
+  name: string; nameEn: string | null;
+  type: 'CLINIC' | 'PHARMACY' | 'HOSPITAL';
+  address: string | null; addressEn: string | null;
+  township: string | null;
+  phone: string | null;
+  openTime: string | null; closeTime: string | null;
+  imageUrl: string | null;
+  rating: number; reviewCount: number;
+  tagsMm: string[]; tagsEn: string[];
+}
+
+const TYPE_LABEL: Record<Clinic['type'], { mm: string; en: string }> = {
+  HOSPITAL: { mm: 'ဆေးရုံ', en: 'Hospital' },
+  CLINIC: { mm: 'ဆေးခန်း', en: 'Clinic' },
+  PHARMACY: { mm: 'ဆေးဆိုင်', en: 'Pharmacy' },
+};
+
+function SkeletonCard() {
+  return (
+    <div className="shrink-0 w-64 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden">
+      <div className="h-40 bg-gray-100 animate-pulse" />
+      <div className="p-5 flex flex-col gap-2">
+        <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
+        <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-1/2" />
+      </div>
+    </div>
+  );
+}
 
 export default function PartnerClinics() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { lang, tr } = useLang();
+  const mm = lang === 'mm';
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/clinics?limit=10')
+      .then(r => r.json())
+      .then(d => { setClinics(d.clinics ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
   const scroll = (dir: 'left' | 'right') => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' });
+    scrollRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
   };
 
+  if (!loading && clinics.length === 0) return null;
+
   return (
-    <section className="w-full px-6 py-10">
-      <div className="max-w-6xl mx-auto">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-lg sm:text-2xl font-bold" style={{ color: '#0d2b6e' }}>{tr.partnerTitle}</h2>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.partnerSubtitle}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <a href="#" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: '#0d2b6e', borderColor: '#0d2b6e' }}>
-              {tr.seeAll}
-            </a>
-            <div className="flex gap-2">
-              <button onClick={() => scroll('left')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <ChevronLeft className="w-4 h-4 text-gray-500" />
-              </button>
-              <button onClick={() => scroll('right')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                <ChevronRight className="w-4 h-4 text-gray-500" />
-              </button>
-            </div>
+    <section className="relative w-full py-10 overflow-hidden">
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M14 7 L14 21 M7 14 L21 14' stroke='%230d2b6e' stroke-opacity='0.06' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'repeat',
+        }}
+      />
+      <div className="relative z-10 max-w-6xl mx-auto px-6 flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-xl sm:text-3xl font-bold text-gray-900">{tr.partnerTitle}</h2>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.partnerSubtitle}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/patient/categories" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
+            {tr.seeAll}
+          </Link>
+          <div className="flex gap-2">
+            <button onClick={() => scroll('left')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <ChevronLeft className="w-4 h-4 text-gray-500" />
+            </button>
+            <button onClick={() => scroll('right')} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Cards */}
-        <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-          {clinics.map(({ id, name, type_mm, type_en, location_mm, location_en, phone, hours_mm, hours_en, color, bg, img, specialties_mm, specialties_en }) => (
-            <div key={id} className="shrink-0 w-72 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
+      {/* Card row — bleeds past the container's right edge */}
+      <div
+        ref={scrollRef}
+        className="relative z-10 flex gap-5 overflow-x-auto pb-2 pl-6 sm:pl-8 pr-6"
+        style={{ scrollbarWidth: 'none', paddingLeft: 'max(1.5rem, calc((100vw - 72rem) / 2 + 1.5rem))' }}
+      >
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : (
+          clinics.map(c => {
+            const name = mm ? c.name : (c.nameEn ?? c.name);
+            const address = mm ? (c.address ?? c.addressEn) : (c.addressEn ?? c.address);
+            const location = [address, c.township].filter(Boolean).join(', ');
+            const hours = c.openTime && c.closeTime ? `${c.openTime} — ${c.closeTime}` : null;
+            const tags = mm ? c.tagsMm : c.tagsEn;
 
-              {/* Image */}
-              <div className="relative w-full h-36 overflow-hidden">
-                <Image src={img} alt={name} fill className="object-cover" />
-                {/* Type Badge */}
-                <span className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: color }}>
-                  {lang === 'mm' ? type_mm : type_en}
-                </span>
+            return (
+              <div key={c.id} className="shrink-0 w-64 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+
+                {/* Image */}
+                <div className="relative w-full h-40 overflow-hidden bg-gray-50">
+                  {c.imageUrl && <Image src={c.imageUrl} alt={name} fill className="object-cover" />}
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <BadgeCheck className="w-3.5 h-3.5 text-white" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white">{mm ? TYPE_LABEL[c.type].mm : TYPE_LABEL[c.type].en}</span>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="p-5 flex flex-col gap-3">
+                  <div>
+                    <h3 className="font-serif text-xl text-gray-900 leading-snug truncate">{name}</h3>
+                    {location && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
+                        <p className="text-xs text-gray-400 truncate">{location}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span className="text-xs font-semibold text-gray-700">{c.rating.toFixed(1)}</span>
+                    {c.reviewCount > 0 && <span className="text-xs text-gray-400">({c.reviewCount})</span>}
+                    {hours && (
+                      <>
+                        <span className="text-xs text-gray-300">·</span>
+                        <span className="text-xs text-gray-400">{hours}</span>
+                      </>
+                    )}
+                  </div>
+
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {tags.slice(0, 2).map(t => (
+                        <span key={t} className="text-[10px] font-semibold text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">{t}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {c.phone && (
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-3 h-3 text-gray-400 shrink-0" />
+                      <span className="text-xs text-gray-500">{c.phone}</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 mt-1">
+                    {c.phone && (
+                      <a
+                        href={`tel:${c.phone}`}
+                        className="w-11 h-11 shrink-0 rounded-full border border-gray-200 flex items-center justify-center transition-colors hover:bg-gray-50"
+                      >
+                        <Phone className="w-4 h-4 text-gray-700" />
+                      </a>
+                    )}
+                    <Link
+                      href={`/patient/clinics/${c.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-gray-900 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-opacity"
+                    >
+                      {tr.viewDetails}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
               </div>
-
-              {/* Info */}
-              <div className="p-4 flex flex-col gap-2.5 flex-1">
-                <h3 className="text-sm font-bold text-gray-800 leading-snug">{name}</h3>
-
-                <div className="flex items-start gap-2 text-xs text-gray-500">
-                  <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color }} />
-                  {lang === 'mm' ? location_mm : location_en}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Phone className="w-3.5 h-3.5 shrink-0" style={{ color }} />
-                  {phone}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Clock className="w-3.5 h-3.5 shrink-0" style={{ color }} />
-                  {lang === 'mm' ? hours_mm : hours_en}
-                </div>
-
-                {/* Specialties */}
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {(lang === 'mm' ? specialties_mm : specialties_en).map(s => (
-                    <span key={s} className="text-xs px-2 py-0.5 rounded-full" style={{ color, backgroundColor: bg }}>
-                      {s}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Button */}
-                <button className="w-full mt-auto py-2.5 rounded-xl text-xs font-semibold text-white" style={{ backgroundColor: '#0d2b6e' }}>
-                  {tr.viewDetails}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
+            );
+          })
+        )}
       </div>
     </section>
   );

@@ -9,8 +9,10 @@ export const t = {
     help: 'အကူအညီ',
     signin: 'ဝင်ရောက်ရန်',
     register: 'စာရင်းသွင်းရန်',
+    navBlog: 'ဆောင်းပါးများ',
 
     // Hero
+    heroBadge: 'MediHug ကျန်းမာရေးပလက်ဖောင်း',
     heroTitle: 'ကျန်းမာရေးစောင့်ရှောက်မှု၊ သင့်လက်တစ်ကမ်းမှာ။',
     heroDesc: 'MediHug ဖြင့် အချိန်မရွေး၊ နေရာမရွေး အထူးကုဆရာဝန်ကြီးများနှင့် တိုက်ရိုက်ဗီဒီယိုကောလ် ပြသပြီး သင့်ကျန်းမာရေးကို စိတ်ချရဆုံး စောင့်ရှောက်လိုက်ပါ။',
     getCareNow: 'စာရင်းသွင်းရန်',
@@ -54,6 +56,8 @@ export const t = {
     seeAll: 'အားလုံးကြည့်ရန်',
 
     // Footer
+    footerCtaTitle: 'ယနေ့ပင် သင့်ကျန်းမာရေးကို စတင်ဂရုစိုက်လိုက်ပါ',
+    footerCtaSubtitle: 'မိနစ်ပိုင်းအတွင်း အခမဲ့ စာရင်းသွင်းနိုင်ပါသည်',
     footerTagline: 'ပိုမိုကောင်းမွန်သော ကျန်းမာရေးအတွက် တည်ဆောက်ထားသည်',
     copyright: '© 2025 MediHug. မူပိုင်ခွင့်အားလုံး ကြယ်ဝသည်။',
     quickLinks: 'အမြန်လင့်ခ်များ',
@@ -61,6 +65,8 @@ export const t = {
     telemedicine: 'အဝေးမှ ဆေးကုသမှု',
     doctorConsultation: 'ဆရာဝန် တိုင်ပင်ဆွေးနွေးမှု',
     emergencyCare: 'အရေးပေါ် ကုသမှု',
+    footerSupport: 'ပံ့ပိုးမှု',
+    footerOperational: 'စနစ်များ ပုံမှန်လည်ပတ်နေသည်',
 
     // Blog
     blogTitle: 'ဆောင်းပါးများ',
@@ -84,8 +90,10 @@ export const t = {
     help: 'Help',
     signin: 'Sign in',
     register: 'Register now',
+    navBlog: 'Blog',
 
     // Hero
+    heroBadge: 'MediHug Health Platform',
     heroTitle: 'Connecting you to better health',
     heroDesc: 'MediHug connects patients and care providers for medical care, mental health, chronic condition management and more.',
     getCareNow: 'Register Now',
@@ -129,6 +137,8 @@ export const t = {
     seeAll: 'See All',
 
     // Footer
+    footerCtaTitle: 'Start taking care of your health today',
+    footerCtaSubtitle: 'Free registration takes less than a minute',
     footerTagline: 'Built with ❤️ for better health',
     copyright: '© 2025 MediHug. All rights reserved.',
     quickLinks: 'Quick Links',
@@ -136,6 +146,8 @@ export const t = {
     telemedicine: 'Telemedicine',
     doctorConsultation: 'Doctor Consultation',
     emergencyCare: 'Emergency Care',
+    footerSupport: 'Support',
+    footerOperational: 'All systems operational',
 
     // Blog
     blogTitle: 'Articles & Blog',

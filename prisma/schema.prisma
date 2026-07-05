@@ -353,3 +353,18 @@ model SpecialOffer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+// ─────────────────────────────────────────────
+// Ads (patient dashboard top slider)
+// ─────────────────────────────────────────────
+
+model Ad {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  alt       String?
+  link      String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

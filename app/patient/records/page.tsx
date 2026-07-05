@@ -1,8 +1,8 @@
 'use client';
 import { theme } from '../../lib/theme'; void theme;
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -185,14 +185,23 @@ function CardSkeleton() {
 }
 
 export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsPageInner />
+    </Suspense>
+  );
+}
+
+function ProductsPageInner() {
   const { lang } = useLang();
   const mm = lang === 'mm';
+  const searchParams = useSearchParams();
 
   const [allProducts, setAllProducts]           = useState<Product[]>([]);
   const [categories,  setCategories]            = useState<Category[]>([]);
   const [loading,     setLoading]               = useState(true);
   const [search,      setSearch]                = useState('');
-  const [filterCat,   setFilterCat]             = useState('all');
+  const [filterCat,   setFilterCat]             = useState(() => searchParams.get('category') ?? 'all');
   const [filterSize,  setFilterSize]            = useState('all');
   const [priceMin,    setPriceMin]              = useState(0);
   const [priceMax,    setPriceMax]              = useState(50000);
