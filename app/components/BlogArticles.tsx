@@ -55,13 +55,6 @@ export default function BlogArticles() {
 
   return (
     <section className="relative w-full px-6 py-10 overflow-hidden">
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M0 0 L28 0 L28 28 L0 28 Z' fill='none' stroke='%230d2b6e' stroke-opacity='0.05' stroke-width='1'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-        }}
-      />
       <div className="relative z-10 max-w-6xl mx-auto">
 
         <div className="flex items-center justify-between mb-6">
@@ -93,7 +86,7 @@ export default function BlogArticles() {
 
                 return (
                   <Link key={b.id} href={`/patient/blog/article/${b.slug}`}
-                    className="shrink-0 w-72 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                    className="shrink-0 w-72 bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
 
                     {/* Image */}
                     <div className="relative w-full h-40 overflow-hidden bg-gray-50">

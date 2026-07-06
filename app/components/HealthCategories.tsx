@@ -24,7 +24,7 @@ const ICON_MAP: Record<string, { icon: LucideIcon; color: string; bg: string }> 
 const DEFAULT_STYLE = { icon: Pill, color: '#6b7280', bg: '#f9fafb' };
 
 function SkeletonTile() {
-  return <div className="rounded-2xl bg-gray-100 animate-pulse h-32" />;
+  return <div className="rounded-2xl bg-gray-100 animate-pulse h-20 sm:h-32" />;
 }
 
 export default function HealthCategories() {
@@ -53,7 +53,7 @@ export default function HealthCategories() {
           {tr.categoriesTitle}
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
           {loading ? (
             Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
           ) : (
@@ -66,7 +66,7 @@ export default function HealthCategories() {
                 <Link
                   key={cat.id}
                   href={`/patient/records?category=${encodeURIComponent(cat.name)}`}
-                  className="group relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl px-4 py-6 text-center transition-all duration-300 hover:-translate-y-1 border border-white/50 backdrop-blur-xl"
+                  className="group relative flex flex-col items-center gap-1.5 sm:gap-3 overflow-hidden rounded-2xl sm:rounded-3xl px-2 py-3 sm:px-4 sm:py-6 text-center transition-all duration-300 hover:-translate-y-1 border border-white/50 backdrop-blur-xl"
                   style={{
                     background: `linear-gradient(150deg, ${style.color}26 0%, ${style.color}0a 100%)`,
                     boxShadow: '0 8px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)',
@@ -79,13 +79,13 @@ export default function HealthCategories() {
                   />
 
                   <div
-                    className="relative flex items-center justify-center rounded-full border border-white/60 backdrop-blur-md transition-transform duration-300 group-hover:scale-110"
-                    style={{ width: 56, height: 56, backgroundColor: `${style.color}22` }}
+                    className="relative flex items-center justify-center rounded-full border border-white/60 backdrop-blur-md transition-transform duration-300 group-hover:scale-110 w-9 h-9 sm:w-14 sm:h-14"
+                    style={{ backgroundColor: `${style.color}22` }}
                   >
-                    <Icon style={{ color: style.color }} className="w-6 h-6" strokeWidth={2.2} />
+                    <Icon style={{ color: style.color }} className="w-4 h-4 sm:w-6 sm:h-6" strokeWidth={2.2} />
                   </div>
 
-                  <span className="relative text-xs sm:text-sm font-semibold text-gray-800 leading-snug">
+                  <span className="relative text-[10px] sm:text-sm font-semibold text-gray-800 leading-snug">
                     {label}
                   </span>
                 </Link>

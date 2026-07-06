@@ -18,7 +18,7 @@ interface Product {
 
 function SkeletonCard() {
   return (
-    <div className="shrink-0 w-64 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden">
+    <div className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden">
       <div className="aspect-4/5 bg-gray-100 animate-pulse" />
       <div className="p-5 flex flex-col gap-2">
         <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
@@ -90,7 +90,7 @@ export default function TopSellingProducts() {
             const favorited = favorites.has(p.id);
 
             return (
-              <div key={p.id} className="shrink-0 w-64 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+              <div key={p.id} className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
 
                 {/* Image */}
                 <div className="relative w-full aspect-4/5 overflow-hidden bg-gray-50">
@@ -106,7 +106,7 @@ export default function TopSellingProducts() {
                 </div>
 
                 {/* Body */}
-                <div className="p-5 flex flex-col gap-3">
+                <div className="p-3 sm:p-5 flex flex-col gap-2 sm:gap-3">
                   <div>
                     {p.category && <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{p.category}</p>}
                     <h3 className="text-base font-semibold text-gray-900 leading-snug mt-1 truncate">{name}</h3>
@@ -118,7 +118,7 @@ export default function TopSellingProducts() {
                   <div className="flex items-center gap-2 mt-1">
                     <button
                       onClick={() => toggleFav(p.id)}
-                      className="w-11 h-11 shrink-0 rounded-full border border-gray-200 flex items-center justify-center transition-colors hover:bg-gray-50"
+                      className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-full border border-gray-200 flex items-center justify-center transition-colors hover:bg-gray-50"
                     >
                       <Bookmark className="w-4 h-4" fill={favorited ? '#111827' : 'none'} stroke={favorited ? '#111827' : '#374151'} />
                     </button>

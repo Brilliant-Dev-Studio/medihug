@@ -81,7 +81,8 @@ export default function Home() {
               src="/doctors.jpg"
               alt="Doctor"
               fill
-              quality={95}
+              quality={100}
+              unoptimized
               sizes="(min-width: 640px) 448px, 384px"
               className="object-cover"
               style={{ objectPosition: '50% 20%' }}

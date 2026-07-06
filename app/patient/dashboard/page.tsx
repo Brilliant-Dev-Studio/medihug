@@ -474,7 +474,6 @@ export default function PatientDashboard() {
                           </span>
                         )}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: '#22c55e' }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm truncate" style={{ color: PRIMARY }}>{displayName}</p>

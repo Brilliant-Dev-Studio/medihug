@@ -66,12 +66,6 @@ function DoctorCard({ d, i, mm, favorited, onToggleFav }: { d: DoctorItem; i: nu
           <Heart className="w-3 h-3 lg:w-4 lg:h-4" style={{ color: favorited ? '#ef4444' : '#fff', fill: favorited ? '#ef4444' : 'transparent' }} />
         </button>
 
-        {/* Availability dot (desktop) */}
-        <span className={`hidden lg:flex absolute bottom-16 right-3.5 items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-full backdrop-blur-md ${d.isAvailable ? 'bg-emerald-500/85 text-white' : 'bg-black/40 text-white/80'}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${d.isAvailable ? 'bg-white animate-pulse' : 'bg-gray-300'}`} />
-          {d.isAvailable ? (mm ? 'အသင့်' : 'Available') : (mm ? 'မအားပါ' : 'Busy')}
-        </span>
-
         <div className="absolute bottom-0 left-0 right-0 px-2 lg:px-5 pb-1.5 lg:pb-4">
           <p className="text-[11px] lg:text-lg font-bold text-white leading-snug line-clamp-1 drop-shadow-sm">{displayName}</p>
           <span className="hidden lg:inline-block text-[11px] font-semibold text-white/90 mt-1 px-2.5 py-0.5 rounded-full backdrop-blur-md" style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}>

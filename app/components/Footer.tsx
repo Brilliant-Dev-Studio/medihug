@@ -9,7 +9,7 @@ const ACCENT = '#2ab5ad';
 
 function FooterLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="text-white/55 text-sm hover:text-white transition-colors">
+    <Link href={href} className="text-white/70 text-sm font-semibold hover:text-white transition-colors">
       {label}
     </Link>
   );
@@ -33,14 +33,14 @@ export default function Footer() {
 
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <Image src="/medihug-logo.png" alt="MediHug" width={32} height={32} className="object-contain w-7 h-7" />
+            <Image src="/medihug-logo.png" alt="MediHug" width={72} height={72} className="object-contain w-16 h-16" />
             <span className="text-base font-bold text-white">MediHug</span>
             <div className="flex items-center gap-2 ml-1.5">
               <a href="#" className="relative w-8 h-8 rounded-full overflow-hidden border border-white/15 hover:border-white/30 transition-colors">
                 <Image src="/socials/facebook.png" alt="Facebook" fill className="object-cover" />
               </a>
-              <a href="#" className="relative w-8 h-8 rounded-full overflow-hidden border border-white/15 hover:border-white/30 transition-colors">
-                <Image src="/socials/viberd.png" alt="Viber" fill className="object-cover" />
+              <a href="#" className="w-8 h-8 rounded-full border border-white/15 hover:border-white/30 transition-colors flex items-center justify-center">
+                <Image src="/socials/viberd.png" alt="Viber" width={20} height={20} className="object-contain w-5 h-5" />
               </a>
             </div>
           </div>
@@ -64,7 +64,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-white/10 mt-6 pt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-white/30 text-xs">{tr.copyright}</p>
+          <p className="text-white/50 text-xs font-semibold">{tr.copyright}</p>
         </div>
       </div>
     </footer>
