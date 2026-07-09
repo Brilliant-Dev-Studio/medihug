@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
+import "./knock-theme.css";
 import { LanguageProvider } from "./lib/LanguageContext";
 
 const poppins = Poppins({

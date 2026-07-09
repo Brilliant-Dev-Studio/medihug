@@ -10,7 +10,12 @@ import {
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
-import NotificationDropdown from '../components/NotificationDropdown';
+import NotificationBell from '@/components/NotificationBell';
+import PushPermissionButton from '@/components/PushPermissionButton';
+import { NotificationProvider } from '@/context/NotificationContext';
+
+// TODO: no patient auth/session exists yet in this codebase — replace with the real logged-in patient id once patient login is wired up.
+const DEMO_PATIENT_ID = 'demo-patient-001';
 
 const navItems = [
   { href: '/patient/dashboard',    icon: LayoutDashboard, mm: 'ပင်မ',              en: 'Dashboard' },
@@ -64,6 +69,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       : 'transparent';
 
   return (
+    <NotificationProvider userId={DEMO_PATIENT_ID}>
     <ThemeProvider>
     <div className="min-h-screen bg-gray-50 flex">
 
@@ -208,7 +214,8 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               />
             </Link>
             <div className="flex items-center gap-2">
-              <NotificationDropdown />
+              <NotificationBell userId={DEMO_PATIENT_ID} />
+              <PushPermissionButton />
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all duration-300"
                 style={{ backgroundColor: (scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)' }}
@@ -277,7 +284,8 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               );
             })()}
 
-            <NotificationDropdown />
+            <NotificationBell userId={DEMO_PATIENT_ID} />
+              <PushPermissionButton />
             <div className="flex items-center gap-2 pl-3 border-l border-gray-100">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
@@ -325,5 +333,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
     </div>
     </ThemeProvider>
+    </NotificationProvider>
   );
 }

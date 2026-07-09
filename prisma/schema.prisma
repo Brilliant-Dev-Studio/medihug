@@ -172,6 +172,19 @@ model Clinic {
   doctors      ClinicDoctor[]
   appointments Appointment[]
   products     ClinicProduct[]
+  gallery      ClinicGallery[]
+}
+
+model ClinicGallery {
+  id        String   @id @default(cuid())
+  clinicId  String
+  imageUrl  String
+  captionMm String?
+  captionEn String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 }
 
 model ClinicDoctor {
@@ -233,6 +246,7 @@ model Product {
   price       Int      @default(0)
   stock       Int      @default(0)
   imageUrl    String?
+  images      String[] @default([])
   category    String?
   brand       String?
   type        String?

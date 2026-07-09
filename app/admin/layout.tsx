@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
-  ShieldCheck, Menu, X, ChevronRight, Bell, Building2, Tags, BookOpen, Layers, Megaphone,
+  ShieldCheck, Menu, X, ChevronRight, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
 } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 const PRIMARY = '#2ab5ad';
 const DARK    = '#1a9990';
@@ -33,6 +34,7 @@ const navGroups = [
       { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs' },
       { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories' },
       { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers' },
+      { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads' },
       { href: '/admin/reports',          icon: BarChart2,  mm: 'အစီရင်ခံစာ',            en: 'Reports' },
       { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records' },
     ],
@@ -48,16 +50,17 @@ const navGroups = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
-  const [open, setOpen]         = useState(false);
-  const [bellOpen, setBellOpen] = useState(false);
+  const [open, setOpen]     = useState(false);
+  const [adminId, setAdminId] = useState<string | null>(null);
 
-  const NOTIFICATIONS = [
-    { id: 1, text: 'New appointment booked by Patient #124', time: '2 min ago', unread: true },
-    { id: 2, text: 'Dr. Aung Ko cancelled appointment #88',  time: '15 min ago', unread: true },
-    { id: 3, text: 'New patient registered: Ma Hnin Wai',     time: '1 hr ago',  unread: false },
-    { id: 4, text: 'Product stock low: Paracetamol 500mg',    time: '3 hr ago',  unread: false },
-  ];
-  const unreadCount = NOTIFICATIONS.filter(n => n.unread).length;
+  useEffect(() => {
+    if (pathname === '/admin/login') return;
+    let cancelled = false;
+    fetch('/api/admin/me').then(r => r.json()).then(d => {
+      if (!cancelled) setAdminId(d.admin?.id ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [pathname]);
 
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -172,51 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <p className="text-[11px] text-gray-400 leading-none mt-0.5">MediHug Super Admin</p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Notification bell */}
-            <div className="relative">
-              <button
-                onClick={() => setBellOpen(o => !o)}
-                className="relative w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[10px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: '#ef4444' }}>
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Dropdown */}
-              {bellOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setBellOpen(false)} />
-                  <div className="absolute right-0 top-11 z-50 w-80 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-bold text-gray-700">Notifications</p>
-                      {unreadCount > 0 && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>
-                          {unreadCount} new
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col divide-y divide-gray-50 max-h-72 overflow-y-auto">
-                      {NOTIFICATIONS.map(n => (
-                        <div key={n.id} className={`flex gap-3 px-4 py-3 ${n.unread ? 'bg-teal-50/50' : ''}`}>
-                          <div className="mt-1 w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: n.unread ? PRIMARY : '#d1d5db' }} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-700 leading-relaxed">{n.text}</p>
-                            <p className="text-[10px] text-gray-400 mt-0.5">{n.time}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <button className="w-full py-3 text-xs font-semibold text-center hover:bg-gray-50 transition-colors border-t border-gray-100" style={{ color: PRIMARY }}>
-                      View all notifications
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+            {adminId && <NotificationBell userId={adminId} />}
           </div>
         </header>
 

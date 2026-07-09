@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import ImageDropzone from '@/components/admin/ImageDropzone';
 
 const PRIMARY = '#2ab5ad';
 
@@ -92,14 +93,7 @@ export default function OfferForm({ editing }: { editing: Offer | null }) {
       {error && <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</div>}
 
       <Section title="Image">
-        <div><label className={lbl}>Image URL *</label>
-          <input className={inp} value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)} placeholder="https://images.unsplash.com/..." /></div>
-        {form.imageUrl && (
-          <div className="h-40 rounded-xl overflow-hidden border border-gray-100">
-            <img src={form.imageUrl} alt="preview" className="w-full h-full object-cover"
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-          </div>
-        )}
+        <ImageDropzone label="Banner Image *" value={form.imageUrl} onChange={v => set('imageUrl', v)} aspect="wide" />
       </Section>
 
       <Section title="Badge & Title">

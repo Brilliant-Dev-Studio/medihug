@@ -4,10 +4,11 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import TimePicker from '@/components/admin/TimePicker';
 import {
-  ArrowLeft, Loader2, X, ImagePlus, ShieldCheck,
+  ArrowLeft, Loader2, X, ShieldCheck,
   Phone, Globe, Clock, MapPin, Star, CheckCircle2,
   Stethoscope, Package, Building2,
 } from 'lucide-react';
+import ImageDropzone from '@/components/admin/ImageDropzone';
 
 const PRIMARY = '#2ab5ad';
 type ClinicType = 'CLINIC' | 'PHARMACY' | 'HOSPITAL';
@@ -52,28 +53,6 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
       <h2 className="font-semibold text-gray-700 text-sm flex items-center gap-2">{icon}{title}</h2>
       {children}
-    </div>
-  );
-}
-
-function ImageUrlField({ label, value, onChange, aspect }: {
-  label: string; value: string; onChange: (v: string) => void; aspect: 'square' | 'wide';
-}) {
-  return (
-    <div>
-      <label className={lbl}>{label}</label>
-      <div className="flex gap-2">
-        <input className={inp} value={value} onChange={e => onChange(e.target.value)} placeholder="https://..." />
-        <button type="button" disabled title="S3 upload — coming soon"
-          className="flex-shrink-0 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-gray-400 disabled:cursor-not-allowed">
-          <ImagePlus size={16} />
-        </button>
-      </div>
-      {value && (
-        <img src={value} alt="preview"
-          className={`mt-2 rounded-xl object-cover border border-gray-100 ${aspect === 'wide' ? 'w-full h-24' : 'h-16 w-16'}`}
-          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-      )}
     </div>
   );
 }
@@ -306,8 +285,8 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         <div className="space-y-5">
           <Section title="ဓာတ်ပုံများ">
             <p className="text-xs text-gray-400 -mt-2">S3 upload လာမည် — ယာယီ URL သုံးနိုင်</p>
-            <ImageUrlField label="Logo / ဓာတ်ပုံ (1:1)" value={form.imageUrl} onChange={v => set('imageUrl', v)} aspect="square" />
-            <ImageUrlField label="Cover Image (16:6)" value={form.coverUrl} onChange={v => set('coverUrl', v)} aspect="wide" />
+            <ImageDropzone label="Logo / ဓာတ်ပုံ (1:1)" value={form.imageUrl} onChange={v => set('imageUrl', v)} aspect="square" />
+            <ImageDropzone label="Cover Image (16:6)" value={form.coverUrl} onChange={v => set('coverUrl', v)} aspect="wide" />
           </Section>
 
           <Section title="Tags">

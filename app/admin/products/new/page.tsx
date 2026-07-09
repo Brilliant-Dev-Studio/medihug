@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, ImagePlus, Search, X, ChevronDown, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2, Search, X, ChevronDown, Plus } from 'lucide-react';
+import ImageDropzoneMulti from '@/components/admin/ImageDropzoneMulti';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
@@ -224,7 +225,7 @@ function BenefitsList({ benefits, onChange }: { benefits: string[]; onChange: (b
 
 const EMPTY = {
   name: '', nameEn: '', description: '',
-  price: 0, stock: 0, imageUrl: '', category: '',
+  price: 0, stock: 0, images: [] as string[], category: '',
   brand: '', type: '', strength: '', packSize: '',
   tags: [] as string[], keyBenefits: [] as string[],
   rating: 0, reviewCount: 0, isActive: true,
@@ -258,7 +259,8 @@ export default function NewProductPage() {
           description: form.description || null,
           price:       Number(form.price),
           stock:       Number(form.stock),
-          imageUrl:    form.imageUrl    || null,
+          imageUrl:    form.images[0]   || null,
+          images:      form.images,
           category:    form.category    || null,
           brand:       form.brand       || null,
           type:        form.type        || null,
@@ -363,22 +365,8 @@ export default function NewProductPage() {
 
         {/* RIGHT */}
         <div className="space-y-5">
-          <Section title="Image">
-            <p className="text-xs text-gray-400 -mt-2">S3 upload coming soon — use URL for now</p>
-            <div>
-              <label className={lbl}>Image URL</label>
-              <div className="flex gap-2">
-                <input className={inp} value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)} placeholder="https://..." />
-                <button type="button" disabled title="S3 upload — coming soon"
-                  className="shrink-0 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-gray-400 disabled:cursor-not-allowed">
-                  <ImagePlus size={16} />
-                </button>
-              </div>
-              {form.imageUrl && (
-                <img src={form.imageUrl} alt="preview" className="mt-3 h-40 w-40 rounded-2xl object-cover border border-gray-100"
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              )}
-            </div>
+          <Section title="Images">
+            <ImageDropzoneMulti label="Product Images" values={form.images} onChange={v => set('images', v)} max={5} />
           </Section>
 
           <Section title="Tags">

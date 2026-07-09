@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const {
       name, nameEn, specialty, specialtyEn, bio,
       phone, phoneSecondary, viber, password, imageUrl, experience, price,
-      isAvailable, slots,
+      isAvailable, slots, gallery,
     } = body;
 
     if (!name || !specialty || !phone || !password) {
@@ -110,9 +110,21 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      if (gallery && gallery.length > 0) {
+        await tx.doctorGallery.createMany({
+          data: gallery.map((g: { imageUrl: string; captionMm?: string; captionEn?: string }, i: number) => ({
+            doctorId:  doc.id,
+            imageUrl:  g.imageUrl,
+            captionMm: g.captionMm ?? '',
+            captionEn: g.captionEn ?? '',
+            order:     i,
+          })),
+        });
+      }
+
       return tx.doctor.findUnique({
         where:   { id: doc.id },
-        include: { slots: true },
+        include: { slots: true, gallery: true },
       });
     });
 

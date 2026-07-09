@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, nameEn, description, price, stock, imageUrl, category } = body;
+    const { name, nameEn, description, price, stock, imageUrl, images, category } = body;
 
 
     if (!name) return NextResponse.json({ error: 'name လိုအပ်သည်။' }, { status: 400 });
@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
         price:       price       ?? 0,
         stock:       stock       ?? 0,
         imageUrl:    imageUrl    || null,
+        images:      Array.isArray(images)     ? images.slice(0, 5) : [],
         category:    category    || null,
         brand:       brand       || null,
         type:        type        || null,

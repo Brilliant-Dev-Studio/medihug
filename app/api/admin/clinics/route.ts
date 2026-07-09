@@ -87,6 +87,19 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const { gallery } = body;
+    if (Array.isArray(gallery) && gallery.length > 0) {
+      await db.clinicGallery.createMany({
+        data: gallery.map((g: { imageUrl: string; captionMm?: string; captionEn?: string }, i: number) => ({
+          clinicId:  clinic.id,
+          imageUrl:  g.imageUrl,
+          captionMm: g.captionMm ?? '',
+          captionEn: g.captionEn ?? '',
+          order:     i,
+        })),
+      });
+    }
+
     return NextResponse.json({ clinic }, { status: 201 });
   } catch (e) {
     console.error(e);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Pencil, Trash2, Check, X, Loader2, BookOpen, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import ImageDropzone from '@/components/admin/ImageDropzone';
 
 const PRIMARY = '#2ab5ad';
 
@@ -143,12 +144,7 @@ export default function AdminBlogCategoriesPage() {
               className={inp}
             />
           </div>
-          <input
-            value={newImageUrl}
-            onChange={e => setNewImageUrl(e.target.value)}
-            placeholder="Image URL (optional — S3 URL)"
-            className={inp}
-          />
+          <ImageDropzone label="Image (optional)" value={newImageUrl} onChange={setNewImageUrl} aspect="square" />
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={savingNew}
               className="px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 flex items-center gap-1.5"
@@ -213,9 +209,7 @@ export default function AdminBlogCategoriesPage() {
                               <X className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                          <input value={editImageUrl} onChange={e => setEditImageUrl(e.target.value)}
-                            placeholder="Image URL (S3 URL)"
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-teal-400" />
+                          <ImageDropzone label="Image" value={editImageUrl} onChange={setEditImageUrl} aspect="square" />
                         </div>
                       </td>
                       <td /><td />

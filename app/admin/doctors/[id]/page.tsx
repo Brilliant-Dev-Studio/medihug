@@ -7,6 +7,7 @@ import {
   CheckCircle2, XCircle, Pencil, Plus, X, Check, Loader2, Save,
   Images, Trash2, GripVertical,
 } from 'lucide-react';
+import ImageDropzone from '@/components/admin/ImageDropzone';
 
 const PRIMARY   = '#2ab5ad';
 const DAYS      = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -493,19 +494,13 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
           {editGallery && (
             <div className="border border-dashed border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Add Photo</p>
-              <input className={inp} placeholder="Image URL (e.g. https://images.unsplash.com/...)"
-                value={newImg.imageUrl} onChange={e => setNewImg(n => ({ ...n, imageUrl: e.target.value }))} />
+              <ImageDropzone label="Photo" value={newImg.imageUrl} onChange={v => setNewImg(n => ({ ...n, imageUrl: v }))} aspect="wide" />
               <div className="grid grid-cols-2 gap-3">
                 <input className={inp} placeholder="Caption (Myanmar)" value={newImg.captionMm}
                   onChange={e => setNewImg(n => ({ ...n, captionMm: e.target.value }))} />
                 <input className={inp} placeholder="Caption (English)" value={newImg.captionEn}
                   onChange={e => setNewImg(n => ({ ...n, captionEn: e.target.value }))} />
               </div>
-              {newImg.imageUrl && (
-                <div className="h-28 rounded-xl overflow-hidden border border-gray-100">
-                  <img src={newImg.imageUrl} alt="preview" className="w-full h-full object-cover" />
-                </div>
-              )}
               <button onClick={addGalleryItem} disabled={!newImg.imageUrl.trim()}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-40"
                 style={{ backgroundColor: PRIMARY }}>

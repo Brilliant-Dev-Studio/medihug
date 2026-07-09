@@ -2,7 +2,8 @@
 
 import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, ImagePlus, Package, Search, X, ChevronDown, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2, Package, Search, X, ChevronDown, Plus } from 'lucide-react';
+import ImageDropzoneMulti from '@/components/admin/ImageDropzoneMulti';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
@@ -11,7 +12,7 @@ const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5';
 interface Product {
   id: string; name: string; nameEn: string | null;
   description: string | null; price: number; stock: number;
-  imageUrl: string | null; category: string | null; isActive: boolean;
+  imageUrl: string | null; images: string[]; category: string | null; isActive: boolean;
   brand: string | null; type: string | null; strength: string | null;
   packSize: string | null; tags: string[]; keyBenefits: string[];
   rating: number; reviewCount: number;
@@ -160,7 +161,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm]             = useState({
     name: '', nameEn: '', description: '',
-    price: 0, stock: 0, imageUrl: '', category: '', isActive: true,
+    price: 0, stock: 0, images: [] as string[], category: '', isActive: true,
     brand: '', type: '', strength: '', packSize: '',
     tags: [] as string[], keyBenefits: [] as string[],
     rating: 0, reviewCount: 0,
@@ -180,7 +181,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         description: p.description ?? '',
         price:       p.price,
         stock:       p.stock,
-        imageUrl:    p.imageUrl    ?? '',
+        images:      p.images ?? (p.imageUrl ? [p.imageUrl] : []),
         category:    p.category    ?? '',
         isActive:    p.isActive,
         brand:       p.brand       ?? '',
@@ -210,7 +211,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           description: form.description || null,
           price:       Number(form.price),
           stock:       Number(form.stock),
-          imageUrl:    form.imageUrl    || null,
+          imageUrl:    form.images[0]   || null,
+          images:      form.images,
           category:    form.category    || null,
           brand:       form.brand       || null,
           type:        form.type        || null,
@@ -324,22 +326,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
         {/* RIGHT */}
         <div className="space-y-5">
-          <Section title="Image">
-            <p className="text-xs text-gray-400 -mt-2">S3 upload coming soon — use URL for now</p>
-            <div>
-              <label className={lbl}>Image URL</label>
-              <div className="flex gap-2">
-                <input className={inp} value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)} placeholder="https://..." />
-                <button type="button" disabled title="S3 upload — coming soon"
-                  className="shrink-0 px-3 py-2.5 rounded-xl border border-dashed border-gray-300 text-gray-400 disabled:cursor-not-allowed">
-                  <ImagePlus size={16} />
-                </button>
-              </div>
-              {form.imageUrl && (
-                <img src={form.imageUrl} alt="preview" className="mt-3 h-40 w-40 rounded-2xl object-cover border border-gray-100"
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              )}
-            </div>
+          <Section title="Images">
+            <ImageDropzoneMulti label="Product Images" values={form.images} onChange={v => set('images', v)} max={5} />
           </Section>
 
           <Section title="Tags">

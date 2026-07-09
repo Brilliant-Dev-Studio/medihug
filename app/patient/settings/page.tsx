@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Camera, Check, ChevronDown, User, MapPin, Calendar, Shield, Bell, Palette, Heart, Stethoscope, Package, ChevronRight } from 'lucide-react';
+import { Camera, Check, ChevronDown, User, MapPin, Calendar, Shield, Bell, Palette, Heart, Stethoscope, Package, ChevronRight, Loader2 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import { useTheme } from '../../lib/ThemeContext';
 import { themes, ThemeId } from '../../lib/theme';
+import { compressAndUpload } from '@/components/admin/uploadImage';
 
 interface FavDoctor { id: string; name: string; nameEn: string | null; imageUrl: string | null; }
 interface FavProduct { id: string; name: string; nameEn: string | null; imageUrl: string | null; }
@@ -40,25 +41,48 @@ export default function ProfilePage() {
   const [saved, setSaved]       = useState(false);
   const [favDoctors, setFavDoctors]   = useState<FavDoctor[]>([]);
   const [favProducts, setFavProducts] = useState<FavProduct[]>([]);
+  const [phone, setPhone]             = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError]         = useState('');
 
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem('medihug_patient');
     if (!raw) return;
-    const { phone } = JSON.parse(raw) as { phone: string };
+    const { phone: p } = JSON.parse(raw) as { phone: string };
+    setPhone(p);
     Promise.all([
-      fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(phone)}&full=true`).then(r => r.json()),
-      fetch(`/api/patient/favorites/products?phone=${encodeURIComponent(phone)}&full=true`).then(r => r.json()),
-    ]).then(([d, p]) => {
+      fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(p)}&full=true`).then(r => r.json()),
+      fetch(`/api/patient/favorites/products?phone=${encodeURIComponent(p)}&full=true`).then(r => r.json()),
+      fetch(`/api/patient/profile?phone=${encodeURIComponent(p)}`).then(r => r.json()),
+    ]).then(([d, pr, prof]) => {
       setFavDoctors(d.doctors ?? []);
-      setFavProducts(p.products ?? []);
+      setFavProducts(pr.products ?? []);
+      if (prof.user?.profileImage) setAvatar(prof.user.profileImage);
     }).catch(() => {});
   }, []);
 
-  const handleAvatar = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setAvatar(URL.createObjectURL(file));
+    e.target.value = '';
+    if (!file || !phone) return;
+
+    setAvatarError('');
+    setAvatarUploading(true);
+    try {
+      const url = await compressAndUpload(file, () => {}, '/api/patient/upload');
+      const res = await fetch('/api/patient/profile', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, profileImage: url }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setAvatar(url);
+    } catch {
+      setAvatarError(mm ? 'ပုံတင်ရာတွင် အမှားရှိသည်' : 'Failed to upload image');
+    } finally {
+      setAvatarUploading(false);
+    }
   };
 
   const handleSave = () => {
@@ -306,13 +330,19 @@ export default function ProfilePage() {
       <div className="relative">
         <div className="w-24 h-24 rounded-full overflow-hidden border-4 shadow-sm" style={{ borderColor: `color-mix(in srgb, var(--color-primary) 25%, white)` }}>
           <Image src={avatar} alt="avatar" width={96} height={96} className="w-full h-full object-cover" />
+          {avatarUploading && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-white animate-spin" />
+            </div>
+          )}
         </div>
-        <button onClick={() => fileRef.current?.click()}
-          className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow-md border border-gray-100 flex items-center justify-center">
+        <button onClick={() => fileRef.current?.click()} disabled={avatarUploading}
+          className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow-md border border-gray-100 flex items-center justify-center disabled:opacity-50">
           <Camera className="w-4 h-4" style={{ color: PRIMARY }} />
         </button>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
       </div>
+      {avatarError && <p className="text-xs text-red-500">{avatarError}</p>}
       <div className="text-center">
         <p className="font-bold text-gray-800">{name || 'Patient User'}</p>
         <span className="text-xs font-semibold px-3 py-1 rounded-full mt-1 inline-block"
@@ -354,13 +384,19 @@ export default function ProfilePage() {
           <div className="relative">
             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
               <Image src={avatar} alt="avatar" width={96} height={96} className="w-full h-full object-cover" />
+              {avatarUploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                </div>
+              )}
             </div>
-            <button onClick={() => fileRef.current?.click()}
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center">
+            <button onClick={() => fileRef.current?.click()} disabled={avatarUploading}
+              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center disabled:opacity-50">
               <Camera className="w-4 h-4" style={{ color: PRIMARY }} />
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
           </div>
+          {avatarError && <p className="text-xs text-white mt-1.5">{avatarError}</p>}
           <p className="mt-3 text-white font-bold text-lg">{name || 'Patient User'}</p>
           <p className="text-white/60 text-xs mt-0.5">MediHug Patient</p>
         </div>

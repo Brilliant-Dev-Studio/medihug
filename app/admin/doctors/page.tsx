@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Search, Filter, Plus, ChevronLeft, ChevronRight,
-  ChevronDown, X, Eye, Star, Clock, Stethoscope,
+  ChevronDown, X, Eye, Star, Stethoscope,
   CheckCircle2, XCircle, Loader2,
 } from 'lucide-react';
 
@@ -30,235 +31,9 @@ interface Doctor {
 }
 
 const DAYS        = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const DAYS_MM     = ['တနင်္ဂနွေ','တနင်္လာ','အင်္ဂါ','ဗုဒ္ဓဟူး','ကြာသပတေး','သောကြာ','စနေ'];
 const AVATAR_COLORS = ['#2ab5ad','#8b5cf6','#f59e0b','#3b82f6','#10b981','#ef4444'];
-const SLOT_DURATION = 15; // fixed 15 min
 
-/* ─────────────────────────────────────────────
-   Create Doctor Drawer
-───────────────────────────────────────────── */
 interface SpecialtyItem { id: string; name: string; }
-
-const EMPTY_FORM = {
-  name:'', nameEn:'', specialty:'', bio:'', phone:'', password:'',
-  phoneSecondary:'', viber:'',
-  imageUrl:'', experience: 0, price: 0, isAvailable: true,
-};
-
-function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [form, setForm]               = useState(EMPTY_FORM);
-  const [slots, setSlots]             = useState<Slot[]>([]);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
-  const [step, setStep]               = useState<1|2>(1);
-  const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
-
-  useEffect(() => {
-    fetch('/api/admin/specialties').then(r => r.json()).then(d => setSpecialties(d.specialties ?? []));
-  }, []);
-
-  const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
-
-  const toggleDay = (day: number) => {
-    if (slots.find(s => s.dayOfWeek === day))
-      setSlots(s => s.filter(sl => sl.dayOfWeek !== day));
-    else
-      setSlots(s => [...s, { dayOfWeek: day, startTime: '09:00', endTime: '17:00', duration: SLOT_DURATION, maxPerSlot: 1 }]);
-  };
-  const updateSlot = (day: number, k: keyof Slot, v: string | number) =>
-    setSlots(s => s.map(sl => sl.dayOfWeek === day ? { ...sl, [k]: v } : sl));
-
-  const handleSubmit = async () => {
-    if (!form.name || !form.specialty || !form.phone || !form.password) {
-      setError('Name, Specialty, Phone, Password လိုအပ်သည်။'); return;
-    }
-    setError(''); setLoading(true);
-    try {
-      const res  = await fetch('/api/admin/doctors', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, slots }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Error'); setLoading(false); return; }
-      onCreated(); onClose();
-    } catch { setError('Server error'); setLoading(false); }
-  };
-
-  const inp = 'w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
-  const lbl = 'text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block';
-
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed right-0 top-0 h-full w-full max-w-lg z-50 bg-white shadow-2xl flex flex-col">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div>
-            <p className="text-base font-bold text-gray-800">Create Doctor</p>
-            <p className="text-xs text-gray-400">Step {step} of 2</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center">
-            <X className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-
-        {/* Progress */}
-        <div className="flex gap-1 px-6 pt-4">
-          {([1,2] as const).map(s => (
-            <div key={s} className="flex-1 h-1 rounded-full transition-all"
-              style={{ backgroundColor: step >= s ? PRIMARY : '#e5e7eb' }} />
-          ))}
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
-
-          {step === 1 && (<>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Doctor Info</p>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={lbl}>Name (Myanmar) *</label>
-                <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="ဒေါ်မြတ်မြတ်" /></div>
-              <div><label className={lbl}>Name (English)</label>
-                <input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} placeholder="Dr. Myat Myat" /></div>
-            </div>
-
-            <div><label className={lbl}>Specialty *</label>
-              <div className="relative">
-                <select className={inp + ' pr-8 appearance-none'} value={form.specialty} onChange={e => set('specialty', e.target.value)}>
-                  <option value="">-- ရွေးချယ်ပါ --</option>
-                  {specialties.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={lbl}>Experience (Years)</label>
-                <input type="number" min={0} className={inp} value={form.experience}
-                  onChange={e => set('experience', parseInt(e.target.value) || 0)} /></div>
-              <div><label className={lbl}>Price (MMK)</label>
-                <input type="number" min={0} className={inp} value={form.price}
-                  onChange={e => set('price', parseInt(e.target.value) || 0)} /></div>
-            </div>
-
-            <div><label className={lbl}>Bio</label>
-              <textarea rows={3} className={inp + ' resize-none'} value={form.bio}
-                onChange={e => set('bio', e.target.value)} placeholder="Doctor biography..." /></div>
-
-            <div><label className={lbl}>Profile Image URL</label>
-              <input className={inp} value={form.imageUrl} onChange={e => set('imageUrl', e.target.value)} placeholder="https://..." /></div>
-
-            <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-              <span className="text-sm text-gray-600 flex-1">Available for appointments</span>
-              <button onClick={() => set('isAvailable', !form.isAvailable)}
-                className="w-10 h-6 rounded-full transition-all relative"
-                style={{ backgroundColor: form.isAvailable ? PRIMARY : '#d1d5db' }}>
-                <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
-                  style={{ left: form.isAvailable ? '1.25rem' : '0.125rem' }} />
-              </button>
-            </div>
-
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Contact</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={lbl}>Main Phone *</label>
-                <input type="tel" className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="09XXXXXXXXX" /></div>
-              <div><label className={lbl}>Secondary Phone</label>
-                <input type="tel" className={inp} value={form.phoneSecondary} onChange={e => set('phoneSecondary', e.target.value)} placeholder="09XXXXXXXXX" /></div>
-            </div>
-            <div><label className={lbl}>Viber</label>
-              <input type="tel" className={inp} value={form.viber} onChange={e => set('viber', e.target.value)} placeholder="09XXXXXXXXX (Viber)" /></div>
-
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-2">Login Account</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={lbl}>Login Phone *</label>
-                <input type="tel" value={form.phone} readOnly className={inp + ' bg-gray-100 text-gray-400 cursor-not-allowed'} /></div>
-              <div><label className={lbl}>Password *</label>
-                <input type="password" className={inp} value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min 6 chars" /></div>
-            </div>
-          </>)}
-
-          {step === 2 && (<>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Weekly Slots</p>
-            <p className="text-xs text-gray-400">ရုံးနေ့ရက်တွေကို ရွေးပြီး အချိန်သတ်မှတ်ပါ</p>
-
-            <div className="flex flex-wrap gap-2">
-              {DAYS.map((d, i) => {
-                const active = !!slots.find(s => s.dayOfWeek === i);
-                return (
-                  <button key={d} onClick={() => toggleDay(i)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
-                    style={{ backgroundColor: active ? PRIMARY : 'transparent', borderColor: active ? PRIMARY : '#e5e7eb', color: active ? '#fff' : '#9ca3af' }}>
-                    {DAYS_MM[i]}
-                  </button>
-                );
-              })}
-            </div>
-
-            {[...slots].sort((a,b) => a.dayOfWeek - b.dayOfWeek).map(slot => (
-              <div key={slot.dayOfWeek} className="bg-gray-50 rounded-2xl p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-gray-700">{DAYS_MM[slot.dayOfWeek]} <span className="text-gray-400 font-normal">({DAYS[slot.dayOfWeek]})</span></p>
-                  <button onClick={() => toggleDay(slot.dayOfWeek)} className="text-gray-300 hover:text-red-400"><X className="w-4 h-4" /></button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div><label className={lbl}>Start Time</label>
-                    <input type="time" className={inp} value={slot.startTime} onChange={e => updateSlot(slot.dayOfWeek,'startTime',e.target.value)} /></div>
-                  <div><label className={lbl}>End Time</label>
-                    <input type="time" className={inp} value={slot.endTime} onChange={e => updateSlot(slot.dayOfWeek,'endTime',e.target.value)} /></div>
-                  <div><label className={lbl}>Duration</label>
-                    <div className={inp + ' flex items-center gap-2 text-gray-500'}>
-                      <Clock className="w-3.5 h-3.5 text-gray-400" />
-                      <span className="text-sm font-semibold" style={{ color: PRIMARY }}>15 min</span>
-                      <span className="text-xs text-gray-400">(fixed)</span>
-                    </div>
-                  </div>
-                  <div><label className={lbl}>Max per Slot</label>
-                    <input type="number" min={1} max={10} className={inp} value={slot.maxPerSlot}
-                      onChange={e => updateSlot(slot.dayOfWeek,'maxPerSlot',parseInt(e.target.value)||1)} /></div>
-                </div>
-              </div>
-            ))}
-
-            {slots.length === 0 && (
-              <div className="text-center py-10 text-gray-300">
-                <Clock className="w-8 h-8 mx-auto mb-2" />
-                <p className="text-sm">နေ့ရက်တစ်ခုခု ရွေးချယ်ပါ</p>
-              </div>
-            )}
-          </>)}
-
-          {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-500">{error}</div>}
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
-          {step === 2 && (
-            <button onClick={() => setStep(1)}
-              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">
-              ← Back
-            </button>
-          )}
-          {step === 1 && (
-            <button onClick={() => setStep(2)}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white"
-              style={{ backgroundColor: PRIMARY }}>
-              Next: Slots →
-            </button>
-          )}
-          {step === 2 && (
-            <button onClick={handleSubmit} disabled={loading}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2"
-              style={{ backgroundColor: PRIMARY }}>
-              {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : 'Create Doctor'}
-            </button>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
 
 /* ─────────────────────────────────────────────
    Main Page
@@ -273,7 +48,6 @@ export default function AdminDoctorsPage() {
   const [isActive,       setIsActive]       = useState('');
   const [page,           setPage]           = useState(1);
   const [showFilter,     setShowFilter]     = useState(false);
-  const [showCreate,     setShowCreate]     = useState(false);
   const [filterSpecialties, setFilterSpecialties] = useState<SpecialtyItem[]>([]);
   const PAGE_SIZE = 10;
 
@@ -314,11 +88,11 @@ export default function AdminDoctorsPage() {
             </div>
           ))}
         </div>
-        <button onClick={() => setShowCreate(true)}
+        <Link href="/admin/doctors/create"
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
           style={{ backgroundColor: PRIMARY }}>
           <Plus className="w-4 h-4" /> Create Doctor
-        </button>
+        </Link>
       </div>
 
       {/* Search + filter bar */}
@@ -503,8 +277,6 @@ export default function AdminDoctorsPage() {
           </div>
         )}
       </div>
-
-      {showCreate && <CreateDrawer onClose={() => setShowCreate(false)} onCreated={fetchDoctors} />}
     </div>
   );
 }

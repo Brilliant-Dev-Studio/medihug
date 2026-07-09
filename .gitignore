@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# generated at build/dev time from firebase-messaging-sw.template.js — contains inlined public config values
+/public/firebase-messaging-sw.js

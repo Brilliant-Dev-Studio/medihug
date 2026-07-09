@@ -1,0 +1,26 @@
+.rnf-notification-icon-button {
+  background-color: #f8fafc; /* slate-50 */
+  border: 1px solid #e2e8f0; /* slate-200 */
+  border-radius: 0.75rem;
+  color: #475569; /* slate-600 */
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.rnf-notification-icon-button:hover {
+  background-color: #f0fdfa; /* teal-50 */
+  color: #0d9488; /* teal-600 */
+}
+
+.rnf-notification-feed-popover {
+  --rnf-accent-color: #0d9488;
+  --rnf-accent-color-hover: #0f766e;
+  border-radius: 1rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+.rnf-notification-cell--unread {
+  background-color: #f8fafc;
+}
+.rnf-notification-feed__mark-all-as-read {
+  color: #0d9488;
+  font-weight: 600;
+}
