@@ -183,7 +183,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
   const initials = doctor.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className="flex flex-col gap-5 max-w-4xl">
+    <div className="flex flex-col gap-5 w-full">
 
       <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors w-fit">
         <ArrowLeft className="w-4 h-4" /> Back to Doctors
