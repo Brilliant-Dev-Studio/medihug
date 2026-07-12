@@ -11,7 +11,7 @@ const PRIMARY = '#0d2b6e';
 interface Clinic {
   id: string;
   name: string; nameEn: string | null;
-  type: 'CLINIC' | 'PHARMACY' | 'HOSPITAL';
+  type: string;
   address: string | null; addressEn: string | null;
   township: string | null;
   phone: string | null;
@@ -20,12 +20,6 @@ interface Clinic {
   rating: number; reviewCount: number;
   tagsMm: string[]; tagsEn: string[];
 }
-
-const TYPE_LABEL: Record<Clinic['type'], { mm: string; en: string }> = {
-  HOSPITAL: { mm: 'ဆေးရုံ', en: 'Hospital' },
-  CLINIC: { mm: 'ဆေးခန်း', en: 'Clinic' },
-  PHARMACY: { mm: 'ဆေးဆိုင်', en: 'Pharmacy' },
-};
 
 function SkeletonCard() {
   return (
@@ -57,8 +51,6 @@ export default function PartnerClinics() {
     if (!scrollRef.current) return;
     scrollRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
   };
-
-  if (!loading && clinics.length === 0) return null;
 
   return (
     <section className="relative w-full py-10 overflow-hidden">
@@ -97,6 +89,11 @@ export default function PartnerClinics() {
       >
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : clinics.length === 0 ? (
+          <div className="w-full flex flex-col items-center justify-center py-14 text-gray-300">
+            <Image src="/9169253-removebg-preview.png" alt="No data" width={80} height={80} className="opacity-70 mb-2" />
+            <p className="text-sm text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+          </div>
         ) : (
           clinics.map(c => {
             const name = mm ? c.name : (c.nameEn ?? c.name);
@@ -113,7 +110,7 @@ export default function PartnerClinics() {
                   {c.imageUrl && <Image src={c.imageUrl} alt={name} fill className="object-cover" />}
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
                     <BadgeCheck className="w-3.5 h-3.5 text-white" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white">{mm ? TYPE_LABEL[c.type].mm : TYPE_LABEL[c.type].en}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white">{c.type}</span>
                   </div>
                 </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   Heart, Baby, Brain, Eye, Bone, Droplets, Stethoscope,
@@ -61,9 +62,8 @@ export default function SpecialistDoctorsSection() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (!loading && specs.length === 0) return null;
-
   const shown = specs.slice(0, 6);
+  const empty = !loading && specs.length === 0;
 
   return (
     <>
@@ -80,6 +80,13 @@ export default function SpecialistDoctorsSection() {
         <div className="grid grid-cols-3 gap-1.5">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
+            : empty
+            ? (
+              <div className="col-span-3 flex flex-col items-center justify-center py-8 text-gray-300">
+                <Image src="/9169253-removebg-preview.png" alt="No data" width={56} height={56} className="opacity-70 mb-2" />
+                <p className="text-xs text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+              </div>
+            )
             : shown.map((s, i) => {
                 const { icon: Icon, color, bg } = ICON_PALETTE[i % ICON_PALETTE.length];
                 const label = mm ? s.name : (s.nameEn ?? s.name);
@@ -112,6 +119,13 @@ export default function SpecialistDoctorsSection() {
         <div className="grid grid-cols-2 gap-1.5">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} mobile />)
+            : empty
+            ? (
+              <div className="col-span-2 flex flex-col items-center justify-center py-8 text-gray-300">
+                <Image src="/9169253-removebg-preview.png" alt="No data" width={56} height={56} className="opacity-70 mb-2" />
+                <p className="text-xs text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+              </div>
+            )
             : shown.map((s, i) => {
                 const { icon: Icon, color, bg } = ICON_PALETTE[i % ICON_PALETTE.length];
                 const label = mm ? s.name : (s.nameEn ?? s.name);

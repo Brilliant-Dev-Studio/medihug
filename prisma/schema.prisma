@@ -30,12 +30,6 @@ enum AppointmentStatus {
   CANCELLED
 }
 
-enum ClinicType {
-  CLINIC
-  PHARMACY
-  HOSPITAL
-}
-
 // ─────────────────────────────────────────────
 // User (Patient)
 // ─────────────────────────────────────────────
@@ -102,6 +96,7 @@ model Doctor {
   slots         DoctorSlot[]
   gallery       DoctorGallery[]
   favoritedBy   FavoriteDoctor[]
+  blogs         Blog[]
 }
 
 // ─────────────────────────────────────────────
@@ -142,11 +137,18 @@ model DoctorSlot {
 // Clinic / Pharmacy (မိတ်ဖက် ဆေးဆိုင် / ဆေးခန်း)
 // ─────────────────────────────────────────────
 
+model PartnerType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  nameEn    String?
+  createdAt DateTime @default(now())
+}
+
 model Clinic {
   id          String     @id @default(cuid())
   name        String
   nameEn      String?
-  type        ClinicType @default(CLINIC)
+  type        String     @default("Clinic")
   address     String?
   addressEn   String?
   state       String?
@@ -224,6 +226,7 @@ model Appointment {
   note          String?
   paymentMethod String?
   fee           Int?
+  receiptUrl    String?
   intake        Json?
   status        AppointmentStatus @default(PENDING)
   createdAt     DateTime          @default(now())
@@ -303,18 +306,21 @@ model BlogCategory {
 // ─────────────────────────────────────────────
 
 model Blog {
-  id          String    @id @default(cuid())
-  title       String
-  titleEn     String?
-  slug        String    @unique
-  content     String
-  excerpt     String?
-  imageUrl    String?
-  category    String?
-  isPublished Boolean   @default(false)
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  title          String
+  titleEn        String?
+  slug           String    @unique
+  content        String
+  excerpt        String?
+  imageUrl       String?
+  category       String?
+  isPublished    Boolean   @default(false)
+  publishedAt    DateTime?
+  authorDoctorId String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  authorDoctor Doctor? @relation(fields: [authorDoctorId], references: [id], onDelete: SetNull)
 }
 
 // ─────────────────────────────────────────────

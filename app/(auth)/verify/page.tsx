@@ -69,7 +69,9 @@ export default function VerifyPage() {
     }
     toast.success(lang === 'mm' ? 'အတည်ပြုပြီးပါပြီ!' : 'Verified successfully!');
     setVerified(true);
-    setTimeout(() => router.push('/patient/dashboard'), 1500);
+    const role = sessionStorage.getItem('medihug_login_role');
+    const destination = role === 'DOCTOR' ? '/doctor/dashboard' : '/patient/dashboard';
+    setTimeout(() => router.push(destination), 1500);
   };
 
   const filled = otp.join('').length === 6;

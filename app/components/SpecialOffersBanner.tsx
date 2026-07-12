@@ -49,8 +49,6 @@ export default function SpecialOffersBanner() {
     );
   }
 
-  if (offers.length === 0) return null;
-
   const offer = offers[current];
 
   return (
@@ -58,7 +56,13 @@ export default function SpecialOffersBanner() {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-sm sm:text-2xl font-bold mb-3" style={{ color: '#0d2b6e' }}>{tr.specialOffersTitle}</h2>
 
-        <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: '120px' }}>
+        {offers.length === 0 ? (
+          <div className="rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center justify-center gap-2 text-gray-300" style={{ minHeight: '260px' }}>
+            <Image src="/9169253-removebg-preview.png" alt="No data" width={90} height={90} className="opacity-70" />
+            <p className="text-sm text-gray-400">{lang === 'mm' ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+          </div>
+        ) : (
+        <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: '260px' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={offer.id}
@@ -74,7 +78,7 @@ export default function SpecialOffersBanner() {
           </AnimatePresence>
 
           {/* Content */}
-          <div className="relative z-10 flex items-center justify-between px-4 sm:px-10 py-4 sm:py-8 gap-3 sm:gap-4">
+          <div className="relative z-10 flex items-center justify-between px-4 sm:px-10 py-8 sm:py-16 gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
               <span className="text-[10px] sm:text-xs font-semibold bg-white/20 text-white px-2.5 py-0.5 rounded-full inline-block mb-1.5">
                 {lang === 'mm' ? offer.badgeMm : (offer.badgeEn ?? offer.badgeMm)}
@@ -114,6 +118,7 @@ export default function SpecialOffersBanner() {
             </div>
           )}
         </div>
+        )}
       </div>
     </section>
   );

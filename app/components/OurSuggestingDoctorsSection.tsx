@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronRight, ChevronLeft, Star, Clock, Award, Globe2, Heart, Sparkles, ArrowUpRight } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
@@ -141,8 +142,6 @@ export default function OurSuggestingDoctorsSection() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (!loading && doctors.length === 0) return null;
-
   const scroll = (dir: 1 | -1) => {
     scrollRef.current?.scrollBy({ left: dir * 620, behavior: 'smooth' });
   };
@@ -174,6 +173,13 @@ export default function OurSuggestingDoctorsSection() {
       <div ref={scrollRef} className="min-w-0 w-full flex gap-2.5 lg:gap-4 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          : doctors.length === 0
+          ? (
+            <div className="w-full flex flex-col items-center justify-center py-10 text-gray-300">
+              <Image src="/9169253-removebg-preview.png" alt="No data" width={80} height={80} className="opacity-70 mb-2" />
+              <p className="text-sm text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+            </div>
+          )
           : doctors.map((d, i) => (
               <DoctorCard key={d.id} d={d} i={i} mm={mm} favorited={favorites.has(d.id)} onToggleFav={() => toggleFav(d.id)} />
             ))

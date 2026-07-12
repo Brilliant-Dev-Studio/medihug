@@ -53,8 +53,6 @@ export default function BlogCategoryCircles() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (!loading && cats.length === 0) return null;
-
   return (
     <div>
       <div className="flex items-center justify-between mb-3 lg:mb-4">
@@ -69,6 +67,13 @@ export default function BlogCategoryCircles() {
       <div className="flex gap-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {loading
           ? Array.from({ length: 8 }).map((_, i) => <SkeletonCircle key={i} />)
+          : cats.length === 0
+          ? (
+            <div className="w-full flex flex-col items-center justify-center py-8 text-gray-300">
+              <Image src="/9169253-removebg-preview.png" alt="No data" width={64} height={64} className="opacity-70 mb-2" />
+              <p className="text-xs text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+            </div>
+          )
           : cats.map((cat, i) => {
               const label = mm ? cat.name : (cat.nameEn ?? cat.name);
               const img   = cat.imageUrl ?? DUMMY_IMAGES[i % DUMMY_IMAGES.length];

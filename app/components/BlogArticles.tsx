@@ -51,8 +51,6 @@ export default function BlogArticles() {
     scrollRef.current.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' });
   };
 
-  if (!loading && blogs.length === 0) return null;
-
   return (
     <section className="relative w-full px-6 py-10 overflow-hidden">
       <div className="relative z-10 max-w-6xl mx-auto">
@@ -80,6 +78,13 @@ export default function BlogArticles() {
         <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
           {loading
             ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+            : blogs.length === 0
+            ? (
+              <div className="w-full flex flex-col items-center justify-center py-14 text-gray-300">
+                <Image src="/9169253-removebg-preview.png" alt="No data" width={80} height={80} className="opacity-70 mb-2" />
+                <p className="text-sm text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+              </div>
+            )
             : blogs.map(b => {
                 const title = mm ? b.title : (b.titleEn ?? b.title);
                 const date  = new Date(b.publishedAt ?? b.createdAt).toLocaleDateString(mm ? 'en-GB' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });

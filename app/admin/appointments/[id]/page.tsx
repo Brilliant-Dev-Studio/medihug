@@ -4,13 +4,14 @@ import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Loader2, Calendar, Clock, CreditCard, Phone,
-  User, FileText, Stethoscope, AlertTriangle,
+  User, FileText, Stethoscope, AlertTriangle, ZoomIn,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
   ViewSection, StatusChanger, LangDropdown, STATUS_STYLE, type Appointment,
 } from '../shared';
 import { useLang } from '../../../lib/LanguageContext';
+import ImageLightbox from '@/components/admin/ImageLightbox';
 
 export default function AdminAppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -19,6 +20,7 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
   const mm = lang === 'mm';
   const [appt, setAppt] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   const fetchAppt = useCallback(async () => {
     setLoading(true);
@@ -90,8 +92,10 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
               <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full self-center" style={{ backgroundColor: 'rgba(255,255,255,0.18)', color: '#fff' }}>
                 <s.icon className="w-3.5 h-3.5" /> {t(mm, s.label)}
               </span>
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0 bg-white/15 text-white border-2 border-white/30">
-                {appt.user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0 bg-white/15 text-white border-2 border-white/30 overflow-hidden">
+                {appt.user.profileImage
+                  ? <img src={appt.user.profileImage} alt={appt.user.name} className="w-full h-full object-cover" />
+                  : appt.user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">{appt.user.name}</h1>
@@ -139,6 +143,23 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
                 <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 capitalize">
                   <CreditCard className="w-4 h-4 shrink-0" style={{ color: PRIMARY }} />
                   <span className="text-xs font-semibold text-gray-600">{appt.paymentMethod}</span>
+                </div>
+              )}
+            </div>
+            <div className="h-px bg-gray-50" />
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{t(mm, { mm: 'ငွေလွှဲပြေစာ', en: 'Payment Receipt' })}</p>
+              {appt.receiptUrl ? (
+                <button type="button" onClick={() => setLightbox({ src: appt.receiptUrl!, alt: 'Payment receipt' })}
+                  className="group block relative w-full rounded-xl overflow-hidden border border-gray-100 bg-gray-50" style={{ aspectRatio: '4 / 3' }}>
+                  <img src={appt.receiptUrl} alt="Payment receipt" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
+                    <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </button>
+              ) : (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center" style={{ aspectRatio: '4 / 3' }}>
+                  <p className="text-xs text-gray-400">{t(mm, { mm: 'မတင်ရသေးပါ', en: 'Not uploaded' })}</p>
                 </div>
               )}
             </div>
@@ -203,10 +224,35 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
                 { label: t(mm, { mm: 'ဆေးမတည့်ခြင်း', en: 'Drug allergy' }),        value: d.drugAllergy === 'yes' ? (d.allergyDetail || t(mm, { mm: 'ရှိပါသည်', en: 'Yes' })) : t(mm, { mm: 'မရှိပါ', en: 'None' }) },
                 { label: t(mm, { mm: 'လက်ရှိ ဆေးဝါးများ', en: 'Current medications' }), value: (d.currentMeds ?? []).map(k => MED_MEDS[k] ? t(mm, MED_MEDS[k]) : k).join(', ') || '—' },
               ]} />
+
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t(mm, { mm: 'ဆေးမှတ်တမ်း / Film ဓာတ်ပုံ', en: 'Medical Records / Films' })}</p>
+                {(d.medicalFiles ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-400">{t(mm, { mm: 'မတင်ရသေးပါ', en: 'Not uploaded' })}</p>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                    {d.medicalFiles.map((f, i) => (
+                      <button key={i} type="button" onClick={() => setLightbox({ src: f.url, alt: f.name })}
+                        className="group relative rounded-xl overflow-hidden border border-gray-100 bg-gray-50" style={{ aspectRatio: '1' }}>
+                        <img src={f.url} alt={f.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
+                          <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <span className="absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                          style={{ backgroundColor: f.type === 'record' ? PRIMARY : '#f59e0b' }}>
+                          {f.type === 'record' ? t(mm, { mm: 'မှတ်တမ်း', en: 'Record' }) : 'Film'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
       </div>
+
+      {lightbox && <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />}
     </div>
   );
 }

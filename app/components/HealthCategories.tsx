@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   Thermometer, Salad, Stethoscope, Baby, Sun, Pill, type LucideIcon,
@@ -40,8 +41,6 @@ export default function HealthCategories() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (!loading && categories.length === 0) return null;
-
   return (
     <section className="relative w-full px-6 py-12 overflow-hidden">
       <div
@@ -56,6 +55,11 @@ export default function HealthCategories() {
         <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
           {loading ? (
             Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
+          ) : categories.length === 0 ? (
+            <div className="col-span-3 md:col-span-6 flex flex-col items-center justify-center py-10 text-gray-300">
+              <Image src="/9169253-removebg-preview.png" alt="No data" width={80} height={80} className="opacity-70 mb-2" />
+              <p className="text-sm text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+            </div>
           ) : (
             categories.map(cat => {
               const style = ICON_MAP[cat.nameEn ?? ''] ?? DEFAULT_STYLE;

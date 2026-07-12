@@ -66,7 +66,11 @@ export default function ProfilePage() {
   const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !phone) return;
+    if (!file) return;
+    if (!phone) {
+      setAvatarError(mm ? 'အကောင့်ဖုန်းနံပါတ် ရှာမတွေ့ပါ။ ချိန်းဆိုမှုတစ်ခု ပြုလုပ်ပြီးမှ ထပ်ကြိုးစားပါ' : 'No account phone found — book an appointment first, then try again');
+      return;
+    }
 
     setAvatarError('');
     setAvatarUploading(true);
@@ -78,6 +82,7 @@ export default function ProfilePage() {
       });
       if (!res.ok) throw new Error('Save failed');
       setAvatar(url);
+      window.dispatchEvent(new CustomEvent('medihug-avatar-updated', { detail: url }));
     } catch {
       setAvatarError(mm ? 'ပုံတင်ရာတွင် အမှားရှိသည်' : 'Failed to upload image');
     } finally {

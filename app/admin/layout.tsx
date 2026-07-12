@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
   ShieldCheck, Menu, X, ChevronRight, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
+  Bell,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -22,7 +23,8 @@ const navGroups = [
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients' },
       { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors' },
       { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments' },
-      { href: '/admin/clinics',       icon: Building2,    mm: 'မိတ်ဖက် ဆေးဆိုင်/ဆေးခန်း', en: 'Clinics & Pharmacies' },
+      { href: '/admin/clinics',       icon: Building2,    mm: 'မိတ်ဖက်များ', en: 'Partners' },
+      { href: '/admin/partner-types', icon: Tags,         mm: 'မိတ်ဖက် အမျိုးအစားများ',    en: 'Partner Types' },
       { href: '/admin/specialties',   icon: Tags,         mm: 'အထူးကုဌာနများ',              en: 'Specialties' },
     ],
   },
@@ -42,6 +44,7 @@ const navGroups = [
   {
     label: 'System',
     items: [
+      { href: '/admin/notifications', icon: Bell,        mm: 'အသိပေးချက်များ',   en: 'Notifications' },
       { href: '/admin/settings',  icon: Settings,        mm: 'ဆက်တင်',           en: 'Settings' },
     ],
   },

@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
     const search   = searchParams.get('search')   ?? '';
     const status   = searchParams.get('status')   ?? '';
     const doctorId = searchParams.get('doctorId') ?? '';
+    const from     = searchParams.get('from')     ?? '';
+    const to       = searchParams.get('to')       ?? '';
     const page     = parseInt(searchParams.get('page')     ?? '1');
     const pageSize = parseInt(searchParams.get('pageSize') ?? '10');
 
@@ -22,6 +24,12 @@ export async function GET(req: NextRequest) {
     }
     if (status)   where.status   = status;
     if (doctorId) where.doctorId = doctorId;
+    if (from || to) {
+      where.date = {
+        ...(from ? { gte: new Date(from) } : {}),
+        ...(to   ? { lte: new Date(to)   } : {}),
+      };
+    }
 
     const [appointments, total] = await Promise.all([
       db.appointment.findMany({

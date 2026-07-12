@@ -64,8 +64,6 @@ export default function PartnerClinicsSlider() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (!loading && clinics.length === 0) return null;
-
   return (
     <div>
       <div className="flex items-center justify-between mb-3 lg:mb-4">
@@ -82,6 +80,15 @@ export default function PartnerClinicsSlider() {
         </Link>
       </div>
 
+      {!loading && clinics.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-gray-300 rounded-2xl border border-gray-100 bg-white">
+          <Image src="/9169253-removebg-preview.png" alt="No data" width={64} height={64} className="opacity-70 mb-2" />
+          <p className="text-xs text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+        </div>
+      )}
+
+      {(loading || clinics.length > 0) && (
+      <>
       {/* Mobile */}
       <div ref={scrollRef} className="lg:hidden flex flex-nowrap gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {loading
@@ -221,6 +228,8 @@ export default function PartnerClinicsSlider() {
             })
         }
       </div>
+      </>
+      )}
     </div>
   );
 }

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         nameEn:    nameEn    || null,
-        type:      type      || 'CLINIC',
+        type:      type      || 'Clinic',
         address:   address   || null,
         addressEn: addressEn || null,
         state:     state     || null,

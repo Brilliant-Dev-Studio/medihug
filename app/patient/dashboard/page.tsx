@@ -193,10 +193,18 @@ interface DoctorItem {
   specialty: string; rating: number; price: number; imageUrl: string | null;
 }
 
-const upcomingAppointments: {
+interface UpcomingAppointment {
   doctor_mm: string; doctor_en: string; spec_mm: string; spec_en: string;
-  date: string; time: string; img: string;
-}[] = [];
+  date: string; time: string; img: string; pending: boolean;
+}
+
+interface RawAppointment {
+  id: string;
+  date: string;
+  time: string | null;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
+}
 
 const AVATAR_COLORS = ['#2ab5ad', '#8b5cf6', '#f59e0b', '#3b82f6', '#10b981', '#ef4444'];
 
@@ -205,6 +213,7 @@ export default function PatientDashboard() {
   const mm = lang === 'mm';
   const [doctors, setDoctors] = useState<DoctorItem[]>([]);
   const [favCount, setFavCount] = useState(0);
+  const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
 
   useEffect(() => {
     fetch('/api/doctors?limit=100')
@@ -220,6 +229,27 @@ export default function PatientDashboard() {
       fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
       fetch(`/api/patient/favorites/products?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
     ]).then(([d, p]) => setFavCount((d.ids?.length ?? 0) + (p.ids?.length ?? 0))).catch(() => {});
+
+    fetch(`/api/patient/appointments?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(d => {
+        const raw: RawAppointment[] = d.appointments ?? [];
+        const upcoming = raw
+          .filter(a => a.status === 'PENDING' || a.status === 'CONFIRMED')
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .map(a => {
+            const dt = new Date(a.date);
+            const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            return {
+              doctor_mm: a.doctor.name, doctor_en: a.doctor.nameEn ?? a.doctor.name,
+              spec_mm: a.doctor.specialty, spec_en: a.doctor.specialtyEn ?? a.doctor.specialty,
+              date: dateStr, time: a.time ?? '',
+              img: a.doctor.imageUrl ?? '/avatar-placeholder.png',
+              pending: a.status === 'PENDING',
+            };
+          });
+        setUpcomingAppointments(upcoming);
+      }).catch(() => {});
   }, []);
 
   return (
@@ -377,8 +407,11 @@ export default function PatientDashboard() {
                         <span className="text-xs text-gray-400 lg:text-sm">{a.date} · {a.time}</span>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 lg:text-sm lg:px-4 lg:py-2" style={{ backgroundColor: '#eff6ff', color: PRIMARY }}>
-                      {mm ? 'အတည်ပြု' : 'Confirmed'}
+                    <span
+                      className="text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 lg:text-sm lg:px-4 lg:py-2"
+                      style={a.pending ? { backgroundColor: '#fffbeb', color: '#f59e0b' } : { backgroundColor: '#eff6ff', color: PRIMARY }}
+                    >
+                      {a.pending ? (mm ? 'စောင့်ဆိုင်း' : 'Pending') : (mm ? 'အတည်ပြု' : 'Confirmed')}
                     </span>
                   </div>
                 ))}

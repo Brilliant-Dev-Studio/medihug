@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { Knock } from '@knocklabs/node';
 import { db } from '@/lib/db';
+import { parseSlotTimes, maxPerSlotFor, dayBounds } from '@/lib/timeSlots';
 
 const knock = new Knock({ apiKey: process.env.KNOCK_API_KEY! });
 
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       name, phone, doctorId, date, time, reason, note,
-      paymentMethod, fee, intake,
+      paymentMethod, fee, receiptUrl, intake,
     } = body;
 
     if (!name || !phone || !doctorId || !date) {
@@ -24,6 +25,30 @@ export async function POST(req: NextRequest) {
     }
 
     const appointment = await db.$transaction(async (tx) => {
+      if (time) {
+        const requestedSlots = parseSlotTimes(time);
+        const { start, end } = dayBounds(date);
+        const dayOfWeek = start.getDay();
+
+        const [firstH, firstM] = requestedSlots[0].split(':').map(Number);
+        const target = new Date(start); target.setHours(firstH, firstM, 0, 0);
+        if (target.getTime() < Date.now()) throw new Error('PAST_SLOT');
+
+        const [windows, existing] = await Promise.all([
+          tx.doctorSlot.findMany({ where: { doctorId, dayOfWeek, isActive: true }, select: { startTime: true, endTime: true, maxPerSlot: true } }),
+          tx.appointment.findMany({ where: { doctorId, date: { gte: start, lt: end }, status: { not: 'CANCELLED' } }, select: { time: true } }),
+        ]);
+
+        const counts: Record<string, number> = {};
+        for (const a of existing) {
+          if (!a.time) continue;
+          for (const slot of parseSlotTimes(a.time)) counts[slot] = (counts[slot] ?? 0) + 1;
+        }
+
+        const isFull = requestedSlots.some(slot => (counts[slot] ?? 0) >= maxPerSlotFor(slot, windows));
+        if (isFull) throw new Error('SLOT_TAKEN');
+      }
+
       let user = await tx.user.findUnique({ where: { phone } });
       if (!user) {
         const hashedPassword = await bcrypt.hash(phone, 12);
@@ -42,6 +67,7 @@ export async function POST(req: NextRequest) {
           note:          note ?? null,
           paymentMethod: paymentMethod ?? null,
           fee:           fee ?? null,
+          receiptUrl:    receiptUrl ?? null,
           intake:        intake ?? undefined,
         },
         include: { doctor: true, user: true },
@@ -75,6 +101,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ appointment }, { status: 201 });
   } catch (e) {
+    if (e instanceof Error && e.message === 'SLOT_TAKEN') {
+      return NextResponse.json({ error: 'This time slot was just booked by someone else. Please choose another.' }, { status: 409 });
+    }
+    if (e instanceof Error && e.message === 'PAST_SLOT') {
+      return NextResponse.json({ error: 'This time slot has already passed. Please choose another.' }, { status: 409 });
+    }
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from './IntakeForm';
+import { compressAndUpload } from '@/components/admin/uploadImage';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -68,7 +69,7 @@ function BookingContent() {
     : slotStart;
 
   function handleFile(file: File) {
-    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') return;
+    if (!file.type.startsWith('image/')) return;
     setReceipt({ file, url: URL.createObjectURL(file) });
   }
 
@@ -87,6 +88,7 @@ function BookingContent() {
     setSubmitting(true);
     setSubmitErr('');
     try {
+      const receiptUrl = receipt ? await compressAndUpload(receipt.file, () => {}, '/api/patient/upload') : null;
       const res = await fetch('/api/patient/bookings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -99,6 +101,7 @@ function BookingContent() {
           note,
           paymentMethod: payMethod,
           fee: basePrice * sessions,
+          receiptUrl,
           intake,
         }),
       });

@@ -11,22 +11,16 @@ import {
 import ImageDropzone from '@/components/admin/ImageDropzone';
 
 const PRIMARY = '#2ab5ad';
-type ClinicType = 'CLINIC' | 'PHARMACY' | 'HOSPITAL';
 
-const TYPE_LABELS: Record<ClinicType, string> = { CLINIC: 'ဆေးခန်း', PHARMACY: 'ဆေးဆိုင်', HOSPITAL: 'ဆေးရုံ' };
-const TYPE_COLORS: Record<ClinicType, string> = {
-  CLINIC:   'bg-blue-100 text-blue-700',
-  PHARMACY: 'bg-green-100 text-green-700',
-  HOSPITAL: 'bg-purple-100 text-purple-700',
-};
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
 const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5';
 
 interface Doctor  { id: string; name: string; nameEn: string | null; imageUrl: string | null; specialty: string; }
 interface Product { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; }
+interface PartnerType { id: string; name: string; nameEn: string | null; }
 interface Clinic {
   id: string; name: string; nameEn: string | null;
-  type: ClinicType; address: string | null; addressEn: string | null;
+  type: string; address: string | null; addressEn: string | null;
   state: string | null; township: string | null;
   phone: string | null; website: string | null;
   imageUrl: string | null; coverUrl: string | null;
@@ -67,9 +61,10 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
   const [error, setError]       = useState('');
   const [allDoctors, setAllDoctors]   = useState<Doctor[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [partnerTypes, setPartnerTypes] = useState<PartnerType[]>([]);
 
   const [form, setForm] = useState({
-    name: '', nameEn: '', type: 'CLINIC' as ClinicType,
+    name: '', nameEn: '', type: '',
     phone: '', website: '', openTime: '', closeTime: '',
     address: '', addressEn: '', state: '', township: '',
     aboutMm: '', aboutEn: '',
@@ -84,7 +79,9 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       fetch(`/api/admin/clinics/${id}`).then(r => r.json()),
       fetch('/api/admin/doctors?pageSize=200').then(r => r.json()),
       fetch('/api/admin/products?pageSize=200&isActive=true').then(r => r.json()),
-    ]).then(([cd, dd, pd]) => {
+      fetch('/api/admin/partner-types').then(r => r.json()),
+    ]).then(([cd, dd, pd, ptd]) => {
+      setPartnerTypes(ptd.partnerTypes ?? []);
       const c: Clinic = cd.clinic;
       setClinic(c);
       setForm({
@@ -123,7 +120,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
   };
 
   const saveInfo = async () => {
-    if (!form.name.trim()) { setError('Clinic name လိုအပ်သည်။'); return; }
+    if (!form.name.trim()) { setError('Partner name လိုအပ်သည်။'); return; }
     setSaving(true); setError('');
     try {
       const res = await fetch(`/api/admin/clinics/${id}`, {
@@ -174,7 +171,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
     </div>
   );
   if (!clinic) return (
-    <div className="flex items-center justify-center h-[60vh] text-gray-400">Clinic မတွေ့ပါ</div>
+    <div className="flex items-center justify-center h-[60vh] text-gray-400">Partner မတွေ့ပါ</div>
   );
 
   const linkedDoctorIds  = (clinic.doctors  ?? []).map(d => d.doctor.id);
@@ -193,8 +190,8 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-gray-800 truncate">{clinic.name}</h1>
               {clinic.verified && <ShieldCheck size={16} className="text-[#2ab5ad] flex-shrink-0" />}
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${TYPE_COLORS[clinic.type]}`}>
-                {TYPE_LABELS[clinic.type]}
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 bg-teal-50 text-teal-700">
+                {clinic.type}
               </span>
             </div>
             {clinic.nameEn && <p className="text-xs text-gray-400">{clinic.nameEn}</p>}
@@ -246,11 +243,11 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         <div className="space-y-5">
           <Section title="အချက်အလက်အခြေခံ">
             {/* Type */}
-            <div className="flex gap-2">
-              {(['CLINIC','PHARMACY','HOSPITAL'] as ClinicType[]).map(t => (
-                <button key={t} type="button" onClick={() => set('type', t)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold border-2 transition-all ${form.type === t ? 'border-[#2ab5ad] bg-teal-50 text-[#2ab5ad]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                  {TYPE_LABELS[t]}
+            <div className="flex flex-wrap gap-2">
+              {partnerTypes.map(t => (
+                <button key={t.id} type="button" onClick={() => set('type', t.name)}
+                  className={`flex-1 min-w-20 py-2 rounded-xl text-xs font-semibold border-2 transition-all ${form.type === t.name ? 'border-[#2ab5ad] bg-teal-50 text-[#2ab5ad]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                  {t.name}
                 </button>
               ))}
             </div>

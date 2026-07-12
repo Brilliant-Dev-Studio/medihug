@@ -383,15 +383,36 @@ export default function FormViewPage() {
           </>
         )}
 
-        {/* files — not persisted (no upload storage yet) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl lg:rounded-3xl border border-gray-100 p-4 lg:p-5 flex items-center gap-3 lg:shadow-sm">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${P}12` }}>
-            <ImageIcon className="w-4 h-4" style={{ color: P }} />
+        {/* files */}
+        <div className="lg:col-span-2 bg-white rounded-2xl lg:rounded-3xl border border-gray-100 p-4 lg:p-5 flex flex-col gap-3 lg:shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${P}12` }}>
+              <ImageIcon className="w-4 h-4" style={{ color: P }} />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-700">{t(mm, { mm: 'ဆေးမှတ်တမ်း / Film ဓာတ်ပုံ', en: 'Medical Records / Films' })}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {(d?.medicalFiles ?? []).length > 0
+                  ? t(mm, { mm: `${d!.medicalFiles.length} ဖိုင်`, en: `${d!.medicalFiles.length} file(s)` })
+                  : t(mm, { mm: 'မတင်ရသေးပါ', en: 'Not uploaded yet' })}
+              </p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-700">{t(mm, { mm: 'ဆေးမှတ်တမ်း / Film ဓာတ်ပုံ', en: 'Medical Records / Films' })}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{t(mm, { mm: 'မတင်ရသေးပါ', en: 'Not uploaded yet' })}</p>
-          </div>
+          {(d?.medicalFiles ?? []).length > 0 && (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {d!.medicalFiles.map((f, i) => (
+                <a key={i} href={f.url} target="_blank" rel="noopener noreferrer"
+                  className="relative rounded-xl overflow-hidden border border-gray-100 bg-gray-50" style={{ aspectRatio: '1' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={f.url} alt={f.name} className="w-full h-full object-cover" />
+                  <span className="absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                    style={{ backgroundColor: f.type === 'record' ? P : '#f59e0b' }}>
+                    {f.type === 'record' ? t(mm, { mm: 'မှတ်တမ်း', en: 'Record' }) : 'Film'}
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* edit CTA at bottom — mobile only (desktop has header Edit button) */}

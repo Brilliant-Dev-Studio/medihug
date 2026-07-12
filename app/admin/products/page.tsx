@@ -100,6 +100,16 @@ export default function AdminProductsPage() {
     load();
   };
 
+  const pageNums = (() => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const nums: (number | '…')[] = [1];
+    if (page > 3) nums.push('…');
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) nums.push(i);
+    if (page < totalPages - 2) nums.push('…');
+    nums.push(totalPages);
+    return nums;
+  })();
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-5">
       {/* Header */}
@@ -110,8 +120,8 @@ export default function AdminProductsPage() {
         </div>
         <button
           onClick={() => router.push('/admin/products/new')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm hover:opacity-90"
-          style={{ backgroundColor: PRIMARY }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-[0_4px_14px_-4px_rgba(42,181,173,0.5)] hover:shadow-[0_6px_18px_-4px_rgba(42,181,173,0.6)] hover:-translate-y-px active:translate-y-0 transition-all"
+          style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)` }}
         >
           <Plus size={16} /> Add Product
         </button>
@@ -146,7 +156,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 size={28} className="animate-spin text-[#2ab5ad]" />
@@ -159,70 +169,70 @@ export default function AdminProductsPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-gray-50/80">
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Product</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Category</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Price</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-600">Stock</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600">Status</th>
-                <th className="px-4 py-3" />
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Product</th>
+                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Category</th>
+                <th className="text-right px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Price</th>
+                <th className="text-right px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Stock</th>
+                <th className="text-center px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3.5 w-20" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {products.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-4 py-3">
+                <tr key={p.id} onClick={() => router.push(`/admin/products/${p.id}`)} className="hover:bg-gray-50/60 transition-colors cursor-pointer">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       {p.imageUrl ? (
                         <img src={p.imageUrl} alt={p.name}
-                          className="h-10 w-10 rounded-xl object-cover border border-gray-100 shrink-0"
+                          className="h-11 w-11 rounded-xl object-cover border border-gray-100 shrink-0 shadow-sm"
                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
-                        <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-                          <Package size={18} className="text-gray-400" />
+                        <div className="h-11 w-11 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                          <Package size={18} className="text-gray-300" />
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-gray-800">{p.name}</p>
+                        <p className="font-semibold text-gray-800">{p.name}</p>
                         {p.nameEn && <p className="text-xs text-gray-400">{p.nameEn}</p>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">
+                  <td className="px-4 py-3.5 text-gray-500">
                     {p.category
-                      ? <span className="px-2 py-0.5 rounded-full bg-gray-100 text-xs font-medium">{p.category}</span>
-                      : <span className="text-gray-300">—</span>}
+                      ? <span className="px-2.5 py-1 rounded-full bg-teal-50 text-[#2ab5ad] text-xs font-semibold">{p.category}</span>
+                      : <span className="text-gray-300 text-xs">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-right font-medium text-gray-800">
+                  <td className="px-4 py-3.5 text-right font-semibold text-gray-800">
                     {p.price.toLocaleString()} Ks
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3.5 text-right">
                     <span className={`font-semibold ${p.stock === 0 ? 'text-red-500' : p.stock < 10 ? 'text-amber-500' : 'text-gray-700'}`}>
                       {p.stock}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3.5 text-center">
                     <button
-                      onClick={() => toggleActive(p)}
-                      className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full transition-colors"
+                      onClick={e => { e.stopPropagation(); toggleActive(p); }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors"
                       style={p.isActive
                         ? { backgroundColor: '#d1fae5', color: '#059669' }
                         : { backgroundColor: '#fee2e2', color: '#dc2626' }}
                     >
-                      {p.isActive ? <><CheckCircle2 size={12} /> Active</> : <><XCircle size={12} /> Inactive</>}
+                      {p.isActive ? <><CheckCircle2 size={11} /> Active</> : <><XCircle size={11} /> Inactive</>}
                     </button>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => router.push(`/admin/products/${p.id}`)}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-[#2ab5ad]"
+                        onClick={e => { e.stopPropagation(); router.push(`/admin/products/${p.id}`); }}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-[#2ab5ad] transition-colors"
                       >
                         <Edit2 size={15} />
                       </button>
                       <button
-                        onClick={() => setDeleteTarget(p)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-500"
+                        onClick={e => { e.stopPropagation(); setDeleteTarget(p); }}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                       >
                         <Trash2 size={15} />
                       </button>
@@ -233,37 +243,41 @@ export default function AdminProductsPage() {
             </tbody>
           </table>
         )}
-      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 bg-white rounded-b-2xl">
-          <p className="text-xs text-gray-400">
-            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft size={15} />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-              <button key={n} onClick={() => setPage(n)}
-                className="w-8 h-8 rounded-lg text-xs font-semibold transition-colors"
-                style={n === page ? { backgroundColor: PRIMARY, color: '#fff' } : { color: '#6b7280' }}>
-                {n}
+        {/* Pagination inside table card */}
+        {!loading && total > 0 && (
+          <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100">
+            <p className="text-xs text-gray-400">
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={15} />
               </button>
-            ))}
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight size={15} />
-            </button>
+              {pageNums.map((n, idx) =>
+                n === '…'
+                  ? <span key={`el-${idx}`} className="w-8 text-center text-xs text-gray-400">…</span>
+                  : (
+                    <button key={n} onClick={() => setPage(n)}
+                      className="w-8 h-8 rounded-lg text-xs font-bold transition-colors"
+                      style={n === page ? { background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)`, color: '#fff' } : { color: '#6b7280' }}>
+                      {n}
+                    </button>
+                  )
+              )}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {deleteTarget && (
         <DeleteModal

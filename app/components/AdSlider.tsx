@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface Ad {
@@ -38,7 +39,16 @@ export default function AdSlider() {
     );
   }
 
-  if (ads.length === 0) return null;
+  if (ads.length === 0) {
+    return (
+      <div className="w-full px-1 sm:px-6 py-4 sm:py-6">
+        <div className="max-w-6xl mx-auto rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center justify-center gap-2 text-gray-300" style={{ aspectRatio: '16 / 5' }}>
+          <Image src="/9169253-removebg-preview.png" alt="No data" width={80} height={80} className="opacity-70" />
+          <p className="text-sm text-gray-400">No data yet</p>
+        </div>
+      </div>
+    );
+  }
 
   const ad = ads[current];
 

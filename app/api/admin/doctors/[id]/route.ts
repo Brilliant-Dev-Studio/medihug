@@ -36,6 +36,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     void clinicTypesMmRaw; void clinicTypesEnRaw; void languagesRaw;
     void user; void createdAt; void updatedAt; void _id;
 
+    if (typeof doctorData.phone === 'string') {
+      const existingDoctor = await db.doctor.findUnique({ where: { id }, select: { userId: true } });
+      if (existingDoctor?.userId) {
+        const phoneTaken = await db.user.findFirst({
+          where: { phone: doctorData.phone, id: { not: existingDoctor.userId } },
+          select: { id: true },
+        });
+        if (phoneTaken) {
+          return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်သည် အခြားအကောင့်တွင် အသုံးပြုနေပြီးဖြစ်သည်။' }, { status: 409 });
+        }
+        await db.user.update({ where: { id: existingDoctor.userId }, data: { phone: doctorData.phone } });
+      }
+    }
+
     await db.doctor.update({ where: { id }, data: doctorData });
 
     if (slots !== undefined) {

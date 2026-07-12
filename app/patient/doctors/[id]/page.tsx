@@ -94,6 +94,7 @@ export default function DoctorDetailPage() {
   const [rangeStart,    setRangeStart]    = useState<string | null>(null);
   const [rangeEnd,      setRangeEnd]      = useState<string | null>(null);
   const [hoveredSlot,   setHoveredSlot]   = useState<string | null>(null);
+  const [fullSlots,     setFullSlots]     = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!id) return;
@@ -102,6 +103,15 @@ export default function DoctorDetailPage() {
       .then(d => { setDoctor(d.doctor); setLoading(false); })
       .catch(() => { setDoctor(null); setLoading(false); });
   }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    const d = new Date(); d.setDate(d.getDate() + selectedDay);
+    fetch(`/api/doctors/${id}/booked-slots?date=${d.toISOString()}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => setFullSlots(new Set<string>(data.fullTimes ?? [])))
+      .catch(() => setFullSlots(new Set()));
+  }, [id, selectedDay]);
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -148,6 +158,8 @@ export default function DoctorDetailPage() {
     }
   }
   const allSlots = [...morningSlots, ...afternoonSlots, ...eveningSlots];
+  const nowMin = selectedDay === 0 ? today.getHours() * 60 + today.getMinutes() : -1;
+  const isPastSlot = (slot: string) => selectedDay === 0 && toMin(slot) <= nowMin;
 
   const periods = [
     { label_mm: 'မနက်ပိုင်း',   label_en: 'Morning',   Icon: Sunrise, iconColor: '#f97316', slots: morningSlots },
@@ -458,35 +470,39 @@ export default function DoctorDetailPage() {
             <div className="p-3 grid grid-cols-4 lg:grid-cols-6 gap-2">
               {period.slots.map(slot => {
                 const idx           = allSlots.indexOf(slot);
+                const isFull        = fullSlots.has(slot);
+                const isPast        = isPastSlot(slot);
+                const isBlocked     = isFull || isPast;
                 const isSingleSel   = selectionMode === 'single' && selectedSlot === slot;
                 const isEndpoint    = selectionMode === 'range' && (slot === rangeStart || slot === rangeEnd);
                 const isInRange     = selectionMode === 'range' && rangeStart !== null && rangeEnd !== null && idx > loIdx && idx < hiIdx;
                 const isHoverRange  = selectionMode === 'range' && rangeStart !== null && rangeEnd === null && hoverIdx > startIdx && idx > startIdx && idx <= hoverIdx;
 
-                const bg = isSingleSel || isEndpoint ? PRIMARY : isInRange ? '#eff6ff' : isHoverRange ? '#f0f9ff' : '#fff';
-                const fg = isSingleSel || isEndpoint ? '#fff'   : isInRange ? PRIMARY   : '#374151';
-                const bd = isSingleSel || isEndpoint ? PRIMARY  : isInRange ? '#bfdbfe' : isHoverRange ? '#93c5fd' : '#e5e7eb';
+                const bg = isBlocked ? '#f3f4f6' : isSingleSel || isEndpoint ? PRIMARY : isInRange ? '#eff6ff' : isHoverRange ? '#f0f9ff' : '#fff';
+                const fg = isBlocked ? '#9ca3af' : isSingleSel || isEndpoint ? '#fff'   : isInRange ? PRIMARY   : '#374151';
+                const bd = isBlocked ? '#e5e7eb' : isSingleSel || isEndpoint ? PRIMARY  : isInRange ? '#bfdbfe' : isHoverRange ? '#93c5fd' : '#e5e7eb';
                 const shadow = (isSingleSel || isEndpoint) ? `0 3px 10px ${PRIMARY}35` : 'none';
 
                 const handleClick = () => {
+                  if (isBlocked) return;
                   if (selectionMode === 'single') { setSelectedSlot(slot === selectedSlot ? null : slot); return; }
                   if (!rangeStart) { setRangeStart(slot); }
                   else if (!rangeEnd) {
                     if (slot === rangeStart) { setRangeStart(null); return; }
                     const lo = Math.min(allSlots.indexOf(rangeStart), idx);
                     const hi = Math.max(allSlots.indexOf(rangeStart), idx);
-                    const blocked = allSlots.slice(lo + 1, hi).some(() => false);
+                    const blocked = allSlots.slice(lo + 1, hi).some(s => fullSlots.has(s) || isPastSlot(s));
                     if (blocked) return;
                     setRangeEnd(slot); setHoveredSlot(null);
                   } else { setRangeStart(slot); setRangeEnd(null); setHoveredSlot(null); }
                 };
 
                 return (
-                  <button key={slot} onClick={handleClick}
-                    onMouseEnter={() => selectionMode === 'range' && setHoveredSlot(slot)}
+                  <button key={slot} onClick={handleClick} disabled={isBlocked}
+                    onMouseEnter={() => selectionMode === 'range' && !isBlocked && setHoveredSlot(slot)}
                     onMouseLeave={() => selectionMode === 'range' && setHoveredSlot(null)}
-                    className="rounded-xl py-2.5 text-xs font-semibold transition-all text-center"
-                    style={{ backgroundColor: bg, color: fg, border: `1.5px solid ${bd}`, boxShadow: shadow }}>
+                    className="rounded-xl py-2.5 text-xs font-semibold transition-all text-center disabled:cursor-not-allowed"
+                    style={{ backgroundColor: bg, color: fg, border: `1.5px solid ${bd}`, boxShadow: shadow, textDecoration: isBlocked ? 'line-through' : 'none' }}>
                     {slot}
                   </button>
                 );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, BadgeCheck, Bookmark, ArrowRight } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
@@ -48,8 +49,6 @@ export default function OurDoctors() {
     scrollRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
   };
 
-  if (!loading && doctors.length === 0) return null;
-
   return (
     <section className="relative w-full py-10 overflow-hidden">
       <div
@@ -87,6 +86,11 @@ export default function OurDoctors() {
       >
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : doctors.length === 0 ? (
+          <div className="w-full flex flex-col items-center justify-center py-14 text-gray-300">
+            <Image src="/9169253-removebg-preview.png" alt="No data" width={80} height={80} className="opacity-70 mb-2" />
+            <p className="text-sm text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
+          </div>
         ) : (
           doctors.map(d => {
             const displayName = mm ? d.name : (d.nameEn ?? d.name);

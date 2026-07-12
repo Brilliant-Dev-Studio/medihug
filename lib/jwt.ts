@@ -5,10 +5,11 @@ const SECRET = new TextEncoder().encode(
 );
 
 export interface AdminTokenPayload {
-  id:    string;
-  name:  string;
-  phone: string;
-  role:  string;
+  id:       string;
+  name:     string;
+  phone:    string;
+  role:     string;
+  doctorId?: string;
 }
 
 export async function signAdminToken(payload: AdminTokenPayload): Promise<string> {
@@ -27,3 +28,7 @@ export async function verifyAdminToken(token: string): Promise<AdminTokenPayload
     return null;
   }
 }
+
+// Doctor sessions reuse the same JWT shape/secret, just a different cookie name.
+export const signDoctorToken   = signAdminToken;
+export const verifyDoctorToken = verifyAdminToken;

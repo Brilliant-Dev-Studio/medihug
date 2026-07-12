@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import {
-  ChevronDown, CheckCircle2, XCircle, Hourglass, Loader2, AlertTriangle,
+  ChevronDown, ChevronRight, CheckCircle2, XCircle, Hourglass, Loader2, AlertTriangle,
 } from 'lucide-react';
 import type { IntakeData } from '../../patient/booking/IntakeForm';
 import { useLang } from '../../lib/LanguageContext';
@@ -21,10 +22,11 @@ export interface Appointment {
   note: string | null;
   paymentMethod: string | null;
   fee: number | null;
+  receiptUrl: string | null;
   intake: IntakeData | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
-  user:   { name: string; phone: string };
+  user:   { name: string; phone: string; profileImage?: string | null };
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
 }
 
@@ -178,7 +180,7 @@ export function ConfirmStatusModal({ current, target, onConfirm, onCancel, savin
 }) {
   const from = STATUS_STYLE[current];
   const to   = STATUS_STYLE[target];
-  return (
+  return createPortal(
     <>
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -217,7 +219,8 @@ export function ConfirmStatusModal({ current, target, onConfirm, onCancel, savin
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
@@ -238,26 +241,44 @@ export function StatusChanger({ status, onChanged }: {
     setPending(null);
   }
 
+  const current = STATUS_STYLE[status];
+  const others  = STATUS_OPTIONS.filter(opt => opt !== status);
+
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        {STATUS_OPTIONS.map(opt => {
+      {/* current status — prominent */}
+      <div className="rounded-2xl p-3.5 flex items-center gap-3 mb-4" style={{ backgroundColor: current.bg }}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm">
+          <current.icon className="w-5 h-5" style={{ color: current.color }} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: current.color, opacity: 0.65 }}>
+            {t(mm, { mm: 'လက်ရှိအခြေအနေ', en: 'Current Status' })}
+          </p>
+          <p className="text-sm font-extrabold leading-tight" style={{ color: current.color }}>{t(mm, current.label)}</p>
+        </div>
+      </div>
+
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+        {t(mm, { mm: 'အခြေအနေ ပြောင်းရန်', en: 'Change Status To' })}
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {others.map(opt => {
           const s = STATUS_STYLE[opt];
-          const active = status === opt;
           return (
             <button
               key={opt}
-              disabled={active}
               onClick={() => setPending(opt)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border-2 transition-all disabled:opacity-100"
-              style={{
-                backgroundColor: active ? s.color : '#fff',
-                borderColor: s.color,
-                color: active ? '#fff' : s.color,
-                cursor: active ? 'default' : 'pointer',
-              }}
+              className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-100 bg-white hover:shadow-sm transition-all text-left"
+              style={{ borderColor: '#f0f0f0' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = `${s.color}50`; e.currentTarget.style.backgroundColor = s.bg; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#f0f0f0'; e.currentTarget.style.backgroundColor = '#fff'; }}
             >
-              <s.icon className="w-3.5 h-3.5" /> {t(mm, s.label)}
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: s.bg }}>
+                <s.icon className="w-3.5 h-3.5" style={{ color: s.color }} />
+              </div>
+              <span className="text-xs font-bold flex-1" style={{ color: s.color }}>{t(mm, s.label)}</span>
+              <ChevronRight className="w-3.5 h-3.5 text-gray-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
             </button>
           );
         })}

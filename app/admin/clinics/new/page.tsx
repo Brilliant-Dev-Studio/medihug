@@ -8,14 +8,12 @@ import ImageDropzone from '@/components/admin/ImageDropzone';
 import GalleryEditor, { type GalleryItem } from '@/components/admin/GalleryEditor';
 
 const PRIMARY = '#2ab5ad';
-type ClinicType = 'CLINIC' | 'PHARMACY' | 'HOSPITAL';
 
-const TYPE_LABELS: Record<ClinicType, string> = { CLINIC: 'Clinic', PHARMACY: 'Pharmacy', HOSPITAL: 'Hospital' };
 const inp  = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
 const lbl  = 'block text-xs font-semibold text-gray-600 mb-1.5';
 
 const EMPTY = {
-  name: '', nameEn: '', type: 'CLINIC' as ClinicType,
+  name: '', nameEn: '', type: '',
   phone: '', website: '',
   openTime: '', closeTime: '',
   address: '', addressEn: '',
@@ -49,6 +47,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
+interface PartnerType { id: string; name: string; nameEn: string | null; }
 
 export default function NewClinicPage() {
   const router = useRouter();
@@ -60,10 +59,19 @@ export default function NewClinicPage() {
   const [selectedDoctors, setSelectedDoctors] = useState<DoctorOption[]>([]);
   const [doctorSearch, setDoctorSearch]     = useState('');
   const [dropdownOpen, setDropdownOpen]     = useState(false);
+  const [partnerTypes, setPartnerTypes]     = useState<PartnerType[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/admin/doctors?pageSize=200').then(r => r.json()).then(d => setAllDoctors(d.doctors ?? []));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/admin/partner-types').then(r => r.json()).then(d => {
+      const types: PartnerType[] = d.partnerTypes ?? [];
+      setPartnerTypes(types);
+      if (types.length > 0) setForm(f => f.type ? f : { ...f, type: types[0].name });
+    });
   }, []);
 
   useEffect(() => {
@@ -106,7 +114,8 @@ export default function NewClinicPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim()) { setError('Clinic name is required.'); return; }
+    if (!form.name.trim()) { setError('Partner name is required.'); return; }
+    if (!form.type) { setError('Partner type is required.'); return; }
     setError(''); setLoading(true);
     try {
       const res = await fetch('/api/admin/clinics', {
@@ -151,7 +160,7 @@ export default function NewClinicPage() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Add New Clinic</h1>
+            <h1 className="text-xl font-bold text-gray-800">Add New Partner</h1>
             <p className="text-xs text-gray-400">Fill in the fields and save</p>
           </div>
         </div>
@@ -164,7 +173,7 @@ export default function NewClinicPage() {
             className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60 hover:opacity-90"
             style={{ backgroundColor: PRIMARY }}>
             {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-            {loading ? 'Saving...' : 'Add Clinic'}
+            {loading ? 'Saving...' : 'Add Partner'}
           </button>
         </div>
       </div>
@@ -175,14 +184,20 @@ export default function NewClinicPage() {
 
       {/* Type selector — full width */}
       <Section title="Type">
-        <div className="flex gap-3">
-          {(['CLINIC', 'PHARMACY', 'HOSPITAL'] as ClinicType[]).map(t => (
-            <button key={t} type="button" onClick={() => set('type', t)}
-              className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-all ${form.type === t ? 'border-[#2ab5ad] bg-teal-50 text-[#2ab5ad]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-              {TYPE_LABELS[t]}
-            </button>
-          ))}
-        </div>
+        {partnerTypes.length === 0 ? (
+          <p className="text-xs text-gray-400">
+            No partner types yet — create one in <a href="/admin/partner-types" className="underline font-semibold" style={{ color: PRIMARY }}>Partner Types</a> first.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {partnerTypes.map(t => (
+              <button key={t.id} type="button" onClick={() => set('type', t.name)}
+                className={`flex-1 min-w-32 py-3 rounded-xl text-sm font-semibold border-2 transition-all ${form.type === t.name ? 'border-[#2ab5ad] bg-teal-50 text-[#2ab5ad]' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
       </Section>
 
       {/* 2-column main layout */}
@@ -193,11 +208,11 @@ export default function NewClinicPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Name (Myanmar) *</label>
-                <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Clinic name in Myanmar" />
+                <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Partner name in Myanmar" />
               </div>
               <div>
                 <label className={lbl}>Name (English)</label>
-                <input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} placeholder="Clinic name" />
+                <input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} placeholder="Partner name" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -405,7 +420,7 @@ export default function NewClinicPage() {
           className="flex-1 py-3 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 hover:opacity-90"
           style={{ backgroundColor: PRIMARY }}>
           {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-          {loading ? 'Saving...' : 'Add Clinic'}
+          {loading ? 'Saving...' : 'Add Partner'}
         </button>
       </div>
     </div>

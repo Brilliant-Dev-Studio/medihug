@@ -35,11 +35,36 @@ export default function SignInPage() {
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    toast.success(mm ? 'OTP ကုဒ် ပေးပို့နေသည်...' : 'Sending OTP code...');
-    router.push('/verify');
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: form.phone, password: form.password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error ?? (mm ? 'အမှားတစ်ခု ဖြစ်ပွားသည်' : 'Something went wrong'));
+        return;
+      }
+
+      // Doctor account: real credentials already verified, session cookie set.
+      if (data.matched && data.role === 'DOCTOR') {
+        sessionStorage.setItem('medihug_login_role', 'DOCTOR');
+      } else {
+        sessionStorage.setItem('medihug_login_role', 'PATIENT');
+      }
+
+      toast.success(mm ? 'OTP ကုဒ် ပေးပို့နေသည်...' : 'Sending OTP code...');
+      router.push('/verify');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -172,10 +197,13 @@ export default function SignInPage() {
             <button
               type="submit"
               onClick={handleSubmit}
-              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+              disabled={submitting}
+              className="w-full py-3.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-60"
               style={{ backgroundColor: '#0d2b6e' }}
             >
-              {lang === 'mm' ? 'ဝင်ရောက်ရန်' : 'Sign In'}
+              {submitting
+                ? (lang === 'mm' ? 'ဝင်ရောက်နေသည်...' : 'Signing in...')
+                : (lang === 'mm' ? 'ဝင်ရောက်ရန်' : 'Sign In')}
             </button>
 
           </div>

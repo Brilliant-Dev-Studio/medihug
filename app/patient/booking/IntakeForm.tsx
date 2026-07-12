@@ -7,9 +7,10 @@ import {
   ClipboardList, User, PenLine, Stethoscope, Baby, History,
   Scissors, AlertTriangle, Pill, FolderOpen,
   Wind, Brain, HeartPulse, Syringe, Bone, Smile,
-  Mars, Venus,
+  Mars, Venus, Loader2,
   type LucideIcon,
 } from 'lucide-react';
+import { compressAndUpload } from '@/components/admin/uploadImage';
 
 const P  = 'var(--color-primary)';
 const PD = 'var(--color-primary-dark)';
@@ -327,6 +328,7 @@ export interface IntakeData {
   medHistory: string[]; hadSurgery: string; surgeryDetail: string;
   drugAllergy: string; allergyDetail: string; currentMeds: string[];
   category: string; dynSingle: Record<string, string>; dynMulti: Record<string, string[]>;
+  medicalFiles: { url: string; type: 'record' | 'film'; name: string }[];
 }
 
 /* ─── main component ─── */
@@ -359,18 +361,33 @@ export default function IntakeForm({ mm, onDone }: { mm: boolean; onDone: (data:
   const setMulti  = (k: string, v: string[]) => setDynMulti(p => ({ ...p, [k]: v }));
 
   const [submitError, setSubmitError] = useState('');
+  const [uploading,   setUploading]   = useState(false);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!name.trim() || !phone.trim()) {
       setSubmitError(t(mm, { mm: 'နာမည်နှင့် ဖုန်းနံပါတ် ဖြည့်ပေးရန် လိုအပ်ပါသည်', en: 'Please fill in name and phone number' }));
       return;
     }
     setSubmitError('');
-    onDone({
-      name, phone, age, gender, mainComplaint, symptomDetail, pregnancy,
-      medHistory, hadSurgery, surgeryDetail, drugAllergy, allergyDetail,
-      currentMeds, category, dynSingle, dynMulti,
-    });
+    setUploading(true);
+    try {
+      const medicalFiles = await Promise.all(
+        medFiles.map(async f => ({
+          url: await compressAndUpload(f.file, () => {}, '/api/patient/upload'),
+          type: f.type,
+          name: f.file.name,
+        }))
+      );
+      onDone({
+        name, phone, age, gender, mainComplaint, symptomDetail, pregnancy,
+        medHistory, hadSurgery, surgeryDetail, drugAllergy, allergyDetail,
+        currentMeds, category, dynSingle, dynMulti, medicalFiles,
+      });
+    } catch {
+      setSubmitError(t(mm, { mm: 'ဖိုင်တင်ရာတွင် အမှားရှိသည်', en: 'Failed to upload files' }));
+    } finally {
+      setUploading(false);
+    }
   }
 
   const card = 'bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4';
@@ -583,7 +600,7 @@ export default function IntakeForm({ mm, onDone }: { mm: boolean; onDone: (data:
         </div>
 
         {/* Hidden inputs */}
-        <input ref={recordRef} type="file" accept="image/*,application/pdf" multiple className="hidden"
+        <input ref={recordRef} type="file" accept="image/*" multiple className="hidden"
           onChange={e => {
             const files = Array.from(e.target.files ?? []);
             setMedFiles(p => [...p, ...files.map(f => ({ file: f, url: URL.createObjectURL(f), type: 'record' as const }))]);
@@ -644,13 +661,23 @@ export default function IntakeForm({ mm, onDone }: { mm: boolean; onDone: (data:
       )}
       <button
         onClick={handleSubmit}
-        className="w-full py-4 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+        disabled={uploading}
+        className="w-full py-4 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-70"
         style={{ background: `linear-gradient(135deg, ${P} 0%, ${PD} 100%)` }}
       >
-        {t(mm, { mm: 'မှတ်တမ်းတင်ပြမည်', en: 'Submit Form' })}
-        <ChevronRight className="w-4 h-4" />
+        {uploading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            {t(mm, { mm: 'ဖိုင်များ တင်နေသည်...', en: 'Uploading files...' })}
+          </>
+        ) : (
+          <>
+            {t(mm, { mm: 'မှတ်တမ်းတင်ပြမည်', en: 'Submit Form' })}
+            <ChevronRight className="w-4 h-4" />
+          </>
+        )}
       </button>
-      <button onClick={handleSubmit} className="text-center text-xs text-gray-400 py-1">
+      <button onClick={handleSubmit} disabled={uploading} className="text-center text-xs text-gray-400 py-1 disabled:opacity-50">
         {t(mm, { mm: 'ကျော်ပြီး ချိန်းဆိုမှုများ ကြည့်မည်', en: 'Skip and view my appointments' })}
       </button>
     </div>

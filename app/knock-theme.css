@@ -1,26 +1,48 @@
+/* Match Knock's notification UI to MediHug's teal brand + rounded design language.
+   !important is used to guarantee these win over @knocklabs/react/dist/index.css
+   regardless of client-bundle CSS load order (that file is imported per-component,
+   not globally, so ordering vs. this file isn't guaranteed). */
+
+:root {
+  --rnf-color-brand-500: #2ab5ad !important;
+  --rnf-color-brand-700: #1a9990 !important;
+  --rnf-color-brand-900: #14625c !important;
+
+  --rnf-notification-cell-unread-dot-bg-color: #2ab5ad !important;
+  --rnf-notification-cell-unread-dot-border-color: #1a9990 !important;
+  --rnf-message-cell-unread-dot-bg-color: #2ab5ad !important;
+
+  --rnf-button-border-radius: 0.625rem !important;
+  --rnf-border-radius-lg: 1rem !important;
+  --rnf-border-radius-md: 0.625rem !important;
+  --rnf-notification-feed-popover-border-radius: 1rem !important;
+
+  --rnf-font-family-sanserif: var(--font-poppins), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", sans-serif !important;
+}
+
 .rnf-notification-icon-button {
-  background-color: #f8fafc; /* slate-50 */
-  border: 1px solid #e2e8f0; /* slate-200 */
-  border-radius: 0.75rem;
-  color: #475569; /* slate-600 */
+  background-color: #f8fafc !important; /* slate-50 */
+  border: 1px solid #e2e8f0 !important; /* slate-200 */
+  border-radius: 0.75rem !important;
+  color: #475569 !important; /* slate-600 */
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 .rnf-notification-icon-button:hover {
-  background-color: #f0fdfa; /* teal-50 */
-  color: #0d9488; /* teal-600 */
+  background-color: #e6f7f7 !important;
+  color: #1a9990 !important;
 }
 
 .rnf-notification-feed-popover {
-  --rnf-accent-color: #0d9488;
-  --rnf-accent-color-hover: #0f766e;
-  border-radius: 1rem;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  border-radius: 1rem !important;
+  border: 1px solid #f1f5f9 !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08) !important;
 }
+
 .rnf-notification-cell--unread {
-  background-color: #f8fafc;
+  background-color: #f8fafc !important;
 }
+
 .rnf-notification-feed__mark-all-as-read {
-  color: #0d9488;
-  font-weight: 600;
+  color: #1a9990 !important;
+  font-weight: 600 !important;
 }

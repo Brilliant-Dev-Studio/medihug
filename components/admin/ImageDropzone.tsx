@@ -18,7 +18,10 @@ export default function ImageDropzone({ label, value, onChange, aspect }: {
     try {
       const url = await compressAndUpload(file, setStatus);
       onChange(url);
-    } catch { setError('Upload failed'); }
+    } catch (err) {
+      console.error('ImageDropzone upload failed:', err);
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    }
     finally { setStatus('idle'); }
   }, [onChange]);
 

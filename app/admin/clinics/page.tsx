@@ -8,23 +8,16 @@ import {
 } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
-type ClinicType = 'CLINIC' | 'PHARMACY' | 'HOSPITAL';
 
 interface Clinic {
   id: string; name: string; nameEn: string | null;
-  type: ClinicType; address: string | null; phone: string | null;
+  type: string; address: string | null; phone: string | null;
   openTime: string | null; closeTime: string | null;
   imageUrl: string | null; coverUrl: string | null;
   verified: boolean; isActive: boolean; isPartner: boolean;
   _count?: { doctors: number };
 }
-
-const TYPE_LABELS: Record<ClinicType, string> = { CLINIC: 'Clinic', PHARMACY: 'Pharmacy', HOSPITAL: 'Hospital' };
-const TYPE_COLORS: Record<ClinicType, string> = {
-  CLINIC:   'bg-blue-100 text-blue-700',
-  PHARMACY: 'bg-green-100 text-green-700',
-  HOSPITAL: 'bg-purple-100 text-purple-700',
-};
+interface PartnerType { id: string; name: string; nameEn: string | null; }
 
 export default function AdminClinicsPage() {
   const router = useRouter();
@@ -35,7 +28,12 @@ export default function AdminClinicsPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [isActive, setIsActive]     = useState('');
   const [page, setPage]             = useState(1);
+  const [partnerTypes, setPartnerTypes] = useState<PartnerType[]>([]);
   const pageSize                    = 12;
+
+  useEffect(() => {
+    fetch('/api/admin/partner-types').then(r => r.json()).then(d => setPartnerTypes(d.partnerTypes ?? []));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,15 +68,15 @@ export default function AdminClinicsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Clinics</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Total {total} clinics</p>
+          <h1 className="text-2xl font-bold text-gray-800">Partners</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Total {total} partners</p>
         </div>
         <button
           onClick={() => router.push('/admin/clinics/new')}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-semibold shadow-sm hover:opacity-90"
           style={{ backgroundColor: PRIMARY }}
         >
-          <Plus size={16} /> Add Clinic
+          <Plus size={16} /> Create Partner
         </button>
       </div>
 
@@ -88,7 +86,7 @@ export default function AdminClinicsPage() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad]"
-            placeholder="Search clinics..."
+            placeholder="Search partners..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
@@ -99,9 +97,7 @@ export default function AdminClinicsPage() {
           onChange={e => { setTypeFilter(e.target.value); setPage(1); }}
         >
           <option value="">All Types</option>
-          <option value="CLINIC">Clinic</option>
-          <option value="PHARMACY">Pharmacy</option>
-          <option value="HOSPITAL">Hospital</option>
+          {partnerTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
         </select>
         <select
           className="px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad]"
@@ -154,8 +150,8 @@ export default function AdminClinicsPage() {
                     </div>
                     {c.nameEn && <p className="text-xs text-gray-400">{c.nameEn}</p>}
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${TYPE_COLORS[c.type]}`}>
-                    {TYPE_LABELS[c.type]}
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 bg-teal-50 text-teal-700">
+                    {c.type}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">

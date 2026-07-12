@@ -3,8 +3,7 @@ import { theme } from '../../lib/theme';
 
 import Link from 'next/link';
 import {
-  Stethoscope, Calendar, FileText, Pill,
-  Heart, Activity, AlertCircle, Brain, Baby, Eye,
+  Stethoscope, Calendar, FileText,
   ChevronLeft,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
@@ -15,14 +14,7 @@ const SECONDARY = 'var(--color-primary-dark)';
 const categories = [
   { icon: Stethoscope, mm: 'ဆရာဝန်တိုင်ပင်ရန်',    en: 'Consult Doctor',      color: 'var(--color-primary)', bg: '#eff6ff', href: '/patient/doctors' },
   { icon: Calendar,    mm: 'ချိန်းဆိုမှု ဗုကင်',     en: 'Book Appointment',    color: 'var(--color-accent)', bg: '#f0f9ff', href: '/patient/appointments' },
-  { icon: Activity,    mm: 'BMI တိုင်းတာ',            en: 'BMI Checker',         color: '#10b981', bg: '#f0fdf4', href: '#' },
   { icon: FileText,    mm: 'ကျန်းမာရေး မှတ်တမ်း',   en: 'Health Records',      color: '#8b5cf6', bg: '#f5f3ff', href: '/patient/records' },
-  { icon: Pill,        mm: 'ဆေးညွှန်းများ',           en: 'Prescriptions',       color: '#f59e0b', bg: '#fffbeb', href: '#' },
-  { icon: AlertCircle, mm: 'အရေးပေါ် ကျန်းမာရေး',  en: 'Emergency Care',      color: '#ef4444', bg: '#fef2f2', href: '#' },
-  { icon: Heart,       mm: 'သွေးပေါင်ချိန်',          en: 'Blood Pressure',      color: '#ec4899', bg: '#fdf2f8', href: '#' },
-  { icon: Brain,       mm: 'AI ကျန်းမာရေး ဆွေးနွေး', en: 'AI Health Chat',      color: '#06b6d4', bg: '#ecfeff', href: '#' },
-  { icon: Baby,        mm: 'မိခင်နှင့် ကလေး',         en: 'Mother & Child',      color: '#f97316', bg: '#fff7ed', href: '#' },
-  { icon: Eye,         mm: 'မျက်စိ ဆေးခန်း',          en: 'Eye Clinic',          color: '#6366f1', bg: '#eef2ff', href: '#' },
 ];
 
 function CategoryCard({ icon: Icon, mm: labelMm, en: labelEn, color, bg, href, large = false }: {

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  Search, Loader2, FileText,
+  Search, Loader2, FileText, Plus,
   ChevronLeft, ChevronRight, Trash2,
   Globe, EyeOff, ChevronDown,
 } from 'lucide-react';
@@ -92,6 +93,7 @@ function CategorySelect({ value, onChange, categories }: {
 
 /* ── Main Page ── */
 export default function AdminBlogsPage() {
+  const router = useRouter();
   const [blogs, setBlogs]         = useState<Blog[]>([]);
   const [total, setTotal]         = useState(0);
   const [loading, setLoading]     = useState(true);
@@ -152,9 +154,18 @@ export default function AdminBlogsPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Blogs</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Total {total} articles</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Blogs</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Total {total} articles</p>
+        </div>
+        <button
+          onClick={() => router.push('/admin/blogs/new')}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-[0_4px_14px_-4px_rgba(42,181,173,0.5)] hover:shadow-[0_6px_18px_-4px_rgba(42,181,173,0.6)] hover:-translate-y-px active:translate-y-0 transition-all"
+          style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)` }}
+        >
+          <Plus size={16} /> Create Blog
+        </button>
       </div>
 
       {/* Filters */}
@@ -180,7 +191,7 @@ export default function AdminBlogsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 size={28} className="animate-spin text-[#2ab5ad]" />
@@ -193,52 +204,52 @@ export default function AdminBlogsPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-gray-50/80">
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 w-8">#</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Article</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Category</th>
-                <th className="text-center px-4 py-3 font-semibold text-gray-600">Status</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden lg:table-cell">Published</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden xl:table-cell">Created</th>
-                <th className="px-4 py-3 w-24" />
+              <tr className="border-b border-gray-100 bg-gray-50/60">
+                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider w-8">#</th>
+                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Article</th>
+                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Category</th>
+                <th className="text-center px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider hidden lg:table-cell">Published</th>
+                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider hidden xl:table-cell">Created</th>
+                <th className="px-4 py-3.5 w-24" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {blogs.map((b, i) => (
-                <tr key={b.id} className="hover:bg-gray-50/60 transition-colors">
+                <tr key={b.id} onClick={() => router.push(`/admin/blogs/${b.id}`)} className="hover:bg-gray-50/60 transition-colors cursor-pointer">
                   {/* # */}
-                  <td className="px-4 py-3 text-xs text-gray-400 font-medium">
+                  <td className="px-4 py-3.5 text-xs text-gray-400 font-medium">
                     {(page - 1) * pageSize + i + 1}
                   </td>
                   {/* Article */}
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       {b.imageUrl ? (
                         <img src={b.imageUrl} alt={b.title}
-                          className="h-10 w-14 rounded-xl object-cover border border-gray-100 shrink-0"
+                          className="h-11 w-15 rounded-xl object-cover border border-gray-100 shrink-0 shadow-sm"
                           onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
-                        <div className="h-10 w-14 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                        <div className="h-11 w-15 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
                           <FileText size={16} className="text-gray-300" />
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-800 truncate max-w-[260px]">{b.title}</p>
-                        {b.titleEn && <p className="text-xs text-gray-400 truncate max-w-[260px]">{b.titleEn}</p>}
+                        <p className="font-semibold text-gray-800 truncate max-w-65">{b.title}</p>
+                        {b.titleEn && <p className="text-xs text-gray-400 truncate max-w-65">{b.titleEn}</p>}
                         <p className="text-[10px] text-gray-300 font-mono mt-0.5">/{b.slug}</p>
                       </div>
                     </div>
                   </td>
                   {/* Category */}
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     {b.category
-                      ? <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-medium">{b.category}</span>
+                      ? <span className="px-2.5 py-1 rounded-full bg-teal-50 text-[#2ab5ad] text-xs font-semibold">{b.category}</span>
                       : <span className="text-gray-300 text-xs">—</span>}
                   </td>
                   {/* Status toggle */}
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3.5 text-center">
                     <button
-                      onClick={() => togglePublished(b)}
+                      onClick={e => { e.stopPropagation(); togglePublished(b); }}
                       disabled={toggling === b.id}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors disabled:opacity-60"
                       style={b.isPublished
@@ -251,19 +262,19 @@ export default function AdminBlogsPage() {
                     </button>
                   </td>
                   {/* Published date */}
-                  <td className="px-4 py-3 text-xs text-gray-500 hidden lg:table-cell whitespace-nowrap">
+                  <td className="px-4 py-3.5 text-xs text-gray-500 hidden lg:table-cell whitespace-nowrap">
                     {fmtDate(b.publishedAt)}
                   </td>
                   {/* Created */}
-                  <td className="px-4 py-3 text-xs text-gray-400 hidden xl:table-cell whitespace-nowrap">
+                  <td className="px-4 py-3.5 text-xs text-gray-400 hidden xl:table-cell whitespace-nowrap">
                     {fmtDate(b.createdAt)}
                   </td>
                   {/* Actions */}
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => setDeleteTarget(b)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-500 hover:text-red-500 transition-colors">
+                        onClick={e => { e.stopPropagation(); setDeleteTarget(b); }}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -275,7 +286,7 @@ export default function AdminBlogsPage() {
         )}
 
         {/* Pagination inside table card */}
-        {!loading && totalPages > 1 && (
+        {!loading && total > 0 && (
           <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100">
             <p className="text-xs text-gray-400">
               Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
@@ -291,8 +302,8 @@ export default function AdminBlogsPage() {
                   ? <span key={`el-${idx}`} className="w-8 text-center text-xs text-gray-400">…</span>
                   : (
                     <button key={n} onClick={() => setPage(n)}
-                      className="w-8 h-8 rounded-lg text-xs font-semibold transition-colors"
-                      style={n === page ? { backgroundColor: PRIMARY, color: '#fff' } : { color: '#6b7280' }}>
+                      className="w-8 h-8 rounded-lg text-xs font-bold transition-colors"
+                      style={n === page ? { background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)`, color: '#fff' } : { color: '#6b7280' }}>
                       {n}
                     </button>
                   )

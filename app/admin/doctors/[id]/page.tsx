@@ -13,6 +13,7 @@ const PRIMARY   = '#2ab5ad';
 const DAYS      = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAYS_MM   = ['တနင်္ဂနွေ', 'တနင်္လာ', 'အင်္ဂါ', 'ဗုဒ္ဓဟူး', 'ကြာသပတေး', 'သောကြာ', 'စနေ'];
 const SLOT_DURATION = 15;
+const DURATION_OPTIONS = [10, 15, 20, 30];
 const AVATAR_COLORS = ['#2ab5ad', '#8b5cf6', '#f59e0b', '#3b82f6', '#10b981', '#ef4444'];
 
 interface Slot    { id?: string; dayOfWeek: number; startTime: string; endTime: string; duration: number; maxPerSlot: number; }
@@ -90,7 +91,9 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       nameEn:        infoForm.nameEn,
       specialty:     infoForm.specialty,
       bio:           infoForm.bio,
-      phone:         infoForm.phone,
+      phone:          infoForm.phone,
+      phoneSecondary: infoForm.phoneSecondary,
+      viber:          infoForm.viber,
       experience:    infoForm.experience,
       price:         infoForm.price,
       isAvailable:   infoForm.isAvailable,
@@ -600,14 +603,13 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
                         <input type="time" className={inp} value={slot.endTime}
                           onChange={e => updateSlot(slot.dayOfWeek, 'endTime', e.target.value)} /></div>
                       <div><label className={lbl}>Duration</label>
-                        <div className={inp + ' flex items-center gap-2 text-gray-500'}>
-                          <Clock className="w-3.5 h-3.5 text-gray-400" />
-                          <span className="text-sm font-semibold" style={{ color: PRIMARY }}>15 min</span>
-                          <span className="text-xs text-gray-400">(fixed)</span>
-                        </div>
+                        <select className={inp} value={slot.duration}
+                          onChange={e => updateSlot(slot.dayOfWeek, 'duration', parseInt(e.target.value))}>
+                          {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} min</option>)}
+                        </select>
                       </div>
                       <div><label className={lbl}>Max / Slot</label>
-                        <input type="number" min={1} max={10} className={inp} value={slot.maxPerSlot}
+                        <input type="number" min={1} className={inp} value={slot.maxPerSlot}
                           onChange={e => updateSlot(slot.dayOfWeek, 'maxPerSlot', parseInt(e.target.value) || 1)} /></div>
                     </div>
                   ) : (

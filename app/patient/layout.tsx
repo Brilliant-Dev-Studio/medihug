@@ -10,9 +10,10 @@ import {
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
-import NotificationBell from '@/components/NotificationBell';
+import { NotificationBellProvider, NotificationBellButton } from '@/components/NotificationBell';
 import PushPermissionButton from '@/components/PushPermissionButton';
 import { NotificationProvider } from '@/context/NotificationContext';
+import PatientAvatar from '@/components/PatientAvatar';
 
 // TODO: no patient auth/session exists yet in this codebase — replace with the real logged-in patient id once patient login is wired up.
 const DEMO_PATIENT_ID = 'demo-patient-001';
@@ -41,11 +42,28 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const [collapsed, setCollapsed]     = useState(false);
   const [langOpen, setLangOpen]       = useState(false);
   const [todayStr, setTodayStr]       = useState('');
+  const [avatarUrl, setAvatarUrl]     = useState('');
+  const [avatarLoading, setAvatarLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTodayStr(new Date().toLocaleDateString(mm ? 'my-MM' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
   }, [mm]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('medihug_patient');
+    if (!raw) { setAvatarLoading(false); return; }
+    const { phone } = JSON.parse(raw) as { phone: string };
+    fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(d => { if (d.user?.profileImage) setAvatarUrl(d.user.profileImage); })
+      .catch(() => {})
+      .finally(() => setAvatarLoading(false));
+
+    const onAvatarUpdate = (e: Event) => setAvatarUrl((e as CustomEvent<string>).detail);
+    window.addEventListener('medihug-avatar-updated', onAvatarUpdate);
+    return () => window.removeEventListener('medihug-avatar-updated', onAvatarUpdate);
+  }, []);
 
   useEffect(() => {
     setScrolled(false);
@@ -70,6 +88,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   return (
     <NotificationProvider userId={DEMO_PATIENT_ID}>
+    <NotificationBellProvider userId={DEMO_PATIENT_ID}>
     <ThemeProvider>
     <div className="min-h-screen bg-gray-50 flex">
 
@@ -154,12 +173,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         <div className="px-2 py-4 border-t border-gray-100 flex flex-col gap-1">
           {!collapsed && (
             <div className="flex items-center gap-3 px-3 py-2.5">
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                style={{ backgroundColor: PRIMARY }}
-              >
-                P
-              </div>
+              <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: PRIMARY }}>Patient User</p>
                 <p className="text-xs text-gray-400">PATIENT</p>
@@ -168,12 +182,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
           )}
           {collapsed && (
             <div className="flex justify-center py-1">
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ backgroundColor: PRIMARY }}
-              >
-                P
-              </div>
+              <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
             </div>
           )}
           <Link
@@ -214,14 +223,13 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               />
             </Link>
             <div className="flex items-center gap-2">
-              <NotificationBell userId={DEMO_PATIENT_ID} />
+              <NotificationBellButton />
               <PushPermissionButton />
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm transition-all duration-300"
-                style={{ backgroundColor: (scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)' }}
-              >
-                P
-              </div>
+              <PatientAvatar
+                src={avatarUrl} loading={avatarLoading}
+                bg={(scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)'}
+                className="w-9 h-9 rounded-full text-white text-sm transition-all duration-300"
+              />
             </div>
           </div>
 
@@ -284,15 +292,10 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               );
             })()}
 
-            <NotificationBell userId={DEMO_PATIENT_ID} />
+            <NotificationBellButton />
               <PushPermissionButton />
             <div className="flex items-center gap-2 pl-3 border-l border-gray-100">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                style={{ backgroundColor: PRIMARY }}
-              >
-                P
-              </div>
+              <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-8 h-8 rounded-full text-white text-sm" />
               <div>
                 <p className="text-sm font-semibold leading-tight" style={{ color: PRIMARY }}>Patient User</p>
                 <p className="text-[10px] text-gray-400 leading-tight">PATIENT</p>
@@ -333,6 +336,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
     </div>
     </ThemeProvider>
+    </NotificationBellProvider>
     </NotificationProvider>
   );
 }

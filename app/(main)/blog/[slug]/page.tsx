@@ -4,6 +4,8 @@ import { use, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, Loader2, Newspaper } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useLang } from '../../../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
@@ -86,9 +88,9 @@ export default function BlogDetailPage({ params }: { params: Promise<{ slug: str
           </div>
         )}
 
-        <div className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap mt-8">
-          {blog.content}
-        </div>
+        <article className="prose prose-lg max-w-none mt-8 prose-headings:font-bold prose-p:text-gray-700 prose-p:leading-relaxed">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{blog.content}</ReactMarkdown>
+        </article>
       </div>
     </div>
   );

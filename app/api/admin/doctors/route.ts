@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
       name, nameEn, specialty, specialtyEn, bio,
       phone, phoneSecondary, viber, password, imageUrl, experience, price,
       isAvailable, slots, gallery,
+      qualifications, careerMm, careerEn, clinicNote, clinicNoteEn, location,
+      clinicTypesMm, clinicTypesEn, languages,
     } = body;
 
     if (!name || !specialty || !phone || !password) {
@@ -94,6 +96,15 @@ export async function POST(req: NextRequest) {
           price:       price       ?? 0,
           isAvailable: isAvailable ?? true,
           isActive:    true,
+          qualifications: qualifications || null,
+          careerMm:       careerMm       || null,
+          careerEn:       careerEn       || null,
+          clinicNote:     clinicNote     || null,
+          clinicNoteEn:   clinicNoteEn   || null,
+          location:       location       || null,
+          clinicTypesMm:  clinicTypesMm  ?? [],
+          clinicTypesEn:  clinicTypesEn  ?? [],
+          languages:      languages      ?? [],
         },
       });
 
