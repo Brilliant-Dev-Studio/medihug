@@ -29,24 +29,39 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   return NextResponse.json({ appointment });
 }
 
-/* ── PATCH /api/doctor/appointments/[id] — status only, own appointments only ── */
+/* ── PATCH /api/doctor/appointments/[id] — status and/or doctorApproved, own appointments only ── */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const doctorId = await requireDoctorId(req);
   if (!doctorId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const { status } = await req.json();
-  // Doctors can only mark an admin-approved appointment as completed (or back to confirmed) —
-  // approving/cancelling stays an admin-only action.
-  if (!['CONFIRMED', 'COMPLETED'].includes(status)) {
-    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
-  }
+  const { status, doctorApproved } = await req.json();
 
   const existing = await db.appointment.findUnique({ where: { id }, select: { doctorId: true, status: true } });
   if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const appointment = await db.appointment.update({ where: { id }, data: { status } });
+  const data: { status?: 'CONFIRMED' | 'COMPLETED'; doctorApproved?: boolean } = {};
+
+  if (status !== undefined) {
+    // Doctors can only mark an admin-approved appointment as completed (or back to confirmed) —
+    // approving/cancelling stays an admin-only action.
+    if (!['CONFIRMED', 'COMPLETED'].includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+    data.status = status;
+  }
+  if (doctorApproved !== undefined) {
+    if (typeof doctorApproved !== 'boolean') {
+      return NextResponse.json({ error: 'Invalid doctorApproved' }, { status: 400 });
+    }
+    data.doctorApproved = doctorApproved;
+  }
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+  }
+
+  const appointment = await db.appointment.update({ where: { id }, data });
   return NextResponse.json({ appointment });
 }

@@ -44,12 +44,14 @@ export default function ProfilePage() {
   const [phone, setPhone]             = useState('');
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError]         = useState('');
+  const [profileLoading, setProfileLoading]   = useState(true);
+  const [avatarImgLoaded, setAvatarImgLoaded] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem('medihug_patient');
-    if (!raw) return;
+    if (!raw) { setProfileLoading(false); return; }
     const { phone: p } = JSON.parse(raw) as { phone: string };
     setPhone(p);
     Promise.all([
@@ -60,8 +62,10 @@ export default function ProfilePage() {
       setFavDoctors(d.doctors ?? []);
       setFavProducts(pr.products ?? []);
       if (prof.user?.profileImage) setAvatar(prof.user.profileImage);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setProfileLoading(false));
   }, []);
+
+  useEffect(() => { setAvatarImgLoaded(false); }, [avatar]);
 
   const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -336,8 +340,13 @@ export default function ProfilePage() {
   const avatarCard = (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center gap-3">
       <div className="relative">
-        <div className="w-24 h-24 rounded-full overflow-hidden border-4 shadow-sm" style={{ borderColor: `color-mix(in srgb, var(--color-primary) 25%, white)` }}>
-          <Image src={avatar} alt="avatar" width={96} height={96} className="w-full h-full object-cover" />
+        <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 shadow-sm" style={{ borderColor: `color-mix(in srgb, var(--color-primary) 25%, white)` }}>
+          {(profileLoading || !avatarImgLoaded) && (
+            <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+          )}
+          <Image src={avatar} alt="avatar" width={96} height={96}
+            onLoad={() => setAvatarImgLoaded(true)}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${avatarImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
           {avatarUploading && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <Loader2 className="w-5 h-5 text-white animate-spin" />
@@ -390,8 +399,13 @@ export default function ProfilePage() {
         <div className="-mt-18 pt-24 pb-10 flex flex-col items-center"
           style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
           <div className="relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
-              <Image src={avatar} alt="avatar" width={96} height={96} className="w-full h-full object-cover" />
+            <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg">
+              {(profileLoading || !avatarImgLoaded) && (
+                <div className="absolute inset-0 bg-white/25 animate-pulse" />
+              )}
+              <Image src={avatar} alt="avatar" width={96} height={96}
+                onLoad={() => setAvatarImgLoaded(true)}
+                className={`w-full h-full object-cover transition-opacity duration-300 ${avatarImgLoaded ? 'opacity-100' : 'opacity-0'}`} />
               {avatarUploading && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                   <Loader2 className="w-5 h-5 text-white animate-spin" />

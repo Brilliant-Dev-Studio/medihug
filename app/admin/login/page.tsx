@@ -119,6 +119,7 @@ export default function AdminLoginPage() {
           <button
             onClick={handleLogin}
             disabled={loading || !phone || !pin}
+            suppressHydrationWarning
             className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: 'linear-gradient(135deg, #2ab5ad 0%, #1a9990 100%)' }}
           >

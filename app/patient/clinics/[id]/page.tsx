@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Phone, Clock, MapPin, Globe, Star,
   Stethoscope, ShoppingBag, CheckCircle2, Heart,
-  Building2, ChevronRight, Share2,
+  Building2, ChevronRight, Share2, Pill,
 } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
 
@@ -163,7 +163,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
               className="object-cover" priority />
           : <div className="w-full h-full"
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
-              <div className="absolute inset-0 flex items-center justify-center text-8xl opacity-20">🏥</div>
+              <div className="absolute inset-0 flex items-center justify-center opacity-20"><Building2 className="w-24 h-24 text-white" strokeWidth={1.2} /></div>
             </div>
         }
         {/* gradient overlay */}
@@ -299,12 +299,12 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         {/* stats strip */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { value: clinic.rating.toFixed(1), label: mm ? 'အဆင့်သတ်မှတ်' : 'Rating', icon: '⭐' },
-            { value: clinic.doctors.length,    label: mm ? 'ဆရာဝန်'         : 'Doctors', icon: '🩺' },
-            { value: clinic.products.length,   label: mm ? 'ထုတ်ကုန်'        : 'Products', icon: '💊' },
+            { value: clinic.rating.toFixed(1), label: mm ? 'အဆင့်သတ်မှတ်' : 'Rating', icon: Star, color: '#f59e0b' },
+            { value: clinic.doctors.length,    label: mm ? 'ဆရာဝန်'         : 'Doctors', icon: Stethoscope, color: PRIMARY },
+            { value: clinic.products.length,   label: mm ? 'ထုတ်ကုန်'        : 'Products', icon: Pill, color: PRIMARY },
           ].map(s => (
             <div key={s.label} className="bg-white rounded-2xl border border-gray-100 px-3 py-3.5 flex flex-col items-center gap-1 text-center">
-              <span className="text-lg leading-none">{s.icon}</span>
+              <s.icon className="w-5 h-5" style={{ color: s.color }} strokeWidth={2} />
               <span className="text-base font-extrabold text-gray-900">{s.value}</span>
               <span className="text-[10px] text-gray-400 font-medium">{s.label}</span>
             </div>
@@ -477,7 +477,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                     <div className="relative w-full h-32 bg-gray-50 overflow-hidden">
                       {p.imageUrl
                         ? <Image src={p.imageUrl} alt={pName} fill sizes="(max-width: 768px) 160px, 25vw" className="object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center text-4xl">💊</div>
+                        : <div className="w-full h-full flex items-center justify-center"><Pill className="w-8 h-8 text-gray-300" strokeWidth={1.2} /></div>
                       }
                     </div>
                     <div className="p-3">

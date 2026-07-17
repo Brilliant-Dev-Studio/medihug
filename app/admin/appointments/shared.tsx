@@ -25,6 +25,7 @@ export interface Appointment {
   receiptUrl: string | null;
   intake: IntakeData | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  doctorApproved: boolean;
   createdAt: string;
   user:   { name: string; phone: string; profileImage?: string | null };
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };

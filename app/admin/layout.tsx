@@ -20,6 +20,7 @@ const navGroups = [
     label: 'Main',
     items: [
       { href: '/admin/dashboard', icon: LayoutDashboard, mm: 'Dashboard',       en: 'Dashboard' },
+      { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports' },
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients' },
       { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors' },
       { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments' },
@@ -37,7 +38,6 @@ const navGroups = [
       { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories' },
       { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers' },
       { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads' },
-      { href: '/admin/reports',          icon: BarChart2,  mm: 'အစီရင်ခံစာ',            en: 'Reports' },
       { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records' },
     ],
   },

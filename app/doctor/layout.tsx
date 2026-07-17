@@ -32,6 +32,9 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
   const pageTitle = navItems.find(i => pathname === i.href || pathname.startsWith(i.href + '/'))?.label ?? 'Doctor Portal';
 
+  // Video call room renders full-screen — skip the portal chrome entirely.
+  if (pathname.endsWith('/call')) return <>{children}</>;
+
   const handleLogout = async () => {
     await fetch('/api/doctor/logout', { method: 'POST' });
     router.replace('/signin');

@@ -234,6 +234,7 @@ model Appointment {
   receiptUrl    String?
   intake        Json?
   status        AppointmentStatus @default(PENDING)
+  doctorApproved Boolean          @default(false)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 

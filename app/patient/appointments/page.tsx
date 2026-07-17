@@ -52,6 +52,7 @@ interface RawAppointment {
   note: string | null;
   fee: number | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  doctorApproved: boolean;
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
 }
 
@@ -63,12 +64,6 @@ function fmtDateTime(dateIso: string, time: string | null): string {
   const d = new Date(dateIso);
   const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return time ? `${dateStr} • ${time}` : dateStr;
-}
-
-function isToday(dateIso: string): boolean {
-  const d = new Date(dateIso);
-  const now = new Date();
-  return d.toDateString() === now.toDateString();
 }
 
 /* ─────────────────── raw → view model ─────────────────── */
@@ -100,7 +95,7 @@ function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; pa
         specialty_en: specEn, specialty_mm: a.doctor.specialty,
         avatar: a.doctor.imageUrl,
         time_en: dt, time_mm: dt,
-        status: a.status === 'PENDING' ? 'pending_payment' : (isToday(a.date) ? 'ready' : 'confirmed'),
+        status: a.status === 'PENDING' ? 'pending_payment' : (a.doctorApproved ? 'ready' : 'confirmed'),
         fee: fmtFee(a.fee),
       });
     }
@@ -229,10 +224,10 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             {appt.status === 'ready' && (
-              <a href="#" className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
+              <Link href={`/patient/appointments/${appt.id}/call`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
                 style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
                 <Video className="w-3.5 h-3.5" />{mm ? 'ဝင်ရောက်မည်' : 'Join Now'}
-              </a>
+              </Link>
             )}
             {appt.status === 'confirmed' && (
               <button disabled className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-300 border border-gray-100 cursor-not-allowed">
@@ -291,10 +286,10 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
             <FileText className="w-4 h-4" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
           </Link>
           {appt.status === 'ready' && (
-            <a href="#" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
+            <Link href={`/patient/appointments/${appt.id}/call`} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
               <Video className="w-4 h-4" />{mm ? 'ဝင်ရောက်မည်' : 'Join Now'}
-            </a>
+            </Link>
           )}
           {appt.status === 'confirmed' && (
             <button disabled className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 border border-gray-100 cursor-not-allowed">

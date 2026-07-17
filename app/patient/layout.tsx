@@ -73,6 +73,9 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     return () => el.removeEventListener('scroll', onScroll);
   }, [pathname]);
 
+  // Video call room renders full-screen — skip the portal chrome entirely.
+  if (pathname.endsWith('/call')) return <>{children}</>;
+
   const sidebarW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
 

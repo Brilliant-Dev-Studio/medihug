@@ -4,7 +4,7 @@ import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Calendar, Clock, CreditCard, Phone,
-  User, FileText, Stethoscope, AlertTriangle,
+  User, FileText, Stethoscope, AlertTriangle, Video, Loader2,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
@@ -75,6 +75,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
   const router = useRouter();
   const [appt, setAppt] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [approving, setApproving] = useState(false);
 
   const fetchAppt = useCallback(async () => {
     setLoading(true);
@@ -92,6 +93,16 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: next }),
     });
+  }
+
+  async function approveVideoCall() {
+    setApproving(true);
+    await fetch(`/api/doctor/appointments/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctorApproved: true }),
+    });
+    setAppt(a => a ? { ...a, doctorApproved: true } : a);
+    setApproving(false);
   }
 
   if (loading) return <AppointmentDetailSkeleton />;
@@ -198,6 +209,31 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Booking Status</p>
             <StatusChanger status={appt.status} onChanged={updateStatus} mm={mm} />
           </div>
+
+          {/* Video call */}
+          {appt.status === 'CONFIRMED' && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Video Call</p>
+              {!appt.doctorApproved ? (
+                <>
+                  <p className="text-xs text-gray-400">Approve this appointment to enable the video call for you and the patient.</p>
+                  <button onClick={approveVideoCall} disabled={approving}
+                    className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60"
+                    style={{ backgroundColor: PRIMARY }}>
+                    {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+                    Approve for Video Call
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => router.push(`/doctor/appointments/${id}/call`)}
+                  className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2"
+                  style={{ backgroundColor: PRIMARY }}>
+                  <Video className="w-4 h-4" />
+                  Start Video Call
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right / main column */}
