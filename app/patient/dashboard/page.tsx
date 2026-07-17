@@ -212,18 +212,21 @@ export default function PatientDashboard() {
   const { lang } = useLang();
   const mm = lang === 'mm';
   const [doctors, setDoctors] = useState<DoctorItem[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
   const [favCount, setFavCount] = useState(0);
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
+  const [apptsLoading, setApptsLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/doctors?limit=100')
       .then(r => r.json())
-      .then(d => setDoctors(d.doctors ?? []));
+      .then(d => setDoctors(d.doctors ?? []))
+      .finally(() => setDoctorsLoading(false));
   }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem('medihug_patient');
-    if (!raw) return;
+    if (!raw) { setApptsLoading(false); return; }
     const { phone } = JSON.parse(raw) as { phone: string };
     Promise.all([
       fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
@@ -249,7 +252,9 @@ export default function PatientDashboard() {
             };
           });
         setUpcomingAppointments(upcoming);
-      }).catch(() => {});
+      })
+      .catch(() => {})
+      .finally(() => setApptsLoading(false));
   }, []);
 
   return (
@@ -366,7 +371,21 @@ export default function PatientDashboard() {
               </Link>
             </div>
 
-            {upcomingAppointments.length === 0 ? (
+            {apptsLoading ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-xl px-3.5 py-3 border border-gray-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 animate-pulse shrink-0" />
+                    <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                      <div className="h-3.5 w-32 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-2.5 w-20 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-2.5 w-24 bg-gray-100 rounded animate-pulse" />
+                    </div>
+                    <div className="h-6 w-16 bg-gray-100 rounded-full animate-pulse shrink-0" />
+                  </div>
+                ))}
+              </div>
+            ) : upcomingAppointments.length === 0 ? (
               <div className="bg-white rounded-2xl border border-gray-100 flex items-center gap-4 px-5 py-5 lg:px-10 lg:py-10 lg:gap-8">
                 <Lottie
                   animationData={emptyLottie}
@@ -391,30 +410,42 @@ export default function PatientDashboard() {
                 </Link>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 lg:gap-4">
-                {upcomingAppointments.map((a, i) => (
-                  <div key={i} className="bg-white rounded-2xl px-4 py-4 border border-gray-100 flex items-center gap-4 lg:px-8 lg:py-6 lg:gap-6">
-                    <div className="w-12 h-12 rounded-full overflow-hidden shrink-0 border border-gray-100 lg:w-16 lg:h-16">
-                      <Image src={a.img} alt={a.doctor_en} width={64} height={64} className="w-full h-full object-cover" />
+              <div className="flex flex-col gap-2">
+                {upcomingAppointments.slice(0, 3).map((a, i) => (
+                  <div key={i} className="bg-white rounded-xl px-3.5 py-3 border border-gray-100 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-gray-100">
+                      <Image src={a.img} alt={a.doctor_en} width={40} height={40} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate lg:text-lg lg:font-bold" style={{ color: PRIMARY }}>
+                      <p className="font-semibold text-sm truncate" style={{ color: PRIMARY }}>
                         {mm ? a.doctor_mm : a.doctor_en}
                       </p>
-                      <p className="text-xs text-gray-400 lg:text-sm lg:mt-0.5">{mm ? a.spec_mm : a.spec_en}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5 lg:mt-1">
-                        <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-400 lg:text-sm">{a.date} · {a.time}</span>
+                      <p className="text-xs text-gray-400 truncate">{mm ? a.spec_mm : a.spec_en}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span className="text-[11px] text-gray-400">{a.date} · {a.time}</span>
                       </div>
                     </div>
                     <span
-                      className="text-xs font-semibold px-3 py-1.5 rounded-full shrink-0 lg:text-sm lg:px-4 lg:py-2"
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0"
                       style={a.pending ? { backgroundColor: '#fffbeb', color: '#f59e0b' } : { backgroundColor: '#eff6ff', color: PRIMARY }}
                     >
                       {a.pending ? (mm ? 'စောင့်ဆိုင်း' : 'Pending') : (mm ? 'အတည်ပြု' : 'Confirmed')}
                     </span>
                   </div>
                 ))}
+                {upcomingAppointments.length > 3 && (
+                  <Link
+                    href="/patient/appointments"
+                    className="flex items-center justify-center gap-1 py-2.5 rounded-xl border border-dashed text-xs font-semibold"
+                    style={{ borderColor: `${PRIMARY}40`, color: PRIMARY }}
+                  >
+                    {mm
+                      ? `နောက်ထပ် ${upcomingAppointments.length - 3} ခု ကြည့်ရန်`
+                      : `+${upcomingAppointments.length - 3} more — View all`}
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -492,7 +523,17 @@ export default function PatientDashboard() {
               </Link>
             </div>
             <div className="flex flex-col divide-y divide-gray-100">
-              {doctors.slice(0, 5).map((d, i) => {
+              {doctorsLoading ? Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 animate-pulse shrink-0" />
+                  <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                    <div className="h-3.5 w-28 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-2.5 w-24 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-2.5 w-16 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-8 w-14 bg-gray-100 rounded-full animate-pulse shrink-0" />
+                </div>
+              )) : doctors.slice(0, 5).map((d, i) => {
                 const displayName = mm ? d.name : (d.nameEn ?? d.name);
                 return (
                   <div key={d.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">

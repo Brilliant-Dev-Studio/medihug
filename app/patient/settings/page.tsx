@@ -318,15 +318,18 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Save button */}
-      <button onClick={handleSave}
-        className="w-full py-3.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90"
-        style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
-        {saved
-          ? <><Check className="w-4 h-4" /> {mm ? 'သိမ်းဆည်းပြီး' : 'Saved!'}</>
-          : (mm ? 'အကောင့် အချက်အလက် သိမ်းရန်' : 'Update Account')}
-      </button>
     </div>
+  );
+
+  /* ── save button (rendered once per layout — desktop inline, mobile fixed bottom) ── */
+  const saveButton = (
+    <button onClick={handleSave}
+      className="w-full py-3.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90"
+      style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+      {saved
+        ? <><Check className="w-4 h-4" /> {mm ? 'သိမ်းဆည်းပြီး' : 'Saved!'}</>
+        : (mm ? 'အကောင့် အချက်အလက် သိမ်းရန်' : 'Update Account')}
+    </button>
   );
 
   /* ── avatar card (reused on desktop left panel) ── */
@@ -413,13 +416,7 @@ export default function ProfilePage() {
 
         {/* Fixed bottom save */}
         <div className="fixed bottom-16 left-0 right-0 z-30 bg-white/80 backdrop-blur-sm border-t border-gray-100 px-4 py-3">
-          <button onClick={handleSave}
-            className="w-full py-4 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-            style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
-            {saved
-              ? <><Check className="w-4 h-4" /> {mm ? 'သိမ်းဆည်းပြီး' : 'Saved!'}</>
-              : (mm ? 'အကောင့် အချက်အလက် သိမ်းရန်' : 'Update Account')}
-          </button>
+          {saveButton}
         </div>
       </div>
 
@@ -459,6 +456,7 @@ export default function ProfilePage() {
 
           <div className="max-w-2xl flex flex-col gap-4 pb-8">
             {formFields}
+            {saveButton}
           </div>
         </div>
 
