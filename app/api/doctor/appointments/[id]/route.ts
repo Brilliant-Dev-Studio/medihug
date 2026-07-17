@@ -22,7 +22,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
     },
   });
-  if (!appointment || appointment.doctorId !== doctorId) {
+  // Doctors only ever see appointments the admin has already approved.
+  if (!appointment || appointment.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(appointment.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
   return NextResponse.json({ appointment });
@@ -35,12 +36,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params;
   const { status } = await req.json();
-  if (!['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].includes(status)) {
+  // Doctors can only mark an admin-approved appointment as completed (or back to confirmed) —
+  // approving/cancelling stays an admin-only action.
+  if (!['CONFIRMED', 'COMPLETED'].includes(status)) {
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   }
 
-  const existing = await db.appointment.findUnique({ where: { id }, select: { doctorId: true } });
-  if (!existing || existing.doctorId !== doctorId) {
+  const existing = await db.appointment.findUnique({ where: { id }, select: { doctorId: true, status: true } });
+  if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 

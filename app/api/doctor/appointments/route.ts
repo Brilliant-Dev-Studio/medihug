@@ -20,8 +20,11 @@ export async function GET(req: NextRequest) {
   const page     = parseInt(searchParams.get('page')     ?? '1');
   const pageSize = parseInt(searchParams.get('pageSize') ?? '10');
 
-  const where: Record<string, unknown> = { doctorId };
-  if (status) where.status = status;
+  // Doctors only ever see appointments the admin has already approved — PENDING
+  // (awaiting admin review) and CANCELLED are never shown here.
+  const VISIBLE_STATUSES = ['CONFIRMED', 'COMPLETED'];
+  const where: Record<string, unknown> = { doctorId, status: { in: VISIBLE_STATUSES } };
+  if (status && VISIBLE_STATUSES.includes(status)) where.status = status;
   if (search) {
     where.user = {
       OR: [

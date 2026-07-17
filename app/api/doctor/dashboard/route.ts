@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
 
   const [todayAppointments, statusCounts, weekAppointments] = await Promise.all([
     db.appointment.findMany({
-      where: { doctorId, date: { gte: todayStart, lte: todayEnd } },
+      // Doctors only ever see admin-approved appointments.
+      where: { doctorId, date: { gte: todayStart, lte: todayEnd }, status: { in: ['CONFIRMED', 'COMPLETED'] } },
       include: { user: { select: { name: true, phone: true } } },
       orderBy: { time: 'asc' },
     }),

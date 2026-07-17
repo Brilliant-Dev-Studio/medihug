@@ -225,11 +225,11 @@ export function ConfirmStatusModal({ current, target, onConfirm, onCancel, savin
 }
 
 /* ── segmented status buttons that open the confirm modal ── */
-export function StatusChanger({ status, onChanged }: {
-  status: Appointment['status']; onChanged: (next: Appointment['status']) => Promise<void>;
+export function StatusChanger({ status, onChanged, mm: mmOverride }: {
+  status: Appointment['status']; onChanged: (next: Appointment['status']) => Promise<void>; mm?: boolean;
 }) {
   const { lang } = useLang();
-  const mm = lang === 'mm';
+  const mm = mmOverride ?? (lang === 'mm');
   const [pending, setPending] = useState<Appointment['status'] | null>(null);
   const [saving,  setSaving]  = useState(false);
 

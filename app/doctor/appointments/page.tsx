@@ -15,7 +15,9 @@ interface Appt {
   user: { name: string; phone: string };
 }
 
-const STATUS_OPTIONS: Appt['status'][] = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
+// Doctors only ever see/act on admin-approved appointments — Pending (awaiting admin
+// review) and Cancelled are admin-only concerns and never shown here.
+const STATUS_OPTIONS: Appt['status'][] = ['CONFIRMED', 'COMPLETED'];
 const STATUS_STYLE: Record<Appt['status'], { bg: string; color: string; icon: React.ElementType; label: string }> = {
   PENDING:   { bg: '#fffbeb', color: '#d97706', icon: Hourglass,    label: 'Pending' },
   CONFIRMED: { bg: '#eff6ff', color: '#3b82f6', icon: CheckCircle2, label: 'Confirmed' },

@@ -196,7 +196,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
           {/* Status changer */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Booking Status</p>
-            <StatusChanger status={appt.status} onChanged={updateStatus} />
+            <StatusChanger status={appt.status} onChanged={updateStatus} mm={mm} />
           </div>
         </div>
 
