@@ -118,7 +118,7 @@ export default function OurDoctors() {
                 <div className="p-3 sm:p-5 flex flex-col gap-2 sm:gap-3">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{d.specialty}</p>
-                    <h3 className="font-serif text-xl text-gray-900 leading-snug mt-1 truncate">{displayName}</h3>
+                    <h3 className="text-xl font-bold text-gray-900 leading-snug mt-1 truncate">{displayName}</h3>
                     <p className="text-xs text-gray-400 mt-1.5">
                       {d.price.toLocaleString()} MMK · {d.experience}+ {mm ? 'နှစ်အတွေ့အကြုံ' : 'yrs exp'}
                     </p>

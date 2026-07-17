@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import localFont from "next/font/local";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import "./knock-theme.css";
 import { LanguageProvider } from "./lib/LanguageContext";
 
-const poppins = Poppins({
+const yati = localFont({
+  src: "../public/Yati font/Variation/Yati Sans Variation.ttf",
   variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: "100 900",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="mm" className={`${poppins.variable} h-full antialiased`}>
+    <html lang="mm" className={`${yati.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col relative">
         <LanguageProvider>
           <Toaster

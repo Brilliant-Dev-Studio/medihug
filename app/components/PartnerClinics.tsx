@@ -117,7 +117,7 @@ export default function PartnerClinics() {
                 {/* Body */}
                 <div className="p-3 sm:p-5 flex flex-col gap-2 sm:gap-3">
                   <div>
-                    <h3 className="font-serif text-xl text-gray-900 leading-snug truncate">{name}</h3>
+                    <h3 className="text-xl font-bold text-gray-900 leading-snug truncate">{name}</h3>
                     {location && (
                       <div className="flex items-center gap-1 mt-1">
                         <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
