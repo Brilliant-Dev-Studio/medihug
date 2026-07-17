@@ -23,7 +23,7 @@ interface Clinic {
 
 function SkeletonCard() {
   return (
-    <div className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden">
+    <div className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white border border-gray-100 overflow-hidden">
       <div className="h-40 bg-gray-100 animate-pulse" />
       <div className="p-5 flex flex-col gap-2">
         <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
@@ -103,7 +103,7 @@ export default function PartnerClinics() {
             const tags = mm ? c.tagsMm : c.tagsEn;
 
             return (
-              <div key={c.id} className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+              <div key={c.id} className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white border border-gray-100 overflow-hidden flex flex-col">
 
                 {/* Image */}
                 <div className="relative w-full h-40 overflow-hidden bg-gray-50">
