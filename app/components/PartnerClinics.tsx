@@ -164,7 +164,7 @@ export default function PartnerClinics() {
                     )}
                     <Link
                       href={`/patient/clinics/${c.id}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-gray-900 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-opacity"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors"
                     >
                       {tr.viewDetails}
                       <ArrowRight className="w-3.5 h-3.5" />
