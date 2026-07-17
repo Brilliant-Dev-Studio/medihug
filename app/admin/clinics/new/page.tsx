@@ -14,7 +14,8 @@ const lbl  = 'block text-xs font-semibold text-gray-600 mb-1.5';
 
 const EMPTY = {
   name: '', nameEn: '', type: '',
-  phone: '', website: '',
+  phone: '', phone2: '', phone3: '', website: '',
+  facebookUrl: '', tiktokUrl: '', mapUrl: '',
   openTime: '', closeTime: '',
   address: '', addressEn: '',
   state: '', township: '',
@@ -125,7 +126,12 @@ export default function NewClinicPage() {
           nameEn:    form.nameEn    || null,
           type:      form.type,
           phone:     form.phone     || null,
+          phone2:    form.phone2    || null,
+          phone3:    form.phone3    || null,
           website:   form.website   || null,
+          facebookUrl: form.facebookUrl || null,
+          tiktokUrl:   form.tiktokUrl   || null,
+          mapUrl:      form.mapUrl      || null,
           openTime:  form.openTime  || null,
           closeTime: form.closeTime || null,
           address:   form.address   || null,
@@ -215,19 +221,42 @@ export default function NewClinicPage() {
                 <input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} placeholder="Partner name" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className={lbl}>Phone</label>
+                <label className={lbl}>Phone 1</label>
                 <input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="09..." />
               </div>
               <div>
-                <label className={lbl}>Website</label>
-                <input className={inp} value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." />
+                <label className={lbl}>Phone 2</label>
+                <input className={inp} value={form.phone2} onChange={e => set('phone2', e.target.value)} placeholder="09..." />
+              </div>
+              <div>
+                <label className={lbl}>Phone 3</label>
+                <input className={inp} value={form.phone3} onChange={e => set('phone3', e.target.value)} placeholder="09..." />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <TimePicker label="Open Time"  value={form.openTime}  onChange={v => set('openTime', v)}  />
               <TimePicker label="Close Time" value={form.closeTime} onChange={v => set('closeTime', v)} />
+            </div>
+          </Section>
+
+          <Section title="Links">
+            <div>
+              <label className={lbl}>Website</label>
+              <input className={inp} value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." />
+            </div>
+            <div>
+              <label className={lbl}>Facebook</label>
+              <input className={inp} value={form.facebookUrl} onChange={e => set('facebookUrl', e.target.value)} placeholder="https://facebook.com/..." />
+            </div>
+            <div>
+              <label className={lbl}>TikTok</label>
+              <input className={inp} value={form.tiktokUrl} onChange={e => set('tiktokUrl', e.target.value)} placeholder="https://tiktok.com/@..." />
+            </div>
+            <div>
+              <label className={lbl}>Google Map Link</label>
+              <input className={inp} value={form.mapUrl} onChange={e => set('mapUrl', e.target.value)} placeholder="https://maps.google.com/..." />
             </div>
           </Section>
 

@@ -32,7 +32,10 @@ export async function POST(req: NextRequest) {
 
         const [firstH, firstM] = requestedSlots[0].split(':').map(Number);
         const target = new Date(start); target.setHours(firstH, firstM, 0, 0);
-        if (target.getTime() < Date.now()) throw new Error('PAST_SLOT');
+        // Grace period: the intake form can take several minutes to fill out between
+        // picking a slot and final submit, so don't reject a slot that only just ticked past.
+        const GRACE_MS = 5 * 60 * 1000;
+        if (target.getTime() < Date.now() - GRACE_MS) throw new Error('PAST_SLOT');
 
         const [windows, existing] = await Promise.all([
           tx.doctorSlot.findMany({ where: { doctorId, dayOfWeek, isActive: true }, select: { startTime: true, endTime: true, maxPerSlot: true } }),
@@ -102,10 +105,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ appointment }, { status: 201 });
   } catch (e) {
     if (e instanceof Error && e.message === 'SLOT_TAKEN') {
-      return NextResponse.json({ error: 'This time slot was just booked by someone else. Please choose another.' }, { status: 409 });
+      return NextResponse.json({ error: 'This time slot was just booked by someone else. Please choose another.', code: 'SLOT_TAKEN' }, { status: 409 });
     }
     if (e instanceof Error && e.message === 'PAST_SLOT') {
-      return NextResponse.json({ error: 'This time slot has already passed. Please choose another.' }, { status: 409 });
+      return NextResponse.json({ error: 'This time slot has already passed. Please choose another.', code: 'PAST_SLOT' }, { status: 409 });
     }
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

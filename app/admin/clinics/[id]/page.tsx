@@ -6,7 +6,7 @@ import TimePicker from '@/components/admin/TimePicker';
 import {
   ArrowLeft, Loader2, X, ShieldCheck,
   Phone, Globe, Clock, MapPin, Star, CheckCircle2,
-  Stethoscope, Package, Building2,
+  Stethoscope, Package, Building2, Link2, Music2, Map,
 } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
 
@@ -22,7 +22,8 @@ interface Clinic {
   id: string; name: string; nameEn: string | null;
   type: string; address: string | null; addressEn: string | null;
   state: string | null; township: string | null;
-  phone: string | null; website: string | null;
+  phone: string | null; phone2: string | null; phone3: string | null; website: string | null;
+  facebookUrl: string | null; tiktokUrl: string | null; mapUrl: string | null;
   imageUrl: string | null; coverUrl: string | null;
   openTime: string | null; closeTime: string | null;
   aboutMm: string | null; aboutEn: string | null;
@@ -65,7 +66,9 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
 
   const [form, setForm] = useState({
     name: '', nameEn: '', type: '',
-    phone: '', website: '', openTime: '', closeTime: '',
+    phone: '', phone2: '', phone3: '', website: '',
+    facebookUrl: '', tiktokUrl: '', mapUrl: '',
+    openTime: '', closeTime: '',
     address: '', addressEn: '', state: '', township: '',
     aboutMm: '', aboutEn: '',
     tagsMmRaw: '', tagsEnRaw: '',
@@ -86,7 +89,8 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       setClinic(c);
       setForm({
         name: c.name, nameEn: c.nameEn ?? '', type: c.type,
-        phone: c.phone ?? '', website: c.website ?? '',
+        phone: c.phone ?? '', phone2: c.phone2 ?? '', phone3: c.phone3 ?? '', website: c.website ?? '',
+        facebookUrl: c.facebookUrl ?? '', tiktokUrl: c.tiktokUrl ?? '', mapUrl: c.mapUrl ?? '',
         openTime: c.openTime ?? '', closeTime: c.closeTime ?? '',
         address: c.address ?? '', addressEn: c.addressEn ?? '',
         state: c.state ?? '', township: c.township ?? '',
@@ -127,7 +131,9 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name, nameEn: form.nameEn || null, type: form.type,
-          phone: form.phone || null, website: form.website || null,
+          phone: form.phone || null, phone2: form.phone2 || null, phone3: form.phone3 || null,
+          website: form.website || null,
+          facebookUrl: form.facebookUrl || null, tiktokUrl: form.tiktokUrl || null, mapUrl: form.mapUrl || null,
           openTime: form.openTime || null, closeTime: form.closeTime || null,
           address: form.address || null, addressEn: form.addressEn || null,
           state: form.state || null, township: form.township || null,
@@ -219,7 +225,12 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         <div className="px-5 pt-10 pb-4">
           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
             {clinic.phone    && <span className="flex items-center gap-1"><Phone size={12}/>{clinic.phone}</span>}
-            {clinic.website  && <span className="flex items-center gap-1"><Globe size={12}/>{clinic.website}</span>}
+            {clinic.phone2   && <span className="flex items-center gap-1"><Phone size={12}/>{clinic.phone2}</span>}
+            {clinic.phone3   && <span className="flex items-center gap-1"><Phone size={12}/>{clinic.phone3}</span>}
+            {clinic.website  && <a href={clinic.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[#2ab5ad]"><Globe size={12}/>Website</a>}
+            {clinic.facebookUrl && <a href={clinic.facebookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[#2ab5ad]"><Link2 size={12}/>Facebook</a>}
+            {clinic.tiktokUrl   && <a href={clinic.tiktokUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[#2ab5ad]"><Music2 size={12}/>TikTok</a>}
+            {clinic.mapUrl      && <a href={clinic.mapUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-[#2ab5ad]"><Map size={12}/>Google Map</a>}
             {clinic.openTime && clinic.closeTime && <span className="flex items-center gap-1"><Clock size={12}/>{clinic.openTime}–{clinic.closeTime}</span>}
             {clinic.address  && <span className="flex items-center gap-1"><MapPin size={12}/>{clinic.address}</span>}
             {!!clinic.rating && <span className="flex items-center gap-1"><Star size={12} className="text-amber-400" fill="currentColor" />{clinic.rating} ({clinic.reviewCount})</span>}
@@ -253,14 +264,22 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div><label className={lbl}>နာမည် (မြန်မာ) *</label><input className={inp} value={form.name} onChange={e => set('name', e.target.value)} /></div>
             <div><label className={lbl}>Name (English)</label><input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className={lbl}>ဖုန်း</label><input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
-              <div><label className={lbl}>Website</label><input className={inp} value={form.website} onChange={e => set('website', e.target.value)} /></div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><label className={lbl}>ဖုန်း ၁</label><input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
+              <div><label className={lbl}>ဖုန်း ၂</label><input className={inp} value={form.phone2} onChange={e => set('phone2', e.target.value)} /></div>
+              <div><label className={lbl}>ဖုန်း ၃</label><input className={inp} value={form.phone3} onChange={e => set('phone3', e.target.value)} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <TimePicker label="ဖွင့်ချိန်" value={form.openTime}  onChange={v => set('openTime', v)}  />
               <TimePicker label="ပိတ်ချိန်" value={form.closeTime} onChange={v => set('closeTime', v)} />
             </div>
+          </Section>
+
+          <Section title="Links">
+            <div><label className={lbl}>Website</label><input className={inp} value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://..." /></div>
+            <div><label className={lbl}>Facebook</label><input className={inp} value={form.facebookUrl} onChange={e => set('facebookUrl', e.target.value)} placeholder="https://facebook.com/..." /></div>
+            <div><label className={lbl}>TikTok</label><input className={inp} value={form.tiktokUrl} onChange={e => set('tiktokUrl', e.target.value)} placeholder="https://tiktok.com/@..." /></div>
+            <div><label className={lbl}>Google Map Link</label><input className={inp} value={form.mapUrl} onChange={e => set('mapUrl', e.target.value)} placeholder="https://maps.google.com/..." /></div>
           </Section>
 
           <Section title="တည်နေရာ">

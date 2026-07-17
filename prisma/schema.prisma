@@ -154,7 +154,12 @@ model Clinic {
   state       String?
   township    String?
   phone       String?
+  phone2      String?
+  phone3      String?
   website     String?
+  facebookUrl String?
+  tiktokUrl   String?
+  mapUrl      String?
   imageUrl    String?
   coverUrl    String?
   openTime    String?

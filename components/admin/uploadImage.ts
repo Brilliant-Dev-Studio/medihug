@@ -1,12 +1,22 @@
 import imageCompression from 'browser-image-compression';
 
 const COMPRESS_THRESHOLD = 1 * 1024 * 1024; // compress anything bigger than 1MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 export async function compressAndUpload(
   file: File,
   onStatus: (s: 'compressing' | 'uploading') => void,
   endpoint: string = '/api/admin/upload',
 ): Promise<string> {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    const isHeic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+    throw new Error(
+      isHeic
+        ? 'iPhone HEIC photos are not supported — please switch your camera format to "Most Compatible" (Settings > Camera > Formats) or pick a JPG/PNG file.'
+        : 'Unsupported file type — please use JPG, PNG, WEBP, or GIF.'
+    );
+  }
+
   let toUpload: File | Blob = file;
 
   if (file.size > COMPRESS_THRESHOLD && file.type !== 'image/gif') {

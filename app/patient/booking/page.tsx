@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChevronLeft, Calendar, Clock, User, Stethoscope,
   Upload, Image as ImageIcon, CheckCircle2, X, FileText,
-  CreditCard, Smartphone, Building2,
+  CreditCard, Smartphone, Building2, CalendarClock, RotateCcw,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from './IntakeForm';
@@ -44,7 +44,7 @@ function BookingContent() {
   const doctorNameMm = params.get('nameMm')      ?? 'ပါမောက္ခသိန်းအောင်';
   const spec         = params.get('spec')        ?? 'Pediatric Specialist';
   const specMm       = params.get('specMm')      ?? 'ကလေးကျန်းမာရေးအထူးကု';
-  const img          = params.get('img')         ?? 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop&crop=face';
+  const img          = params.get('img')         || 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop&crop=face';
   const date         = params.get('date')        ?? 'Fri 27 Jun';
   const dateIso      = params.get('dateIso')     ?? '';
   const slotStart    = params.get('start')       ?? '09:00';
@@ -61,7 +61,7 @@ function BookingContent() {
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
   const [note,       setNote]       = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [submitErr,  setSubmitErr]  = useState('');
+  const [submitErr,  setSubmitErr]  = useState<{ message: string; code?: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const timeLabel = slotEnd
@@ -84,9 +84,12 @@ function BookingContent() {
     setStep('intake');
   }
 
+  const [lastIntake, setLastIntake] = useState<IntakeData | null>(null);
+
   async function handleIntakeDone(intake: IntakeData) {
+    setLastIntake(intake);
     setSubmitting(true);
-    setSubmitErr('');
+    setSubmitErr(null);
     try {
       const receiptUrl = receipt ? await compressAndUpload(receipt.file, () => {}, '/api/patient/upload') : null;
       const res = await fetch('/api/patient/bookings', {
@@ -106,12 +109,16 @@ function BookingContent() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setSubmitErr(data.error ?? (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong')); setSubmitting(false); return; }
+      if (!res.ok) {
+        setSubmitErr({ message: data.error ?? (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong'), code: data.code });
+        setSubmitting(false);
+        return;
+      }
       localStorage.setItem('medihug_patient', JSON.stringify({ name: intake.name, phone: intake.phone }));
       setSubmitting(false);
       setStep('done');
-    } catch {
-      setSubmitErr(mm ? 'ဆာဗာအမှား' : 'Server error');
+    } catch (err) {
+      setSubmitErr({ message: err instanceof Error ? err.message : (mm ? 'ဆာဗာအမှား' : 'Server error') });
       setSubmitting(false);
     }
   }
@@ -122,7 +129,50 @@ function BookingContent() {
       <div className="min-h-full bg-gray-50">
         <div className="max-w-2xl lg:max-w-5xl mx-auto px-4 lg:px-8 py-6">
           {submitErr && (
-            <p className="mb-3 text-center text-xs text-red-500 font-semibold">{submitErr}</p>
+            <div className="mb-4 rounded-2xl border p-4 flex items-start gap-3"
+              style={{
+                backgroundColor: (submitErr.code === 'SLOT_TAKEN' || submitErr.code === 'PAST_SLOT') ? '#fffbeb' : '#fef2f2',
+                borderColor:     (submitErr.code === 'SLOT_TAKEN' || submitErr.code === 'PAST_SLOT') ? '#fde68a' : '#fecaca',
+              }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: (submitErr.code === 'SLOT_TAKEN' || submitErr.code === 'PAST_SLOT') ? '#fef3c7' : '#fee2e2' }}>
+                <CalendarClock className="w-4.5 h-4.5" style={{ color: (submitErr.code === 'SLOT_TAKEN' || submitErr.code === 'PAST_SLOT') ? '#d97706' : '#dc2626' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold" style={{ color: (submitErr.code === 'SLOT_TAKEN' || submitErr.code === 'PAST_SLOT') ? '#b45309' : '#b91c1c' }}>
+                  {submitErr.code === 'SLOT_TAKEN'
+                    ? (mm ? 'အချိန်ပိတ်သွားပါပြီ' : 'This slot just filled up')
+                    : submitErr.code === 'PAST_SLOT'
+                    ? (mm ? 'အချိန်ကုန်သွားပါပြီ' : 'This time has already passed')
+                    : (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong')}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: (submitErr.code === 'SLOT_TAKEN' || submitErr.code === 'PAST_SLOT') ? '#92400e' : '#991b1b' }}>
+                  {submitErr.message}
+                </p>
+                <div className="mt-2.5 flex gap-2">
+                  {(submitErr.code === 'SLOT_TAKEN' || submitErr.code === 'PAST_SLOT') ? (
+                    <button
+                      onClick={() => router.push(`/patient/doctors/${doctorId}?tab=schedule`)}
+                      className="text-xs font-bold px-3.5 py-2 rounded-xl text-white flex items-center gap-1.5"
+                      style={{ backgroundColor: '#d97706' }}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      {mm ? 'အခြားအချိန် ရွေးရန်' : 'Choose Another Time'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => lastIntake && handleIntakeDone(lastIntake)}
+                      disabled={!lastIntake}
+                      className="text-xs font-bold px-3.5 py-2 rounded-xl text-white flex items-center gap-1.5 disabled:opacity-50"
+                      style={{ backgroundColor: '#dc2626' }}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      {mm ? 'ထပ်ကြိုးစားရန်' : 'Try Again'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
           <IntakeForm mm={mm} onDone={handleIntakeDone} />
           {submitting && (
@@ -518,7 +568,7 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
         <input
           ref={fileRef}
           type="file"
-          accept="image/*,application/pdf"
+          accept="image/*"
           className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
         />

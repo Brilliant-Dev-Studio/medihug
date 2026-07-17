@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       name, nameEn, type, address, addressEn, state, township,
-      phone, website, imageUrl, coverUrl, openTime, closeTime,
+      phone, phone2, phone3, website, facebookUrl, tiktokUrl, mapUrl,
+      imageUrl, coverUrl, openTime, closeTime,
       aboutMm, aboutEn, tagsMm, tagsEn, verified, isPartner,
     } = body;
 
@@ -65,7 +66,12 @@ export async function POST(req: NextRequest) {
         state:     state     || null,
         township:  township  || null,
         phone:     phone     || null,
+        phone2:    phone2    || null,
+        phone3:    phone3    || null,
         website:   website   || null,
+        facebookUrl: facebookUrl || null,
+        tiktokUrl:   tiktokUrl   || null,
+        mapUrl:      mapUrl      || null,
         imageUrl:  imageUrl  || null,
         coverUrl:  coverUrl  || null,
         openTime:  openTime  || null,

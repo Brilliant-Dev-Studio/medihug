@@ -1,0 +1,5 @@
+ALTER TABLE "Clinic" ADD COLUMN "phone2" TEXT;
+ALTER TABLE "Clinic" ADD COLUMN "phone3" TEXT;
+ALTER TABLE "Clinic" ADD COLUMN "facebookUrl" TEXT;
+ALTER TABLE "Clinic" ADD COLUMN "tiktokUrl" TEXT;
+ALTER TABLE "Clinic" ADD COLUMN "mapUrl" TEXT;

@@ -11,7 +11,6 @@ import {
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
 import { NotificationBellProvider, NotificationBellButton } from '@/components/NotificationBell';
-import PushPermissionButton from '@/components/PushPermissionButton';
 import { NotificationProvider } from '@/context/NotificationContext';
 import PatientAvatar from '@/components/PatientAvatar';
 
@@ -224,7 +223,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             </Link>
             <div className="flex items-center gap-2">
               <NotificationBellButton />
-              <PushPermissionButton />
               <PatientAvatar
                 src={avatarUrl} loading={avatarLoading}
                 bg={(scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)'}
@@ -293,7 +291,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             })()}
 
             <NotificationBellButton />
-              <PushPermissionButton />
             <div className="flex items-center gap-2 pl-3 border-l border-gray-100">
               <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-8 h-8 rounded-full text-white text-sm" />
               <div>

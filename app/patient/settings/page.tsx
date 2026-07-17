@@ -83,8 +83,8 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error('Save failed');
       setAvatar(url);
       window.dispatchEvent(new CustomEvent('medihug-avatar-updated', { detail: url }));
-    } catch {
-      setAvatarError(mm ? 'ပုံတင်ရာတွင် အမှားရှိသည်' : 'Failed to upload image');
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : (mm ? 'ပုံတင်ရာတွင် အမှားရှိသည်' : 'Failed to upload image'));
     } finally {
       setAvatarUploading(false);
     }

@@ -383,8 +383,8 @@ export default function IntakeForm({ mm, onDone }: { mm: boolean; onDone: (data:
         medHistory, hadSurgery, surgeryDetail, drugAllergy, allergyDetail,
         currentMeds, category, dynSingle, dynMulti, medicalFiles,
       });
-    } catch {
-      setSubmitError(t(mm, { mm: 'ဖိုင်တင်ရာတွင် အမှားရှိသည်', en: 'Failed to upload files' }));
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : t(mm, { mm: 'ဖိုင်တင်ရာတွင် အမှားရှိသည်', en: 'Failed to upload files' }));
     } finally {
       setUploading(false);
     }
