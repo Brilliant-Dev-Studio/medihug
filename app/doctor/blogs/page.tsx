@@ -83,15 +83,15 @@ export default function DoctorBlogsPage() {
   const fmtDate = (s: string | null) => s ? new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-4 lg:space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">My Blogs</h1>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-800">My Blogs</h1>
           <p className="text-sm text-gray-500 mt-0.5">Total {total} articles you&apos;ve written</p>
         </div>
         <button
           onClick={() => router.push('/doctor/blogs/new')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-[0_4px_14px_-4px_rgba(42,181,173,0.5)] hover:shadow-[0_6px_18px_-4px_rgba(42,181,173,0.6)] hover:-translate-y-px active:translate-y-0 transition-all"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-[0_4px_14px_-4px_rgba(42,181,173,0.5)] hover:shadow-[0_6px_18px_-4px_rgba(42,181,173,0.6)] hover:-translate-y-px active:translate-y-0 transition-all"
           style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)` }}
         >
           <Plus size={16} /> Write Blog
@@ -130,75 +130,109 @@ export default function DoctorBlogsPage() {
             <p className="mt-3 text-sm">You haven&apos;t written any blogs yet</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Article</th>
-                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Category</th>
-                <th className="text-center px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider hidden lg:table-cell">Created</th>
-                <th className="px-4 py-3.5 w-16" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+          <>
+            {/* Mobile: card list */}
+            <div className="lg:hidden divide-y divide-gray-50">
               {blogs.map(b => (
-                <tr key={b.id} onClick={() => router.push(`/doctor/blogs/${b.id}`)} className="hover:bg-gray-50/60 transition-colors cursor-pointer">
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-3">
-                      {b.imageUrl ? (
-                        <img src={b.imageUrl} alt={b.title} className="h-11 w-15 rounded-xl object-cover border border-gray-100 shrink-0 shadow-sm" />
-                      ) : (
-                        <div className="h-11 w-15 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-                          <FileText size={16} className="text-gray-300" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-semibold text-gray-800 truncate max-w-65">{b.title}</p>
-                        {b.titleEn && <p className="text-xs text-gray-400 truncate max-w-65">{b.titleEn}</p>}
-                      </div>
+                <div key={b.id} onClick={() => router.push(`/doctor/blogs/${b.id}`)}
+                  className="px-4 py-3.5 flex items-center gap-3 active:bg-gray-50/60 transition-colors cursor-pointer">
+                  {b.imageUrl ? (
+                    <img src={b.imageUrl} alt={b.title} className="h-11 w-15 rounded-xl object-cover border border-gray-100 shrink-0 shadow-sm" />
+                  ) : (
+                    <div className="h-11 w-15 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                      <FileText size={16} className="text-gray-300" />
                     </div>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    {b.category
-                      ? <span className="px-2.5 py-1 rounded-full bg-teal-50 text-[#2ab5ad] text-xs font-semibold">{b.category}</span>
-                      : <span className="text-gray-300 text-xs">—</span>}
-                  </td>
-                  <td className="px-4 py-3.5 text-center" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => togglePublished(b)}
-                      disabled={toggling === b.id}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors disabled:opacity-60"
-                      style={b.isPublished ? { backgroundColor: '#d1fae5', color: '#059669' } : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}>
-                      {toggling === b.id ? <Loader2 size={11} className="animate-spin" /> : b.isPublished ? <Globe size={11} /> : <EyeOff size={11} />}
-                      {b.isPublished ? 'Published' : 'Draft'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3.5 text-xs text-gray-400 hidden lg:table-cell whitespace-nowrap">
-                    {fmtDate(b.createdAt)}
-                  </td>
-                  <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => setDeleteTarget(b)}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
-                      <Trash2 size={15} />
-                    </button>
-                  </td>
-                </tr>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-800 truncate">{b.title}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {b.category && <span className="px-2 py-0.5 rounded-full bg-teal-50 text-[#2ab5ad] text-[10px] font-semibold">{b.category}</span>}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: b.isPublished ? '#059669' : '#9ca3af' }}>
+                        {b.isPublished ? <Globe size={10} /> : <EyeOff size={10} />}
+                        {b.isPublished ? 'Published' : 'Draft'}
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(b); }}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors shrink-0">
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Desktop: table */}
+            <table className="hidden lg:table w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/60">
+                  <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Article</th>
+                  <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Category</th>
+                  <th className="text-center px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Status</th>
+                  <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Created</th>
+                  <th className="px-4 py-3.5 w-16" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {blogs.map(b => (
+                  <tr key={b.id} onClick={() => router.push(`/doctor/blogs/${b.id}`)} className="hover:bg-gray-50/60 transition-colors cursor-pointer">
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3">
+                        {b.imageUrl ? (
+                          <img src={b.imageUrl} alt={b.title} className="h-11 w-15 rounded-xl object-cover border border-gray-100 shrink-0 shadow-sm" />
+                        ) : (
+                          <div className="h-11 w-15 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
+                            <FileText size={16} className="text-gray-300" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-semibold text-gray-800 truncate max-w-65">{b.title}</p>
+                          {b.titleEn && <p className="text-xs text-gray-400 truncate max-w-65">{b.titleEn}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      {b.category
+                        ? <span className="px-2.5 py-1 rounded-full bg-teal-50 text-[#2ab5ad] text-xs font-semibold">{b.category}</span>
+                        : <span className="text-gray-300 text-xs">—</span>}
+                    </td>
+                    <td className="px-4 py-3.5 text-center" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => togglePublished(b)}
+                        disabled={toggling === b.id}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-colors disabled:opacity-60"
+                        style={b.isPublished ? { backgroundColor: '#d1fae5', color: '#059669' } : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}>
+                        {toggling === b.id ? <Loader2 size={11} className="animate-spin" /> : b.isPublished ? <Globe size={11} /> : <EyeOff size={11} />}
+                        {b.isPublished ? 'Published' : 'Draft'}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3.5 text-xs text-gray-400 whitespace-nowrap">
+                      {fmtDate(b.createdAt)}
+                    </td>
+                    <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => setDeleteTarget(b)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
 
         {!loading && total > 0 && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100">
+          <div className="flex items-center justify-between px-4 lg:px-5 py-3.5 border-t border-gray-100">
             <p className="text-xs text-gray-400">
-              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+              <span className="hidden sm:inline">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}</span>
+              <span className="sm:hidden">{page} / {totalPages}</span>
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft size={15} />
               </button>
-              <span className="text-xs text-gray-500 font-semibold px-2">{page} / {totalPages}</span>
+              <span className="hidden sm:inline text-xs text-gray-500 font-semibold px-2">{page} / {totalPages}</span>
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight size={15} />

@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import {
   Phone, MapPin, Stethoscope,
   Languages, GraduationCap, Building2, Users, BadgeCheck, MessageCircle,
+  Camera, Loader2, Pencil, Check, X,
 } from 'lucide-react';
+import { compressAndUpload } from '@/components/admin/uploadImage';
 
 const PRIMARY = '#2ab5ad';
 const DARK    = '#1a9990';
@@ -16,7 +18,7 @@ interface Slot { dayOfWeek: number; startTime: string; endTime: string; duration
 interface Doctor {
   name: string; nameEn: string | null; specialty: string; bio: string | null;
   phone: string | null; phoneSecondary: string | null; viber: string | null;
-  imageUrl: string | null; experience: number; rating: number; reviewCount: number; price: number;
+  imageUrl: string | null; coverUrl: string | null; experience: number; rating: number; reviewCount: number; price: number;
   isAvailable: boolean; qualifications: string | null; careerMm: string | null; careerEn: string | null;
   clinicNote: string | null; clinicNoteEn: string | null; location: string | null;
   languages: string[]; clinicTypesMm: string[]; clinicTypesEn: string[];
@@ -119,9 +121,37 @@ function ProfileSkeleton() {
   );
 }
 
+interface EditForm {
+  bio: string; phoneSecondary: string; viber: string; location: string;
+  careerMm: string; careerEn: string; qualifications: string;
+  clinicNote: string; clinicNoteEn: string;
+  languagesRaw: string; clinicTypesMmRaw: string; clinicTypesEnRaw: string;
+}
+
+function toForm(d: Doctor): EditForm {
+  return {
+    bio: d.bio ?? '', phoneSecondary: d.phoneSecondary ?? '', viber: d.viber ?? '', location: d.location ?? '',
+    careerMm: d.careerMm ?? '', careerEn: d.careerEn ?? '', qualifications: d.qualifications ?? '',
+    clinicNote: d.clinicNote ?? '', clinicNoteEn: d.clinicNoteEn ?? '',
+    languagesRaw: d.languages.join(', '),
+    clinicTypesMmRaw: d.clinicTypesMm.join('\n'), clinicTypesEnRaw: d.clinicTypesEn.join('\n'),
+  };
+}
+
+const inp = 'w-full text-sm text-gray-700 placeholder-gray-300 rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-teal-400 transition-colors';
+const lbl = 'text-xs text-gray-400 mb-1 block';
+
 export default function DoctorProfilePage() {
   const [doctor, setDoctor]   = useState<Doctor | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving,  setSaving]  = useState(false);
+  const [form,    setForm]    = useState<EditForm | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [coverUploading, setCoverUploading]   = useState(false);
+  const [availToggling, setAvailToggling]     = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const coverFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/doctor/profile').then(r => r.json()).then(d => {
@@ -129,6 +159,79 @@ export default function DoctorProfilePage() {
       setLoading(false);
     });
   }, []);
+
+  const set = (k: keyof EditForm, v: string) => setForm(f => f ? { ...f, [k]: v } : f);
+
+  // Safe response parsing — a server error (e.g. 500 with no body) shouldn't crash the page.
+  async function patchProfile(body: Record<string, unknown>): Promise<Doctor | null> {
+    const res = await fetch('/api/doctor/profile', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    let data: { doctor?: Doctor; error?: string } = {};
+    try { data = await res.json(); } catch { /* empty/non-JSON body */ }
+    if (!res.ok) { console.error('Profile update failed:', data.error ?? res.status); return null; }
+    return data.doctor ?? null;
+  }
+
+  const startEdit = () => { if (doctor) { setForm(toForm(doctor)); setEditing(true); } };
+  const cancelEdit = () => { setEditing(false); setForm(null); };
+
+  const saveEdit = async () => {
+    if (!form) return;
+    setSaving(true);
+    try {
+      const updated = await patchProfile({
+        bio: form.bio || null,
+        phoneSecondary: form.phoneSecondary || null,
+        viber: form.viber || null,
+        location: form.location || null,
+        careerMm: form.careerMm || null,
+        careerEn: form.careerEn || null,
+        qualifications: form.qualifications || null,
+        clinicNote: form.clinicNote || null,
+        clinicNoteEn: form.clinicNoteEn || null,
+        languages: form.languagesRaw.split(',').map(s => s.trim()).filter(Boolean),
+        clinicTypesMm: form.clinicTypesMmRaw.split('\n').map(s => s.trim()).filter(Boolean),
+        clinicTypesEn: form.clinicTypesEnRaw.split('\n').map(s => s.trim()).filter(Boolean),
+      });
+      if (updated) { setDoctor(updated); setEditing(false); setForm(null); }
+    } finally { setSaving(false); }
+  };
+
+  const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const url = await compressAndUpload(file, () => {});
+      const updated = await patchProfile({ imageUrl: url });
+      if (updated) setDoctor(updated);
+    } finally { setAvatarUploading(false); }
+  };
+
+  const handleCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setCoverUploading(true);
+    try {
+      const url = await compressAndUpload(file, () => {});
+      const updated = await patchProfile({ coverUrl: url });
+      if (updated) setDoctor(updated);
+    } finally { setCoverUploading(false); }
+  };
+
+  const toggleAvailable = async () => {
+    if (!doctor) return;
+    setAvailToggling(true);
+    const next = !doctor.isAvailable;
+    try {
+      const updated = await patchProfile({ isAvailable: next });
+      if (updated) setDoctor(updated);
+    } finally { setAvailToggling(false); }
+  };
 
   if (loading) return <ProfileSkeleton />;
   if (!doctor) return (
@@ -145,23 +248,48 @@ export default function DoctorProfilePage() {
         className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] overflow-hidden"
       >
         {/* Cover */}
-        <div className="relative h-32 sm:h-40" style={{ background: `linear-gradient(120deg, ${PRIMARY} 0%, ${DARK} 60%, #14625c 100%)` }}>
-          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.14) 0%, transparent 70%)' }} />
-          <div className="absolute -bottom-16 left-1/3 w-56 h-56 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)' }} />
+        <div className="relative h-32 sm:h-40 overflow-hidden" style={!doctor.coverUrl ? { background: `linear-gradient(120deg, ${PRIMARY} 0%, ${DARK} 60%, #14625c 100%)` } : undefined}>
+          {doctor.coverUrl ? (
+            <>
+              <img src={doctor.coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%)' }} />
+            </>
+          ) : (
+            <>
+              <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.14) 0%, transparent 70%)' }} />
+              <div className="absolute -bottom-16 left-1/3 w-56 h-56 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)' }} />
+            </>
+          )}
 
-          <span
-            className="absolute top-3.5 right-3.5 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm"
+          {coverUploading && (
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-white animate-spin" />
+            </div>
+          )}
+
+          <button
+            onClick={toggleAvailable}
+            disabled={availToggling}
+            className="absolute top-3.5 right-3.5 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full backdrop-blur-sm disabled:opacity-60 transition-opacity"
             style={doctor.isAvailable
               ? { backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }
               : { backgroundColor: 'rgba(0,0,0,0.25)', color: 'rgba(255,255,255,0.8)' }}
           >
+            {availToggling ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
             {doctor.isAvailable ? 'Available for booking' : 'Unavailable'}
-          </span>
+          </button>
+
+          <button onClick={() => coverFileRef.current?.click()} disabled={coverUploading}
+            className="absolute bottom-3.5 right-3.5 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1.5 rounded-full backdrop-blur-sm disabled:opacity-50 transition-opacity"
+            style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
+            <Camera className="w-3.5 h-3.5" /> Edit Banner
+          </button>
+          <input ref={coverFileRef} type="file" accept="image/*" className="hidden" onChange={handleCover} />
         </div>
 
         {/* Avatar + identity */}
         <div className="px-5 sm:px-8 pb-6">
-          <div className="flex items-end gap-4 -mt-12 sm:-mt-14">
+          <div className="flex items-end justify-between gap-4 -mt-12 sm:-mt-14">
             <div className="relative shrink-0">
               {doctor.imageUrl ? (
                 <img src={doctor.imageUrl} alt={doctor.name} className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-4 ring-white shadow-lg" />
@@ -170,10 +298,36 @@ export default function DoctorProfilePage() {
                   {doctor.name.charAt(0)}
                 </div>
               )}
-              <span className="absolute bottom-1 right-1 w-7 h-7 rounded-full flex items-center justify-center ring-4 ring-white" style={{ backgroundColor: PRIMARY }}>
-                <BadgeCheck className="w-4 h-4 text-white" />
-              </span>
+              {avatarUploading && (
+                <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center">
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                </div>
+              )}
+              <button onClick={() => fileRef.current?.click()} disabled={avatarUploading}
+                className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-white shadow-md border border-gray-100 flex items-center justify-center disabled:opacity-50">
+                <Camera className="w-4 h-4" style={{ color: PRIMARY }} />
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
             </div>
+
+            {!editing ? (
+              <button onClick={startEdit}
+                className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors shrink-0">
+                <Pencil className="w-3.5 h-3.5" /> Edit Profile
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={cancelEdit} disabled={saving}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50">
+                  <X className="w-3.5 h-3.5" /> Cancel
+                </button>
+                <button onClick={saveEdit} disabled={saving}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl text-white disabled:opacity-60"
+                  style={{ backgroundColor: PRIMARY }}>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="mt-4">
@@ -183,11 +337,22 @@ export default function DoctorProfilePage() {
             </div>
             {doctor.nameEn && <p className="text-sm text-gray-400 mt-0.5">{doctor.nameEn}</p>}
             <p className="text-sm font-semibold mt-1.5" style={{ color: PRIMARY }}>{doctor.specialty}</p>
-            {doctor.bio && <p className="text-sm text-gray-600 leading-relaxed mt-3 max-w-xl">{doctor.bio}</p>}
-            {doctor.location && (
-              <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-3">
-                <MapPin size={12} /> {doctor.location}
-              </p>
+
+            {editing && form ? (
+              <textarea rows={3} className={inp + ' mt-3 max-w-xl resize-none'} placeholder="Bio"
+                value={form.bio} onChange={e => set('bio', e.target.value)} />
+            ) : (
+              doctor.bio && <p className="text-sm text-gray-600 leading-relaxed mt-3 max-w-xl">{doctor.bio}</p>
+            )}
+
+            {editing && form ? (
+              <input className={inp + ' mt-3 max-w-xs'} placeholder="Location" value={form.location} onChange={e => set('location', e.target.value)} />
+            ) : (
+              doctor.location && (
+                <p className="flex items-center gap-1.5 text-xs text-gray-400 mt-3">
+                  <MapPin size={12} /> {doctor.location}
+                </p>
+              )
             )}
           </div>
 
@@ -202,47 +367,85 @@ export default function DoctorProfilePage() {
       </motion.div>
 
       <p className="text-xs text-gray-400 px-1">
-        This info was set up by MediHug admin. Contact admin to request changes.
+        {editing
+          ? 'Name, specialty, fee, experience and weekly schedule are set by MediHug admin — everything else here is yours to edit.'
+          : 'Tap "Edit Profile" to update your bio, contact info, qualifications and services.'}
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Section title="Contact" icon={Phone} index={0}>
           <Row label="Main Phone" value={doctor.phone} />
-          <Row label="Secondary Phone" value={doctor.phoneSecondary} />
-          <Row label="Viber" value={doctor.viber} />
+          {editing && form ? (
+            <>
+              <div><label className={lbl}>Secondary Phone</label><input className={inp} value={form.phoneSecondary} onChange={e => set('phoneSecondary', e.target.value)} /></div>
+              <div><label className={lbl}>Viber</label><input className={inp} value={form.viber} onChange={e => set('viber', e.target.value)} /></div>
+            </>
+          ) : (
+            <>
+              <Row label="Secondary Phone" value={doctor.phoneSecondary} />
+              <Row label="Viber" value={doctor.viber} />
+            </>
+          )}
           <Row label="Location" value={doctor.location} />
         </Section>
 
         <Section title="Professional" icon={GraduationCap} index={1}>
-          <Row label="Career Title" value={doctor.careerMm} />
-          <Row label="Career Title (EN)" value={doctor.careerEn} />
-          <Row label="Qualifications" value={doctor.qualifications} />
-          {doctor.languages.length > 0 && (
-            <div className="flex items-start justify-between gap-4 py-1.5">
-              <p className="text-xs text-gray-400 shrink-0 flex items-center gap-1"><Languages size={12} /> Languages</p>
-              <div className="flex flex-wrap gap-1.5 justify-end">
-                {doctor.languages.map(l => (
-                  <span key={l} className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-600">{l}</span>
-                ))}
-              </div>
+          {editing && form ? (
+            <div className="flex flex-col gap-3">
+              <div><label className={lbl}>Career Title (Myanmar)</label><input className={inp} value={form.careerMm} onChange={e => set('careerMm', e.target.value)} /></div>
+              <div><label className={lbl}>Career Title (English)</label><input className={inp} value={form.careerEn} onChange={e => set('careerEn', e.target.value)} /></div>
+              <div><label className={lbl}>Qualifications</label><input className={inp} value={form.qualifications} onChange={e => set('qualifications', e.target.value)} placeholder="M.B.,B.S | DCH | MRCP" /></div>
+              <div><label className={lbl}>Languages (comma-separated)</label><input className={inp} value={form.languagesRaw} onChange={e => set('languagesRaw', e.target.value)} placeholder="Myanmar, English" /></div>
             </div>
+          ) : (
+            <>
+              <Row label="Career Title" value={doctor.careerMm} />
+              <Row label="Career Title (EN)" value={doctor.careerEn} />
+              <Row label="Qualifications" value={doctor.qualifications} />
+              {doctor.languages.length > 0 && (
+                <div className="flex items-start justify-between gap-4 py-1.5">
+                  <p className="text-xs text-gray-400 shrink-0 flex items-center gap-1"><Languages size={12} /> Languages</p>
+                  <div className="flex flex-wrap gap-1.5 justify-end">
+                    {doctor.languages.map(l => (
+                      <span key={l} className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-50 text-gray-600">{l}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </Section>
 
-        {(doctor.clinicNote || doctor.clinicNoteEn) && (
+        {(editing || doctor.clinicNote || doctor.clinicNoteEn) && (
           <Section title="Clinic Note" icon={Building2} index={2}>
-            {doctor.clinicNote && <p className="text-sm text-gray-600 leading-relaxed">{doctor.clinicNote}</p>}
-            {doctor.clinicNoteEn && <p className="text-xs text-gray-400 leading-relaxed italic mt-1">{doctor.clinicNoteEn}</p>}
+            {editing && form ? (
+              <div className="flex flex-col gap-3">
+                <div><label className={lbl}>Note (Myanmar)</label><textarea rows={3} className={inp + ' resize-none'} value={form.clinicNote} onChange={e => set('clinicNote', e.target.value)} /></div>
+                <div><label className={lbl}>Note (English)</label><textarea rows={3} className={inp + ' resize-none'} value={form.clinicNoteEn} onChange={e => set('clinicNoteEn', e.target.value)} /></div>
+              </div>
+            ) : (
+              <>
+                {doctor.clinicNote && <p className="text-sm text-gray-600 leading-relaxed">{doctor.clinicNote}</p>}
+                {doctor.clinicNoteEn && <p className="text-xs text-gray-400 leading-relaxed italic mt-1">{doctor.clinicNoteEn}</p>}
+              </>
+            )}
           </Section>
         )}
 
-        {doctor.clinicTypesMm.length > 0 && (
+        {(editing || doctor.clinicTypesMm.length > 0) && (
           <Section title="Services" icon={MessageCircle} index={3}>
-            <div className="flex flex-wrap gap-1.5">
-              {doctor.clinicTypesMm.map(t => (
-                <span key={t} className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: '#e6f7f7', color: DARK }}>{t}</span>
-              ))}
-            </div>
+            {editing && form ? (
+              <div className="flex flex-col gap-3">
+                <div><label className={lbl}>Services (Myanmar, one per line)</label><textarea rows={4} className={inp + ' resize-none'} value={form.clinicTypesMmRaw} onChange={e => set('clinicTypesMmRaw', e.target.value)} /></div>
+                <div><label className={lbl}>Services (English, one per line)</label><textarea rows={4} className={inp + ' resize-none'} value={form.clinicTypesEnRaw} onChange={e => set('clinicTypesEnRaw', e.target.value)} /></div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {doctor.clinicTypesMm.map(t => (
+                  <span key={t} className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: '#e6f7f7', color: DARK }}>{t}</span>
+                ))}
+              </div>
+            )}
           </Section>
         )}
       </div>

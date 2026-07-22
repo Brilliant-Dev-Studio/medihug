@@ -207,9 +207,9 @@ export default function DoctorDashboardPage() {
   const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-5">
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-4 lg:space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-800">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-0.5">{todayStr}</p>
       </div>
 
@@ -226,12 +226,12 @@ export default function DoctorDashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Status breakdown — donut with center total + list legend */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-4 sm:p-6">
               <CardHeader icon={PieIcon} title="Appointment Status Breakdown" badge={totalAppts > 0 ? `${totalAppts} total` : undefined} />
               {totalAppts === 0 ? (
                 <EmptyChart icon={PieIcon} message="No appointments yet" />
               ) : (
-                <div className="flex items-center gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
                   <div className="relative shrink-0" style={{ width: 160, height: 160 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -264,7 +264,7 @@ export default function DoctorDashboardPage() {
             </div>
 
             {/* Last 7 days — gradient bar chart */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-6">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-4 sm:p-6">
               <CardHeader icon={BarChart2} title="Appointments — Last 7 Days" badge={weekTotal > 0 ? `${weekTotal} this week` : undefined} />
               {weekTotal === 0 ? (
                 <EmptyChart icon={BarChart2} message="No appointments this week" />
@@ -310,7 +310,7 @@ export default function DoctorDashboardPage() {
                 {today.map(a => {
                   const s = STATUS_STYLE[a.status];
                   return (
-                    <Link key={a.id} href={`/doctor/appointments/${a.id}`} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50/60 transition-colors">
+                    <Link key={a.id} href={`/doctor/appointments/${a.id}`} className="flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 hover:bg-gray-50/60 transition-colors flex-wrap sm:flex-nowrap">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: PRIMARY }}>
                         <User className="w-4 h-4 text-white" />
                       </div>
@@ -318,14 +318,16 @@ export default function DoctorDashboardPage() {
                         <p className="text-sm font-semibold text-gray-800 truncate">{a.user.name}</p>
                         <p className="text-xs text-gray-400 truncate">{a.reason || a.user.phone}</p>
                       </div>
-                      {a.time && (
-                        <span className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
-                          <Clock size={12} /> {a.time}
+                      <div className="flex items-center gap-2 shrink-0 ml-12 sm:ml-0">
+                        {a.time && (
+                          <span className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
+                            <Clock size={12} /> {a.time}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>
+                          <s.icon size={11} /> {s.label}
                         </span>
-                      )}
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full shrink-0" style={{ backgroundColor: s.bg, color: s.color }}>
-                        <s.icon size={11} /> {s.label}
-                      </span>
+                      </div>
                     </Link>
                   );
                 })}

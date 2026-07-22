@@ -27,13 +27,13 @@ export default function DoctorNotificationsPage() {
   const feedId    = process.env.NEXT_PUBLIC_KNOCK_FEED_CHANNEL_ID;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-5">
+    <div className="p-4 lg:p-6 max-w-4xl mx-auto space-y-4 lg:space-y-5">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#e6f7f7' }}>
           <Bell className="w-4.5 h-4.5" style={{ color: PRIMARY }} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Notifications</h1>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-800">Notifications</h1>
           <p className="text-sm text-gray-500 mt-0.5">Updates on your appointments</p>
         </div>
       </div>

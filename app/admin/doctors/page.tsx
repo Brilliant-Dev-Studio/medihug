@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Search, Filter, Plus, ChevronLeft, ChevronRight,
   ChevronDown, X, Eye, Star, Stethoscope,
-  CheckCircle2, XCircle, Loader2,
+  CheckCircle2, XCircle, Loader2, Download, Upload,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const PRIMARY = '#2ab5ad';
 
@@ -49,6 +50,8 @@ export default function AdminDoctorsPage() {
   const [page,           setPage]           = useState(1);
   const [showFilter,     setShowFilter]     = useState(false);
   const [filterSpecialties, setFilterSpecialties] = useState<SpecialtyItem[]>([]);
+  const [importing, setImporting] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
   const PAGE_SIZE = 10;
 
   useEffect(() => {
@@ -71,6 +74,31 @@ export default function AdminDoctorsPage() {
   const hasFilter = specialty || isAvail || isActive;
   const resetFilters = () => { setSpecialty(''); setIsAvail(''); setIsActive(''); setPage(1); };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res  = await fetch('/api/admin/doctors/import', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error ?? 'Import failed'); return; }
+      if (data.createdCount > 0) {
+        toast.success(`Imported ${data.createdCount} of ${data.total} doctors`);
+      }
+      if (data.skipped?.length > 0) {
+        toast.error(`${data.skipped.length} row(s) skipped — e.g. row ${data.skipped[0].row}: ${data.skipped[0].reason}`, { duration: 6000 });
+      }
+      fetchDoctors();
+    } catch {
+      toast.error('Import failed — check the file and try again');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-5">
 
@@ -88,11 +116,23 @@ export default function AdminDoctorsPage() {
             </div>
           ))}
         </div>
-        <Link href="/admin/doctors/create"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
-          style={{ backgroundColor: PRIMARY }}>
-          <Plus className="w-4 h-4" /> Create Doctor
-        </Link>
+        <div className="flex flex-wrap gap-2.5">
+          <a href="/api/admin/doctors/export"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors">
+            <Download className="w-4 h-4" /> Export CSV
+          </a>
+          <button onClick={() => importFileRef.current?.click()} disabled={importing}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-60">
+            {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            {importing ? 'Importing…' : 'Import CSV'}
+          </button>
+          <input ref={importFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={handleImport} />
+          <Link href="/admin/doctors/create"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white"
+            style={{ backgroundColor: PRIMARY }}>
+            <Plus className="w-4 h-4" /> Create Doctor
+          </Link>
+        </div>
       </div>
 
       {/* Search + filter bar */}

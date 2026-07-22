@@ -8,10 +8,9 @@ import {
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
-  ViewSection, StatusChanger, STATUS_STYLE, type Appointment,
+  ViewSection, StatusChanger, STATUS_STYLE, LangDropdown, type Appointment,
 } from '@/app/admin/appointments/shared';
-
-const mm = false; // doctor portal is English-only for now
+import { useLang } from '@/app/lib/LanguageContext';
 
 function Skel({ className, style }: { className: string; style?: React.CSSProperties }) {
   return <div className={`bg-gray-100 rounded-md animate-pulse ${className}`} style={style} />;
@@ -19,7 +18,7 @@ function Skel({ className, style }: { className: string; style?: React.CSSProper
 
 function AppointmentDetailSkeleton() {
   return (
-    <div className="p-6 max-w-6xl mx-auto flex flex-col gap-5">
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto flex flex-col gap-4 lg:gap-5">
       <Skel className="w-40 h-4" />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
         <div className="flex flex-col gap-5">
@@ -73,6 +72,8 @@ function AppointmentDetailSkeleton() {
 export default function DoctorAppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { lang } = useLang();
+  const mm = lang === 'mm';
   const [appt, setAppt] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
@@ -110,8 +111,8 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
   if (!appt) return (
     <div className="flex flex-col items-center justify-center h-64 gap-3">
       <Calendar className="w-12 h-12 text-gray-200" />
-      <p className="text-gray-400">Appointment not found.</p>
-      <button onClick={() => router.back()} className="text-sm font-semibold" style={{ color: PRIMARY }}>← Back</button>
+      <p className="text-gray-400">{t(mm, { mm: 'ချိန်းဆိုမှု ရှာမတွေ့ပါ', en: 'Appointment not found.' })}</p>
+      <button onClick={() => router.back()} className="text-sm font-semibold" style={{ color: PRIMARY }}>← {t(mm, { mm: 'နောက်သို့', en: 'Back' })}</button>
     </div>
   );
 
@@ -132,11 +133,14 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
   const s = STATUS_STYLE[appt.status];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto flex flex-col gap-5">
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto flex flex-col gap-4 lg:gap-5">
 
-      <button onClick={() => router.push('/doctor/appointments')} className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors w-fit">
-        <ArrowLeft className="w-4 h-4" /> Back to Appointments
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={() => router.push('/doctor/appointments')} className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 transition-colors w-fit">
+          <ArrowLeft className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">{t(mm, { mm: 'ချိန်းဆိုမှုများသို့ ပြန်သွားရန်', en: 'Back to Appointments' })}</span>
+        </button>
+        <LangDropdown />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
@@ -164,7 +168,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
 
           {/* Doctor + meta */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Doctor</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t(mm, { mm: 'ဆရာဝန်', en: 'Doctor' })}</p>
             <div className="flex items-center gap-3">
               {appt.doctor.imageUrl ? (
                 <img src={appt.doctor.imageUrl} alt={doctorName} className="w-12 h-12 rounded-xl object-cover shrink-0" />
@@ -206,22 +210,22 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
 
           {/* Status changer */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Booking Status</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{t(mm, { mm: 'ချိန်းဆိုမှု အခြေအနေ', en: 'Booking Status' })}</p>
             <StatusChanger status={appt.status} onChanged={updateStatus} mm={mm} />
           </div>
 
           {/* Video call */}
           {appt.status === 'CONFIRMED' && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Video Call</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t(mm, { mm: 'ဗီဒီယိုခေါ်ဆိုမှု', en: 'Video Call' })}</p>
               {!appt.doctorApproved ? (
                 <>
-                  <p className="text-xs text-gray-400">Approve this appointment to enable the video call for you and the patient.</p>
+                  <p className="text-xs text-gray-400">{t(mm, { mm: 'ဤချိန်းဆိုမှုကို အတည်ပြုပါက သင်နှင့် လူနာအတွက် ဗီဒီယိုခေါ်ဆိုမှု ဖွင့်ပေးပါမည်', en: 'Approve this appointment to enable the video call for you and the patient.' })}</p>
                   <button onClick={approveVideoCall} disabled={approving}
                     className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60"
                     style={{ backgroundColor: PRIMARY }}>
                     {approving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-                    Approve for Video Call
+                    {t(mm, { mm: 'ဗီဒီယိုခေါ်ဆိုမှုအတွက် အတည်ပြုမည်', en: 'Approve for Video Call' })}
                   </button>
                 </>
               ) : (
@@ -229,7 +233,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
                   className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2"
                   style={{ backgroundColor: PRIMARY }}>
                   <Video className="w-4 h-4" />
-                  Start Video Call
+                  {t(mm, { mm: 'ဗီဒီယိုခေါ်ဆိုမည်', en: 'Start Video Call' })}
                 </button>
               )}
             </div>
@@ -240,53 +244,53 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
         <div className="lg:col-span-2 flex flex-col gap-5">
 
           {(appt.reason || appt.note) && (
-            <ViewSection icon={FileText} title="Reason / Note" rows={[
-              ...(appt.reason ? [{ label: 'Reason', value: appt.reason }] : []),
-              ...(appt.note   ? [{ label: 'Note',   value: appt.note }]   : []),
+            <ViewSection icon={FileText} title={t(mm, { mm: 'အကြောင်းအရာ / မှတ်ချက်', en: 'Reason / Note' })} rows={[
+              ...(appt.reason ? [{ label: t(mm, { mm: 'အကြောင်းအရာ', en: 'Reason' }), value: appt.reason }] : []),
+              ...(appt.note   ? [{ label: t(mm, { mm: 'မှတ်ချက်', en: 'Note' }),      value: appt.note }]   : []),
             ]} />
           )}
 
           {!d ? (
             <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
               <FileText className="w-8 h-8 mx-auto text-gray-200 mb-2" />
-              <p className="text-sm text-gray-400">No pre-consultation form submitted.</p>
+              <p className="text-sm text-gray-400">{t(mm, { mm: 'ကြိုတင် ဆေးဘက်ဆိုင်ရာ မှတ်တမ်း မဖြည့်ရသေးပါ', en: 'No pre-consultation form submitted.' })}</p>
             </div>
           ) : (
             <>
-              <ViewSection icon={User} title="Patient Information" rows={[
-                { label: 'Name',   value: d.name },
-                { label: 'Phone',  value: d.phone },
-                { label: 'Age',    value: d.age ? `${d.age} yrs` : '' },
-                { label: 'Gender', value: d.gender === 'male' ? 'Male' : d.gender === 'female' ? 'Female' : d.gender ? 'Other' : '' },
+              <ViewSection icon={User} title={t(mm, { mm: 'လူနာ အချက်အလက်', en: 'Patient Information' })} rows={[
+                { label: t(mm, { mm: 'နာမည်', en: 'Name' }),       value: d.name },
+                { label: t(mm, { mm: 'ဖုန်းနံပါတ်', en: 'Phone' }), value: d.phone },
+                { label: t(mm, { mm: 'အသက်', en: 'Age' }),       value: d.age ? `${d.age} ${t(mm, { mm: 'နှစ်', en: 'yrs' })}` : '' },
+                { label: t(mm, { mm: 'ကျား/မ', en: 'Gender' }),  value: d.gender === 'male' ? t(mm, { mm: 'ကျား', en: 'Male' }) : d.gender === 'female' ? t(mm, { mm: 'မ', en: 'Female' }) : d.gender ? t(mm, { mm: 'အခြား', en: 'Other' }) : '' },
               ]} />
 
-              <ViewSection icon={FileText} title="Consultation Reason" rows={[
-                { label: 'Main complaint', value: d.mainComplaint },
-                { label: 'Details',        value: d.symptomDetail },
+              <ViewSection icon={FileText} title={t(mm, { mm: 'ဆေးဝါးဆိုင်ရာ အကြောင်းအရာ', en: 'Consultation Reason' })} rows={[
+                { label: t(mm, { mm: 'အဓိက ပြဿနာ', en: 'Main complaint' }), value: d.mainComplaint },
+                { label: t(mm, { mm: 'အသေးစိတ်', en: 'Details' }),         value: d.symptomDetail },
               ]} />
 
               {d.category && (dynRows.length > 0 || multiRows.length > 0) && (
-                <ViewSection icon={Stethoscope} title="Medical Category" rows={[
-                  { label: 'Category', value: CATEGORIES[d.category] ? t(mm, CATEGORIES[d.category]) : d.category },
+                <ViewSection icon={Stethoscope} title={t(mm, { mm: 'ရောဂါ အမျိုးအစား', en: 'Medical Category' })} rows={[
+                  { label: t(mm, { mm: 'အမျိုးအစား', en: 'Category' }), value: CATEGORIES[d.category] ? t(mm, CATEGORIES[d.category]) : d.category },
                   ...dynRows,
                   ...multiRows,
                 ]} />
               )}
 
               {d.pregnancy && (
-                <ViewSection icon={AlertTriangle} title="Female Patient Info" rows={[
-                  { label: 'Status', value: t(mm, { no: { mm: 'မဟုတ်ပါ', en: 'None' }, pregnant: { mm: 'ကိုယ်ဝန်ရှိသည်', en: 'Pregnant' }, breastfeed: { mm: 'နို့တိုက်မိခင်', en: 'Breastfeeding' } }[d.pregnancy] ?? { mm: d.pregnancy, en: d.pregnancy }) },
+                <ViewSection icon={AlertTriangle} title={t(mm, { mm: 'အမျိုးသမီးလူနာများအတွက်', en: 'Female Patient Info' })} rows={[
+                  { label: t(mm, { mm: 'အခြေအနေ', en: 'Status' }), value: t(mm, { no: { mm: 'မဟုတ်ပါ', en: 'None' }, pregnant: { mm: 'ကိုယ်ဝန်ရှိသည်', en: 'Pregnant' }, breastfeed: { mm: 'နို့တိုက်မိခင်', en: 'Breastfeeding' } }[d.pregnancy] ?? { mm: d.pregnancy, en: d.pregnancy }) },
                 ]} />
               )}
 
-              <ViewSection icon={Stethoscope} title="Past Medical History" rows={[
-                { label: 'Chronic conditions', value: (d.medHistory ?? []).map(k => MED_LABELS[k] ? t(mm, MED_LABELS[k]) : k).join(', ') || 'None' },
-                { label: 'Past surgery',       value: d.hadSurgery === 'yes' ? (d.surgeryDetail || 'Yes') : 'No' },
+              <ViewSection icon={Stethoscope} title={t(mm, { mm: 'ယခင် ရောဂါရာဇဝင်', en: 'Past Medical History' })} rows={[
+                { label: t(mm, { mm: 'အခံရောဂါ', en: 'Chronic conditions' }), value: (d.medHistory ?? []).map(k => MED_LABELS[k] ? t(mm, MED_LABELS[k]) : k).join(', ') || t(mm, { mm: 'မရှိပါ', en: 'None' }) },
+                { label: t(mm, { mm: 'ခွဲစိတ်ဖူး', en: 'Past surgery' }),   value: d.hadSurgery === 'yes' ? (d.surgeryDetail || t(mm, { mm: 'ဖူးပါသည်', en: 'Yes' })) : t(mm, { mm: 'မဖူးပါ', en: 'No' }) },
               ]} />
 
-              <ViewSection icon={AlertTriangle} title="Allergies & Medications" rows={[
-                { label: 'Drug allergy',          value: d.drugAllergy === 'yes' ? (d.allergyDetail || 'Yes') : 'None' },
-                { label: 'Current medications',   value: (d.currentMeds ?? []).map(k => MED_MEDS[k] ? t(mm, MED_MEDS[k]) : k).join(', ') || '—' },
+              <ViewSection icon={AlertTriangle} title={t(mm, { mm: 'ဆေးနှင့် ဓာတ်မတည့်မှု', en: 'Allergies & Medications' })} rows={[
+                { label: t(mm, { mm: 'ဆေးမတည့်ခြင်း', en: 'Drug allergy' }),        value: d.drugAllergy === 'yes' ? (d.allergyDetail || t(mm, { mm: 'ရှိပါသည်', en: 'Yes' })) : t(mm, { mm: 'မရှိပါ', en: 'None' }) },
+                { label: t(mm, { mm: 'လက်ရှိ ဆေးဝါးများ', en: 'Current medications' }), value: (d.currentMeds ?? []).map(k => MED_MEDS[k] ? t(mm, MED_MEDS[k]) : k).join(', ') || '—' },
               ]} />
             </>
           )}

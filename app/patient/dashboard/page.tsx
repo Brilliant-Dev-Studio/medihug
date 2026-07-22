@@ -194,8 +194,9 @@ interface DoctorItem {
 }
 
 interface UpcomingAppointment {
+  id: string;
   doctor_mm: string; doctor_en: string; spec_mm: string; spec_en: string;
-  date: string; time: string; img: string; pending: boolean;
+  date: string; time: string; img: string | null; pending: boolean;
 }
 
 interface RawAppointment {
@@ -244,10 +245,11 @@ export default function PatientDashboard() {
             const dt = new Date(a.date);
             const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             return {
+              id: a.id,
               doctor_mm: a.doctor.name, doctor_en: a.doctor.nameEn ?? a.doctor.name,
               spec_mm: a.doctor.specialty, spec_en: a.doctor.specialtyEn ?? a.doctor.specialty,
               date: dateStr, time: a.time ?? '',
-              img: a.doctor.imageUrl ?? '/avatar-placeholder.png',
+              img: a.doctor.imageUrl,
               pending: a.status === 'PENDING',
             };
           });
@@ -412,9 +414,17 @@ export default function PatientDashboard() {
             ) : (
               <div className="flex flex-col gap-2">
                 {upcomingAppointments.slice(0, 3).map((a, i) => (
-                  <div key={i} className="bg-white rounded-xl px-3.5 py-3 border border-gray-100 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-gray-100">
-                      <Image src={a.img} alt={a.doctor_en} width={40} height={40} className="w-full h-full object-cover" />
+                  <Link key={a.id} href={`/patient/appointments/${a.id}/form`}
+                    className="bg-white rounded-xl px-3.5 py-3 border border-gray-100 flex items-center gap-3 hover:border-gray-200 transition-colors">
+                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-gray-100 flex items-center justify-center"
+                      style={{ backgroundColor: `${AVATAR_COLORS[i % AVATAR_COLORS.length]}20` }}>
+                      {a.img ? (
+                        <Image src={a.img} alt={a.doctor_en} width={40} height={40} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-bold" style={{ color: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
+                          {(mm ? a.doctor_mm : a.doctor_en).charAt(0)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm truncate" style={{ color: PRIMARY }}>
@@ -432,7 +442,7 @@ export default function PatientDashboard() {
                     >
                       {a.pending ? (mm ? 'စောင့်ဆိုင်း' : 'Pending') : (mm ? 'အတည်ပြု' : 'Confirmed')}
                     </span>
-                  </div>
+                  </Link>
                 ))}
                 {upcomingAppointments.length > 3 && (
                   <Link

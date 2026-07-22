@@ -71,6 +71,7 @@ model Doctor {
   phoneSecondary String?
   viber          String?
   imageUrl       String?
+  coverUrl       String?
   experience     Int      @default(0)
   rating         Float    @default(0)
   reviewCount    Int      @default(0)

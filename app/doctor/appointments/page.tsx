@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search, ChevronLeft, ChevronRight, Calendar, Clock,
-  Hourglass, CheckCircle2, XCircle, ChevronDown,
+  Hourglass, CheckCircle2, XCircle, ChevronDown, Eye,
 } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
@@ -93,15 +93,15 @@ export default function DoctorAppointmentsPage() {
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-5">
+    <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-4 lg:space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">My Appointments</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-800">My Appointments</h1>
         <p className="text-sm text-gray-500 mt-0.5">{total} total appointments</p>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-55">
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 sm:min-w-55">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad]"
@@ -119,7 +119,7 @@ export default function DoctorAppointmentsPage() {
         </select>
       </div>
 
-      {/* Table */}
+      {/* List */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] overflow-hidden">
         {loading ? (
           <div className="divide-y divide-gray-50">
@@ -129,9 +129,9 @@ export default function DoctorAppointmentsPage() {
                   <div className="bg-gray-100 rounded-md animate-pulse h-3 w-24" />
                   <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-20" />
                 </div>
-                <div className="bg-gray-100 rounded-md animate-pulse h-2.5 flex-1" />
+                <div className="hidden lg:block bg-gray-100 rounded-md animate-pulse h-2.5 flex-1" />
                 <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-24 shrink-0" />
-                <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-16 shrink-0" />
+                <div className="hidden lg:block bg-gray-100 rounded-md animate-pulse h-2.5 w-16 shrink-0" />
                 <div className="bg-gray-100 rounded-full animate-pulse h-6 w-20 shrink-0" />
               </div>
             ))}
@@ -142,53 +142,87 @@ export default function DoctorAppointmentsPage() {
             <p className="mt-3 text-sm">No appointments found</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
-                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Patient</th>
-                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Reason</th>
-                <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Date</th>
-                <th className="text-right px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Fee</th>
-                <th className="text-center px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+          <>
+            {/* Mobile: card list */}
+            <div className="lg:hidden divide-y divide-gray-50">
               {appts.map(a => (
-                <tr key={a.id} onClick={() => router.push(`/doctor/appointments/${a.id}`)} className="hover:bg-gray-50/60 transition-colors cursor-pointer">
-                  <td className="px-4 py-3.5">
-                    <p className="font-semibold text-gray-800">{a.user.name}</p>
-                    <p className="text-xs text-gray-400">{a.user.phone}</p>
-                  </td>
-                  <td className="px-4 py-3.5 text-gray-500 max-w-65">
-                    <p className="truncate">{a.reason || '—'}</p>
-                  </td>
-                  <td className="px-4 py-3.5 text-xs text-gray-500 whitespace-nowrap">
+                <div key={a.id} onClick={() => router.push(`/doctor/appointments/${a.id}`)}
+                  className="px-4 py-3.5 flex flex-col gap-2 active:bg-gray-50/60 transition-colors cursor-pointer">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-800 truncate">{a.user.name}</p>
+                      <p className="text-xs text-gray-400">{a.user.phone}</p>
+                    </div>
+                    <div className="shrink-0" onClick={e => e.stopPropagation()}>
+                      <StatusDropdown status={a.status} onChange={s => updateStatus(a.id, s)} />
+                    </div>
+                  </div>
+                  {a.reason && <p className="text-xs text-gray-500 line-clamp-2">{a.reason}</p>}
+                  <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
                     <span className="flex items-center gap-1"><Clock size={11} /> {fmtDate(a.date)}{a.time ? ` · ${a.time}` : ''}</span>
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-semibold text-gray-800 whitespace-nowrap">
-                    {a.fee ? `${a.fee.toLocaleString()} Ks` : '—'}
-                  </td>
-                  <td className="px-4 py-3.5 text-center" onClick={e => e.stopPropagation()}>
-                    <StatusDropdown status={a.status} onChange={s => updateStatus(a.id, s)} />
-                  </td>
-                </tr>
+                    <span className="font-semibold text-gray-800">{a.fee ? `${a.fee.toLocaleString()} Ks` : '—'}</span>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Desktop: table */}
+            <table className="hidden lg:table w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50/60">
+                  <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Patient</th>
+                  <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Reason</th>
+                  <th className="text-left px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Date</th>
+                  <th className="text-right px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Fee</th>
+                  <th className="text-center px-4 py-3.5 font-bold text-gray-400 text-[10px] uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3.5 w-10" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {appts.map(a => (
+                  <tr key={a.id} onClick={() => router.push(`/doctor/appointments/${a.id}`)} className="hover:bg-gray-50/60 transition-colors cursor-pointer">
+                    <td className="px-4 py-3.5">
+                      <p className="font-semibold text-gray-800">{a.user.name}</p>
+                      <p className="text-xs text-gray-400">{a.user.phone}</p>
+                    </td>
+                    <td className="px-4 py-3.5 text-gray-500 max-w-65">
+                      <p className="truncate">{a.reason || '—'}</p>
+                    </td>
+                    <td className="px-4 py-3.5 text-xs text-gray-500 whitespace-nowrap">
+                      <span className="flex items-center gap-1"><Clock size={11} /> {fmtDate(a.date)}{a.time ? ` · ${a.time}` : ''}</span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-semibold text-gray-800 whitespace-nowrap">
+                      {a.fee ? `${a.fee.toLocaleString()} Ks` : '—'}
+                    </td>
+                    <td className="px-4 py-3.5 text-center" onClick={e => e.stopPropagation()}>
+                      <StatusDropdown status={a.status} onChange={s => updateStatus(a.id, s)} />
+                    </td>
+                    <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => router.push(`/doctor/appointments/${a.id}`)}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors whitespace-nowrap">
+                        <Eye size={13} /> View Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
 
         {/* Pagination */}
         {!loading && total > 0 && (
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-gray-100">
+          <div className="flex items-center justify-between px-4 lg:px-5 py-3.5 border-t border-gray-100">
             <p className="text-xs text-gray-400">
-              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
+              <span className="hidden sm:inline">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}</span>
+              <span className="sm:hidden">{page} / {totalPages}</span>
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft size={15} />
               </button>
-              <span className="text-xs text-gray-500 font-semibold px-2">{page} / {totalPages}</span>
+              <span className="hidden sm:inline text-xs text-gray-500 font-semibold px-2">{page} / {totalPages}</span>
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight size={15} />
