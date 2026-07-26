@@ -1,0 +1,1 @@
+ALTER TABLE "Appointment" ADD COLUMN "callRinging" BOOLEAN NOT NULL DEFAULT false;

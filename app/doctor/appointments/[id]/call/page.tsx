@@ -4,17 +4,12 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import VideoCallRoom from '@/components/VideoCallRoom';
-
-interface CallAppointment {
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
-  doctorApproved: boolean;
-  user: { name: string };
-}
+import type { Appointment } from '@/app/admin/appointments/shared';
 
 export default function DoctorVideoCallPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [appt, setAppt] = useState<CallAppointment | null>(null);
+  const [appt, setAppt] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -49,6 +44,7 @@ export default function DoctorVideoCallPage({ params }: { params: Promise<{ id: 
       peerName={appt.user.name}
       backHref={`/doctor/appointments/${id}`}
       shareable
+      patientRecord={appt}
     />
   );
 }

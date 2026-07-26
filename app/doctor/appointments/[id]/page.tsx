@@ -77,6 +77,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
   const [appt, setAppt] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
+  const [callStarting, setCallStarting] = useState(false);
 
   const fetchAppt = useCallback(async () => {
     setLoading(true);
@@ -104,6 +105,15 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
     });
     setAppt(a => a ? { ...a, doctorApproved: true } : a);
     setApproving(false);
+  }
+
+  async function startCall() {
+    setCallStarting(true);
+    await fetch(`/api/doctor/appointments/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callRinging: true }),
+    });
+    router.push(`/doctor/appointments/${id}/call`);
   }
 
   if (loading) return <AppointmentDetailSkeleton />;
@@ -229,10 +239,10 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
                   </button>
                 </>
               ) : (
-                <button onClick={() => router.push(`/doctor/appointments/${id}/call`)}
-                  className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2"
+                <button onClick={startCall} disabled={callStarting}
+                  className="w-full py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60"
                   style={{ backgroundColor: PRIMARY }}>
-                  <Video className="w-4 h-4" />
+                  {callStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
                   {t(mm, { mm: 'ဗီဒီယိုခေါ်ဆိုမည်', en: 'Start Video Call' })}
                 </button>
               )}

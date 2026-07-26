@@ -236,6 +236,8 @@ model Appointment {
   intake        Json?
   status        AppointmentStatus @default(PENDING)
   doctorApproved Boolean          @default(false)
+  callRinging   Boolean           @default(false)
+  callDeclined  Boolean           @default(false)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 

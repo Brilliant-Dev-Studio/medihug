@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
@@ -13,6 +13,7 @@ import { ThemeProvider } from '../lib/ThemeContext';
 import { NotificationBellProvider, NotificationBellButton } from '@/components/NotificationBell';
 import { NotificationProvider } from '@/context/NotificationContext';
 import PatientAvatar from '@/components/PatientAvatar';
+import IncomingCallRing from '@/components/IncomingCallRing';
 
 // TODO: no patient auth/session exists yet in this codebase — replace with the real logged-in patient id once patient login is wired up.
 const DEMO_PATIENT_ID = 'demo-patient-001';
@@ -35,6 +36,7 @@ const ACCENT  = 'var(--color-accent)';
 
 export default function PatientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { lang, setLang } = useLang();
   const mm = lang === 'mm';
   const [scrolled, setScrolled]       = useState(false);
@@ -74,7 +76,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   }, [pathname]);
 
   // Video call room renders full-screen — skip the portal chrome entirely.
-  if (pathname.endsWith('/call')) return <>{children}</>;
+  if (pathname.endsWith('/call')) return <><IncomingCallRing />{children}</>;
 
   const sidebarW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
@@ -92,6 +94,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <NotificationProvider userId={DEMO_PATIENT_ID}>
     <NotificationBellProvider userId={DEMO_PATIENT_ID}>
     <ThemeProvider>
+    <IncomingCallRing />
     <div className="min-h-screen bg-gray-50 flex">
 
       {/* ── Sidebar (desktop lg+) ── */}
@@ -187,14 +190,14 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
             </div>
           )}
-          <Link
-            href="/signin"
+          <button
+            onClick={() => { localStorage.removeItem('medihug_patient'); router.replace('/signin'); }}
             title={collapsed ? (mm ? 'ထွက်ရန်' : 'Sign Out') : undefined}
             className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all ${collapsed ? 'justify-center' : ''}`}
           >
             <LogOut style={{ width: 18, height: 18, flexShrink: 0 }} />
             {!collapsed && <span>{mm ? 'ထွက်ရန်' : 'Sign Out'}</span>}
-          </Link>
+          </button>
         </div>
       </aside>
 

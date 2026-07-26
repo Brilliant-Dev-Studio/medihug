@@ -27,7 +27,11 @@ export async function middleware(req: NextRequest) {
     reqHeaders.set('x-admin-name',  encodeURIComponent(payload.name));
     reqHeaders.set('x-admin-phone', payload.phone);
 
-    return NextResponse.next({ request: { headers: reqHeaders } });
+    // No cache so the browser can't show this authenticated page from bfcache
+    // after logout when the user hits Back.
+    const res = NextResponse.next({ request: { headers: reqHeaders } });
+    res.headers.set('Cache-Control', 'no-store, must-revalidate');
+    return res;
   }
 
   // Guard /doctor routes
@@ -51,7 +55,11 @@ export async function middleware(req: NextRequest) {
     reqHeaders.set('x-doctor-user-id', payload.id);
     reqHeaders.set('x-doctor-name',    encodeURIComponent(payload.name));
 
-    return NextResponse.next({ request: { headers: reqHeaders } });
+    // No cache so the browser can't show this authenticated page from bfcache
+    // after logout when the user hits Back.
+    const res = NextResponse.next({ request: { headers: reqHeaders } });
+    res.headers.set('Cache-Control', 'no-store, must-revalidate');
+    return res;
   }
 
   return NextResponse.next();

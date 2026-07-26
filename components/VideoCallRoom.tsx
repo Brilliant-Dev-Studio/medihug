@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Loader2, AlertTriangle, Share2 } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Loader2, AlertTriangle, Share2, FileText } from 'lucide-react';
 import type { IAgoraRTCClient, IMicrophoneAudioTrack, ICameraVideoTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
+import type { Appointment } from '@/app/admin/appointments/shared';
+import PatientRecordPanel from '@/components/PatientRecordPanel';
 
 const PRIMARY = 'var(--color-primary, #2ab5ad)';
 const CALL_DURATION_SECONDS = 30 * 60;
 const WARNING_AT_SECONDS = 2 * 60; // show the countdown once 2 minutes remain
+const DECLINE_POLL_MS = 3000;
 
 interface Props {
   appointmentId: string;
@@ -18,6 +21,7 @@ interface Props {
   peerName: string;
   backHref: string;
   shareable?: boolean; // show a "Share" button that copies a guest join link (doctor/patient only)
+  patientRecord?: Appointment; // doctor role only — enables the in-call "Patient Record" panel
 }
 
 function fmtCountdown(seconds: number): string {
@@ -26,7 +30,7 @@ function fmtCountdown(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export default function VideoCallRoom({ appointmentId, role, phone, displayName, peerName, backHref, shareable }: Props) {
+export default function VideoCallRoom({ appointmentId, role, phone, displayName, peerName, backHref, shareable, patientRecord }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const [error, setError] = useState('');
@@ -34,6 +38,7 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
   const [camOn, setCamOn] = useState(true);
   const [peerJoined, setPeerJoined] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(CALL_DURATION_SECONDS);
+  const [recordOpen, setRecordOpen] = useState(false);
 
   const localVideoRef  = useRef<HTMLDivElement>(null);
   const remoteVideoRef = useRef<HTMLDivElement>(null);
@@ -130,6 +135,27 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [status, router, backHref]);
+
+  // Doctor only: while waiting for the patient to join, watch for a decline so the
+  // doctor isn't left staring at "Waiting…" forever with no feedback.
+  useEffect(() => {
+    if (role !== 'doctor' || peerJoined) return;
+    let cancelled = false;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/doctor/appointments/${appointmentId}`);
+        const data = await res.json();
+        if (cancelled || !data.appointment?.callDeclined) return;
+        toast.error('Patient declined the call');
+        fetch(`/api/doctor/appointments/${appointmentId}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callDeclined: false }),
+        }).catch(() => {});
+        router.push(backHref);
+      } catch {}
+    }, DECLINE_POLL_MS);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [role, peerJoined, appointmentId, router, backHref]);
 
   const toggleMic = () => {
     audioTrackRef.current?.setEnabled(!micOn);
@@ -234,7 +260,18 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
             <Share2 className="w-5 h-5 text-white" />
           </button>
         )}
+        {role === 'doctor' && patientRecord && (
+          <button onClick={() => setRecordOpen(true)}
+            className="w-14 h-14 rounded-full flex items-center justify-center transition-colors"
+            style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+            <FileText className="w-5 h-5 text-white" />
+          </button>
+        )}
       </div>
+
+      {role === 'doctor' && patientRecord && (
+        <PatientRecordPanel appointment={patientRecord} open={recordOpen} onClose={() => setRecordOpen(false)} />
+      )}
     </div>
   );
 }

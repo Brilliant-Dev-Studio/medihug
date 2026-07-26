@@ -20,14 +20,23 @@ export default function PatientVideoCallPage({ params }: { params: Promise<{ id:
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let phoneVal = '';
     const raw = localStorage.getItem('medihug_patient');
     if (raw) {
-      try { setPhone((JSON.parse(raw) as { phone: string }).phone); } catch {}
+      try { phoneVal = (JSON.parse(raw) as { phone: string }).phone; setPhone(phoneVal); } catch {}
     }
     fetch(`/api/patient/appointments/${id}`)
       .then(r => r.json())
       .then(d => setAppt(d.appointment ?? null))
       .finally(() => setLoading(false));
+
+    // Joining the call answers it — stop the ring on any other device/tab.
+    if (phoneVal) {
+      fetch(`/api/patient/appointments/${id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneVal, callRinging: false }),
+      }).catch(() => {});
+    }
   }, [id]);
 
   if (loading) return (

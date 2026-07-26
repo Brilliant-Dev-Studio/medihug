@@ -35,14 +35,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!doctorId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const { status, doctorApproved } = await req.json();
+  const { status, doctorApproved, callRinging, callDeclined } = await req.json();
 
   const existing = await db.appointment.findUnique({ where: { id }, select: { doctorId: true, status: true } });
   if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const data: { status?: 'CONFIRMED' | 'COMPLETED'; doctorApproved?: boolean } = {};
+  const data: { status?: 'CONFIRMED' | 'COMPLETED'; doctorApproved?: boolean; callRinging?: boolean; callDeclined?: boolean } = {};
 
   if (status !== undefined) {
     // Doctors can only mark an admin-approved appointment as completed (or back to confirmed) —
@@ -57,6 +57,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Invalid doctorApproved' }, { status: 400 });
     }
     data.doctorApproved = doctorApproved;
+  }
+  if (callRinging !== undefined) {
+    if (typeof callRinging !== 'boolean') {
+      return NextResponse.json({ error: 'Invalid callRinging' }, { status: 400 });
+    }
+    data.callRinging = callRinging;
+  }
+  if (callDeclined !== undefined) {
+    if (callDeclined !== false) {
+      return NextResponse.json({ error: 'Invalid callDeclined' }, { status: 400 });
+    }
+    data.callDeclined = false;
   }
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
