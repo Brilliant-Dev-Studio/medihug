@@ -561,12 +561,12 @@ export default function PatientDashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm truncate" style={{ color: PRIMARY }}>{displayName}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: '#eff6ff', color: SECONDARY }}>
+                      <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                        <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full truncate max-w-32" style={{ backgroundColor: '#eff6ff', color: SECONDARY }}>
                           {d.specialty}
                         </span>
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span className="text-xs font-bold text-amber-700">{d.rating.toFixed(1)}</span>
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+                        <span className="text-xs font-bold text-amber-700 shrink-0">{d.rating.toFixed(1)}</span>
                       </div>
                       <p className="text-xs font-semibold mt-0.5" style={{ color: PRIMARY }}>
                         {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}

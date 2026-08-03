@@ -66,6 +66,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
   const startEditInfo = () => {
     if (!doctor) return;
     setInfoForm({
+      imageUrl: doctor.imageUrl ?? '',
       name: doctor.name, nameEn: doctor.nameEn ?? '',
       specialty: doctor.specialty, bio: doctor.bio ?? '',
       phone: doctor.phone ?? '', phoneSecondary: doctor.phoneSecondary ?? '',
@@ -87,6 +88,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
   const saveInfo = async () => {
     setSavingInfo(true); setError('');
     const payload = {
+      imageUrl:      infoForm.imageUrl,
       name:          infoForm.name,
       nameEn:        infoForm.nameEn,
       specialty:     infoForm.specialty,
@@ -144,6 +146,18 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
   };
 
   /* ── Gallery edit ── */
+  const [settingProfilePic, setSettingProfilePic] = useState(false);
+  const setAsProfile = async (imageUrl: string) => {
+    setSettingProfilePic(true);
+    const res  = await fetch(`/api/admin/doctors/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageUrl }),
+    });
+    const data = await res.json();
+    if (res.ok) setDoctor(data.doctor);
+    setSettingProfilePic(false);
+  };
+
   const addGalleryItem = () => {
     if (!newImg.imageUrl.trim()) return;
     setGallery(g => [...g, { imageUrl: newImg.imageUrl.trim(), captionMm: newImg.captionMm, captionEn: newImg.captionEn, order: g.length }]);
@@ -235,6 +249,8 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       {editInfo && (
         <div className="bg-white rounded-2xl border-2 p-6 flex flex-col gap-4" style={{ borderColor: PRIMARY }}>
           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PRIMARY }}>Edit Doctor Info</p>
+
+          <ImageDropzone label="Profile Image" value={infoForm.imageUrl ?? ''} onChange={v => setInfoForm(f => ({ ...f, imageUrl: v }))} aspect="square" />
 
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>Name (Myanmar) *</label>
@@ -476,6 +492,12 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
                     <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 text-[11px] text-white font-semibold bg-black/50">
                       {g.captionMm || g.captionEn}
                     </div>
+                  )}
+                  {doctor.imageUrl !== g.imageUrl && (
+                    <button onClick={() => setAsProfile(g.imageUrl)} disabled={settingProfilePic} title="Set as profile picture"
+                      className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-white/90 text-[10px] font-bold text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-60">
+                      <CheckCircle2 className="w-3 h-3" style={{ color: PRIMARY }} /> Set as profile
+                    </button>
                   )}
                   {editGallery && (
                     <button onClick={() => removeGalleryItem(i)}

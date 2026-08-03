@@ -34,18 +34,18 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  // Guard /doctor routes
-  if (pathname.startsWith('/doctor')) {
+  // Guard /doctor routes (except /doctor/login)
+  if (pathname.startsWith('/doctor') && pathname !== '/doctor/login') {
     const token = req.cookies.get('doctor_token')?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL('/signin', req.url));
+      return NextResponse.redirect(new URL('/doctor/login', req.url));
     }
 
     const payload = await verifyDoctorToken(token);
 
     if (!payload || payload.role !== 'DOCTOR' || !payload.doctorId) {
-      const res = NextResponse.redirect(new URL('/signin', req.url));
+      const res = NextResponse.redirect(new URL('/doctor/login', req.url));
       res.cookies.set('doctor_token', '', { maxAge: 0, path: '/' });
       return res;
     }

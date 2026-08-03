@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Search, Filter, Plus, ChevronLeft, ChevronRight,
   ChevronDown, X, Eye, Star, Stethoscope,
-  CheckCircle2, XCircle, Loader2, Download, Upload,
+  Loader2, Download, Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -212,11 +212,21 @@ export default function AdminDoctorsPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[750px]">
+          <table className="w-full min-w-[800px] table-fixed">
+            <colgroup>
+              <col className="w-10" />
+              <col className="w-56" />
+              <col className="w-40" />
+              <col className="w-20" />
+              <col className="w-28" />
+              <col className="w-32" />
+              <col className="w-28" />
+              <col className="w-20" />
+            </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                {['#','Doctor','Specialty','Experience','Price','Slots','Status','Action'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
+                {['#','Doctor','Specialty','Exp','Price','Slots','Status','Action'].map(h => (
+                  <th key={h} className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -228,69 +238,55 @@ export default function AdminDoctorsPage() {
                   <Stethoscope className="w-8 h-8 mx-auto text-gray-200 mb-2" />
                   <p className="text-sm text-gray-400">No doctors found.</p>
                 </td></tr>
-              ) : doctors.map((d, i) => (
+              ) : doctors.map((d, i) => {
+                const slotDays = [...new Set(d.slots.map(s => s.dayOfWeek))].sort((a,b)=>a-b);
+                return (
                 <tr key={d.id} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-4 py-3.5 text-xs text-gray-400">{(page-1)*PAGE_SIZE + i + 1}</td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2.5">
+                  <td className="px-3 py-2.5 text-xs text-gray-400">{(page-1)*PAGE_SIZE + i + 1}</td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
                       {d.imageUrl ? (
-                        <img src={d.imageUrl} alt={d.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                        <img src={d.imageUrl} alt={d.name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                           style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
                           {d.name.split(' ').map((w:string) => w[0]).join('').slice(0,2)}
                         </div>
                       )}
-                      <div>
-                        <p className="text-sm font-semibold text-gray-700 whitespace-nowrap">{d.name}</p>
-                        <p className="text-[10px] text-gray-400">{d.phone}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-700 truncate" title={d.name}>{d.name}</p>
+                        <p className="text-[10px] text-gray-400 truncate">{d.phone}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{d.specialty}</td>
-                  <td className="px-4 py-3.5 text-sm text-gray-500">{d.experience} yr{d.experience !== 1 ? 's':''}</td>
-                  <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{d.price.toLocaleString()} MMK</td>
-                  <td className="px-4 py-3.5">
-                    {d.slots.length === 0 ? (
-                      <span className="text-xs text-gray-300">No slots</span>
+                  <td className="px-3 py-2.5 text-xs text-gray-500 truncate" title={d.specialty}>{d.specialty}</td>
+                  <td className="px-3 py-2.5 text-xs text-gray-500 whitespace-nowrap">{d.experience}y</td>
+                  <td className="px-3 py-2.5 text-xs text-gray-500 whitespace-nowrap truncate">{d.price.toLocaleString()}</td>
+                  <td className="px-3 py-2.5">
+                    {slotDays.length === 0 ? (
+                      <span className="text-[11px] text-gray-300">—</span>
                     ) : (
-                      <div className="flex flex-wrap gap-1">
-                        {d.slots.slice(0,4).map((s, si) => (
-                          <span key={si} className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-teal-50 text-teal-600">
-                            {DAYS[s.dayOfWeek]}
-                          </span>
-                        ))}
-                        {d.slots.length > 4 && <span className="text-[10px] text-gray-400">+{d.slots.length-4}</span>}
-                      </div>
+                      <span className="text-[11px] font-semibold text-teal-600 truncate block" title={slotDays.map(n=>DAYS[n]).join(', ')}>
+                        {slotDays.slice(0,3).map(n=>DAYS[n]).join(', ')}{slotDays.length>3 && ` +${slotDays.length-3}`}
+                      </span>
                     )}
                   </td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex flex-col gap-1">
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full w-fit ${d.isActive ? 'bg-green-50 text-green-600':'bg-red-50 text-red-400'}`}>
-                        {d.isActive ? <CheckCircle2 className="w-3 h-3"/> : <XCircle className="w-3 h-3"/>}
-                        {d.isActive ? 'Active':'Inactive'}
-                      </span>
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full w-fit ${d.isAvailable ? 'bg-blue-50 text-blue-500':'bg-gray-100 text-gray-400'}`}>
-                        <Star className="w-3 h-3"/>
-                        {d.isAvailable ? 'Available':'Unavailable'}
-                      </span>
-                      {d.isSuggested && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full w-fit bg-amber-50 text-amber-500">
-                          <Star className="w-3 h-3 fill-amber-400"/>
-                          Suggested
-                        </span>
-                      )}
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span title={d.isActive ? 'Active':'Inactive'} className={`w-2 h-2 rounded-full shrink-0 ${d.isActive ? 'bg-green-500':'bg-red-300'}`} />
+                      <span title={d.isAvailable ? 'Available':'Unavailable'} className={`w-2 h-2 rounded-full shrink-0 ${d.isAvailable ? 'bg-blue-500':'bg-gray-300'}`} />
+                      {d.isSuggested && <span title="Suggested"><Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" /></span>}
                     </div>
                   </td>
-                  <td className="px-4 py-3.5">
+                  <td className="px-3 py-2.5">
                     <a href={`/admin/doctors/${d.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                      className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
                       style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
-                      <Eye className="w-3.5 h-3.5" /> View
+                      <Eye className="w-3.5 h-3.5" />
                     </a>
                   </td>
                 </tr>
-              ))}
+              );})}
             </tbody>
           </table>
         </div>

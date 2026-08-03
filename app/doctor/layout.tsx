@@ -37,7 +37,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
   const handleLogout = async () => {
     await fetch('/api/doctor/logout', { method: 'POST' });
-    router.replace('/signin');
+    router.replace('/doctor/login');
   };
 
   const SidebarContent = ({ layoutIdPrefix }: { layoutIdPrefix: string }) => (

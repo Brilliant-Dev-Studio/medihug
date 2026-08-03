@@ -8,11 +8,13 @@ import Link from 'next/link';
 import {
   Heart, ChevronLeft, GraduationCap, Languages, MapPin, Stethoscope,
   BriefcaseMedical, CheckCircle2, Hospital, Images, X,
-  Sunrise, Sun, Sunset, Calendar, Clock,
+  Sunrise, Sun, Sunset, Calendar, Clock, CalendarClock,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useLang } from '../../../lib/LanguageContext';
 import { useFavorites } from '../../../lib/useFavorites';
 import IdentifyModal from '../../../components/IdentifyModal';
+import CustomTimeRequestModal from '../../../components/CustomTimeRequestModal';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -95,6 +97,8 @@ export default function DoctorDetailPage() {
   const [rangeEnd,      setRangeEnd]      = useState<string | null>(null);
   const [hoveredSlot,   setHoveredSlot]   = useState<string | null>(null);
   const [fullSlots,     setFullSlots]     = useState<Set<string>>(new Set());
+  const [showCustomRequest,   setShowCustomRequest]   = useState(false);
+  const [submittingCustom,    setSubmittingCustom]    = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -206,6 +210,31 @@ export default function DoctorDetailPage() {
       fee:      tf.toLocaleString(), sessions: String(sc), basePrice: String(doctor.price),
     });
     router.push(`/patient/booking?${q.toString()}`);
+  }
+
+  async function submitCustomTimeRequest(data: { name: string; phone: string; date: string; time: string; note: string }) {
+    if (!doctor) return;
+    setSubmittingCustom(true);
+    try {
+      const res = await fetch('/api/patient/custom-time-requests', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.name, phone: data.phone, doctorId: doctor.id,
+          requestedDate: data.date, requestedTime: data.time, note: data.note || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error ?? (mm ? 'အမှားတစ်ခု ဖြစ်ပွားသည်' : 'Something went wrong'));
+        return;
+      }
+      toast.success(mm ? 'တောင်းဆိုမှု ပေးပို့ပြီးပါပြီ — Admin မှ ဆက်သွယ်ပါမည်' : 'Request sent — our team will contact you');
+      setShowCustomRequest(false);
+    } catch {
+      toast.error(mm ? 'Server ချိတ်ဆက်မှု မအောင်မြင်ပါ' : 'Could not connect to server');
+    } finally {
+      setSubmittingCustom(false);
+    }
   }
 
   /* ── Gallery grid ── */
@@ -512,6 +541,14 @@ export default function DoctorDetailPage() {
         ))
       )}
 
+      {/* Request a custom time */}
+      <button onClick={() => setShowCustomRequest(true)}
+        className="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold border-2 border-dashed transition-colors hover:bg-gray-50"
+        style={{ borderColor: '#e5e7eb', color: PRIMARY }}>
+        <CalendarClock className="w-4 h-4" />
+        {mm ? 'အခြားအချိန် သီးသန့် တောင်းဆိုမည်' : 'Request a Different Time'}
+      </button>
+
       {/* Confirm bar */}
       {showConfirm && (
         <div className="sticky bottom-0 -mx-4 lg:-mx-6 px-4 lg:px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3"
@@ -797,6 +834,15 @@ export default function DoctorDetailPage() {
       )}
 
       {needsIdentity && <IdentifyModal mm={mm} onClose={closeIdentity} onSubmit={submitIdentity} />}
+      {showCustomRequest && (
+        <CustomTimeRequestModal
+          mm={mm}
+          defaultDateIso={days[selectedDay].toISOString()}
+          submitting={submittingCustom}
+          onClose={() => setShowCustomRequest(false)}
+          onSubmit={submitCustomTimeRequest}
+        />
+      )}
     </div>
   );
 }

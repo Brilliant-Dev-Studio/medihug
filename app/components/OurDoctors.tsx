@@ -78,11 +78,10 @@ export default function OurDoctors() {
         </div>
       </div>
 
-      {/* Card row — bleeds past the container's right edge */}
       <div
         ref={scrollRef}
-        className="relative z-10 flex gap-5 overflow-x-auto pb-2 pl-6 sm:pl-8 pr-6"
-        style={{ scrollbarWidth: 'none', paddingLeft: 'max(1.5rem, calc((100vw - 72rem) / 2 + 1.5rem))' }}
+        className="relative z-10 flex gap-5 overflow-x-auto pb-2 max-w-6xl mx-auto px-6"
+        style={{ scrollbarWidth: 'none' }}
       >
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)

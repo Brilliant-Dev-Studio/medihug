@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Phone, Lock } from 'lucide-react';
@@ -12,6 +12,14 @@ export default function SignInPage() {
   const router = useRouter();
   const [show, setShow] = useState(false);
   const [form, setForm] = useState({ phone: '', password: '' });
+  const [stats, setStats] = useState({ doctorCount: 0, patientCount: 0, avgRating: 0 });
+
+  useEffect(() => {
+    fetch('/api/public-stats')
+      .then(r => r.json())
+      .then(d => setStats({ doctorCount: d.doctorCount ?? 0, patientCount: d.patientCount ?? 0, avgRating: d.avgRating ?? 0 }))
+      .catch(() => {});
+  }, []);
 
   const mm = lang === 'mm';
 
@@ -116,11 +124,11 @@ export default function SignInPage() {
           {/* Stats */}
           <div className="flex gap-8 mt-8">
             {[
-              { num: '500+', label_mm: 'ဆရာဝန်', label_en: 'Doctors' },
-              { num: '50K+', label_mm: 'လူနာ', label_en: 'Patients' },
-              { num: '4.9★', label_mm: 'အဆင့်သတ်မှတ်', label_en: 'Rating' },
+              { num: stats.doctorCount.toLocaleString(), label_mm: 'ဆရာဝန်', label_en: 'Doctors' },
+              { num: stats.patientCount.toLocaleString(), label_mm: 'လူနာ', label_en: 'Patients' },
+              { num: `${stats.avgRating.toFixed(1)}★`, label_mm: 'အဆင့်သတ်မှတ်', label_en: 'Rating' },
             ].map(s => (
-              <div key={s.num}>
+              <div key={s.label_en}>
                 <p className="text-white text-xl font-bold">{s.num}</p>
                 <p className="text-white/40 text-xs mt-0.5">{lang === 'mm' ? s.label_mm : s.label_en}</p>
               </div>
