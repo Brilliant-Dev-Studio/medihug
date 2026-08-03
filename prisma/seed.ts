@@ -373,6 +373,54 @@ async function main() {
       tags: ['Healthy Snack', 'High Protein'], keyBenefits: ['Rich in omega-3 & fiber', 'No added sugar'],
       rating: 4.5, reviewCount: 76, isActive: true,
     },
+    {
+      name: 'အမောက်ဇီစီလင်း', nameEn: 'Amoxicillin 500mg',
+      description: 'ဘက်တီးရီးယား ကူးစက်ရောဂါများအတွက် ပဋိဇီဝဆေး', price: 4500, stock: 240,
+      imageUrl: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=600&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=600&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=600&h=600&fit=crop',
+      ],
+      category: 'ဆေးဝါး', brand: 'Pfizer', type: 'Capsule', strength: '500mg', packSize: '21 capsules/box',
+      tags: ['Antibiotic', 'Prescription'], keyBenefits: ['Treats bacterial infections', 'Broad-spectrum coverage'],
+      rating: 4.4, reviewCount: 92, isActive: true,
+    },
+    {
+      name: 'ငါးဆီ Omega-3', nameEn: 'Omega-3 Fish Oil 1000mg',
+      description: 'နှလုံးနှင့် ဦးနှောက်ကျန်းမာရေးအတွက် ငါးဆီဆေးပြား', price: 15000, stock: 200,
+      imageUrl: 'https://images.unsplash.com/photo-1577460551100-d3f01b1f6a71?w=600&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1577460551100-d3f01b1f6a71?w=600&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1550572017-edd951b55104?w=600&h=600&fit=crop',
+      ],
+      category: 'Supplement', brand: "Nature's Bounty", type: 'Softgel', strength: '1000mg', packSize: '60 softgels/bottle',
+      tags: ['Omega-3', 'Heart Health'], keyBenefits: ['Supports cardiovascular health', 'Promotes brain function'],
+      rating: 4.7, reviewCount: 156, isActive: true,
+    },
+    {
+      name: 'နေလောင်ကာကွယ်ရေးလိမ်းဆီ SPF50', nameEn: 'Sunscreen SPF50 PA+++',
+      description: 'နေရောင်ခြည်မှ အရေပြားကို ကာကွယ်ပေးသော ပေါ့ပါးသည့် ဆန်းစကရင်', price: 13500, stock: 175,
+      imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=600&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=600&h=600&fit=crop',
+      ],
+      category: 'အရေပြားထိန်းသိမ်းမှု', brand: 'La Roche-Posay', type: 'Sunscreen', strength: 'SPF50 PA+++', packSize: '50ml',
+      tags: ['Sun Protection', 'Non-Greasy'], keyBenefits: ['Broad-spectrum UVA/UVB protection', 'Lightweight, no white cast'],
+      rating: 4.8, reviewCount: 267, isActive: true,
+    },
+    {
+      name: 'ဒစ်ဂျစ်တယ် ဖျားချိန်တိုင်းကိရိယာ', nameEn: 'Digital Thermometer',
+      description: 'စက္ကန့်ပိုင်းအတွင်း တိကျစွာ ဖျားချိန်တိုင်းတာနိုင်သော ဒစ်ဂျစ်တယ်ကိရိယာ', price: 6500, stock: 130,
+      imageUrl: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=600&h=600&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=600&h=600&fit=crop',
+        'https://images.unsplash.com/photo-1583912267550-d44c9c9c4b3d?w=600&h=600&fit=crop',
+      ],
+      category: 'ဆေးကိရိယာများ', brand: 'Omron', type: 'Device', strength: null, packSize: '1 unit',
+      tags: ['Digital', 'Fast Reading'], keyBenefits: ['10-second accurate reading', 'Waterproof tip'],
+      rating: 4.6, reviewCount: 143, isActive: true,
+    },
   ];
   let productCount = 0;
   for (const p of products) {

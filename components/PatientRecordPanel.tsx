@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { X, User, FileText, Stethoscope, AlertTriangle, Image as ImageIcon, ZoomIn } from 'lucide-react';
 import {
   MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
@@ -115,7 +116,7 @@ export default function PatientRecordPanel({ appointment, open, onClose }: Props
                       {d.medicalFiles.map((f, i) => (
                         <button key={i} type="button" onClick={() => setLightbox({ src: f.url, alt: f.name })}
                           className="group relative rounded-xl overflow-hidden border border-gray-100 bg-gray-50" style={{ aspectRatio: '1' }}>
-                          <img src={f.url} alt={f.name} className="w-full h-full object-cover" />
+                          <Image src={f.url} alt={f.name} fill sizes="120px" className="object-cover" />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center transition-colors">
                             <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
-  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper,
+  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper, ShoppingCart,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
@@ -14,6 +14,8 @@ import { NotificationBellProvider, NotificationBellButton } from '@/components/N
 import { NotificationProvider } from '@/context/NotificationContext';
 import PatientAvatar from '@/components/PatientAvatar';
 import IncomingCallRing from '@/components/IncomingCallRing';
+import SupportChatWidget from '@/components/SupportChatWidget';
+import { useCart } from '../lib/useCart';
 
 // TODO: no patient auth/session exists yet in this codebase — replace with the real logged-in patient id once patient login is wired up.
 const DEMO_PATIENT_ID = 'demo-patient-001';
@@ -39,6 +41,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const router = useRouter();
   const { lang, setLang } = useLang();
   const mm = lang === 'mm';
+  const { count: cartCount } = useCart();
   const [scrolled, setScrolled]       = useState(false);
   const [collapsed, setCollapsed]     = useState(false);
   const [langOpen, setLangOpen]       = useState(false);
@@ -95,6 +98,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <NotificationBellProvider userId={DEMO_PATIENT_ID}>
     <ThemeProvider>
     <IncomingCallRing />
+    <SupportChatWidget />
     <div className="min-h-screen bg-gray-50 flex">
 
       {/* ── Sidebar (desktop lg+) ── */}
@@ -228,6 +232,15 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               />
             </Link>
             <div className="flex items-center gap-2">
+              <Link href="/patient/cart" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300"
+                style={{ backgroundColor: (scrolled && !isDetailPage) ? '#f3f4f6' : 'rgba(255,255,255,0.2)', color: (scrolled && !isDetailPage) ? PRIMARY : '#fff' }}>
+                <ShoppingCart className="w-4.5 h-4.5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: '#ef4444' }}>
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
               <NotificationBellButton />
               <PatientAvatar
                 src={avatarUrl} loading={avatarLoading}
@@ -296,6 +309,14 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               );
             })()}
 
+            <Link href="/patient/cart" className="relative w-9 h-9 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 transition-colors">
+              <ShoppingCart className="w-4 h-4" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: '#ef4444' }}>
+                  {cartCount}
+                </span>
+              )}
+            </Link>
             <NotificationBellButton />
             <div className="flex items-center gap-2 pl-3 border-l border-gray-100">
               <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-8 h-8 rounded-full text-white text-sm" />

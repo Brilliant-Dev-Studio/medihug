@@ -58,6 +58,7 @@ model User {
   appointments        Appointment[]
   doctor              Doctor?
   partnerClinic       Clinic?
+  supportConversation SupportConversation?
   favoriteDoctors     FavoriteDoctor[]
   favoriteProducts    FavoriteProduct[]
   customTimeRequests  CustomTimeRequest[]
@@ -123,6 +124,8 @@ model DoctorGallery {
   createdAt DateTime @default(now())
 
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
 }
 
 // ─────────────────────────────────────────────
@@ -141,6 +144,8 @@ model DoctorSlot {
   createdAt  DateTime @default(now())
 
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
 }
 
 // ─────────────────────────────────────────────
@@ -215,6 +220,7 @@ model ClinicDoctor {
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@unique([clinicId, doctorId])
+  @@index([doctorId])
 }
 
 model ClinicProduct {
@@ -226,6 +232,7 @@ model ClinicProduct {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([clinicId, productId])
+  @@index([productId])
 }
 
 // ─────────────────────────────────────────────
@@ -255,6 +262,10 @@ model Appointment {
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctor Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([doctorId])
+  @@index([clinicId])
 }
 
 // ─────────────────────────────────────────────
@@ -274,6 +285,9 @@ model CustomTimeRequest {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([doctorId])
 }
 
 // ─────────────────────────────────────────────
@@ -360,6 +374,8 @@ model Blog {
   updatedAt      DateTime  @updatedAt
 
   authorDoctor Doctor? @relation(fields: [authorDoctorId], references: [id], onDelete: SetNull)
+
+  @@index([authorDoctorId])
 }
 
 // ─────────────────────────────────────────────
@@ -376,6 +392,7 @@ model FavoriteDoctor {
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@unique([userId, doctorId])
+  @@index([doctorId])
 }
 
 model FavoriteProduct {
@@ -388,6 +405,7 @@ model FavoriteProduct {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@index([productId])
 }
 
 // ─────────────────────────────────────────────
@@ -426,4 +444,38 @@ model Ad {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Customer Support Chat (patient ↔ super admin)
+// ─────────────────────────────────────────────
+
+model SupportConversation {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  lastMessageAt DateTime @default(now())
+  unreadAdmin   Boolean  @default(false) // new patient message the admin hasn't seen
+  unreadPatient Boolean  @default(false) // new admin reply the patient hasn't seen
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages SupportMessage[]
+}
+
+enum SupportSender {
+  PATIENT
+  ADMIN
+}
+
+model SupportMessage {
+  id             String        @id @default(cuid())
+  conversationId String
+  sender         SupportSender
+  body           String
+  createdAt      DateTime      @default(now())
+
+  conversation SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Calendar, Stethoscope, ShoppingBag, Building2 } from 'lucide-react';
 
 const PRIMARY = '#3b5bdb';
@@ -15,13 +16,13 @@ export default function PartnerDashboardPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/partner/me').then(r => r.json()),
-      fetch('/api/partner/appointments').then(r => r.json()),
+      fetch('/api/partner/appointments?page=1&pageSize=1').then(r => r.json()),
       fetch('/api/partner/doctors').then(r => r.json()),
       fetch('/api/partner/products').then(r => r.json()),
     ]).then(([me, appts, docs, prods]) => {
       setClinic(me.clinic ?? null);
       setCounts({
-        appointments: (appts.appointments ?? []).length,
+        appointments: appts.total ?? 0,
         doctors: (docs.doctors ?? []).length,
         products: (prods.products ?? []).length,
       });
@@ -37,9 +38,9 @@ export default function PartnerDashboardPage() {
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto flex flex-col gap-5">
       <div className="rounded-2xl p-6 flex items-center gap-4" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #22308f 100%)` }}>
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-white/15">
+        <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-white/15 overflow-hidden">
           {clinic?.imageUrl ? (
-            <img src={clinic.imageUrl} alt={clinic.name} className="w-full h-full object-cover rounded-2xl" />
+            <Image src={clinic.imageUrl} alt={clinic.name} fill sizes="56px" className="object-cover" />
           ) : (
             <Building2 className="w-6 h-6 text-white" />
           )}

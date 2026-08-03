@@ -95,7 +95,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
           <div className="flex items-center gap-2.5 px-2.5 py-2 mb-1.5 rounded-xl bg-white/5 border border-white/5">
             <div className="shrink-0">
               {clinic.imageUrl ? (
-                <img src={clinic.imageUrl} alt={clinic.name} className="w-8 h-8 rounded-full object-cover ring-2 ring-white/10" />
+                <Image src={clinic.imageUrl} alt={clinic.name} width={32} height={32} className="w-8 h-8 rounded-full object-cover ring-2 ring-white/10" />
               ) : (
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white/10" style={{ backgroundColor: PRIMARY }}>
                   {clinic.name.charAt(0)}

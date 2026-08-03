@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
   ShieldCheck, Menu, X, ChevronRight, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
-  Bell, CalendarClock,
+  Bell, CalendarClock, Headset,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -22,6 +22,7 @@ const navGroups = [
       { href: '/admin/dashboard', icon: LayoutDashboard, mm: 'Dashboard',       en: 'Dashboard' },
       { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports' },
       { href: '/admin/notifications', icon: Bell,        mm: 'အသိပေးချက်များ',   en: 'Notifications' },
+      { href: '/admin/support',   icon: Headset,         mm: 'Customer Support',  en: 'Customer Support' },
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients' },
       { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors' },
       { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments' },
@@ -56,6 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router   = useRouter();
   const [open, setOpen]     = useState(false);
   const [adminId, setAdminId] = useState<string | null>(null);
+  const [supportUnread, setSupportUnread] = useState(false);
 
   useEffect(() => {
     if (pathname === '/admin/login') return;
@@ -64,6 +66,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (!cancelled) setAdminId(d.admin?.id ?? null);
     });
     return () => { cancelled = true; };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname === '/admin/login') return;
+    let cancelled = false;
+    async function poll() {
+      if (document.hidden) return;
+      try {
+        const res = await fetch('/api/admin/support/unread');
+        const data = await res.json();
+        if (!cancelled) setSupportUnread((data.count ?? 0) > 0);
+      } catch {}
+    }
+    poll();
+    const interval = setInterval(poll, 10000);
+    document.addEventListener('visibilitychange', poll);
+    return () => { cancelled = true; clearInterval(interval); document.removeEventListener('visibilitychange', poll); };
   }, [pathname]);
 
   const handleLogout = async () => {
@@ -109,7 +128,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     color: active ? '#fff' : 'rgba(255,255,255,0.5)',
                   }}
                 >
-                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="relative shrink-0">
+                    <Icon className="w-4 h-4" />
+                    {href === '/admin/support' && supportUnread && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
+                    )}
+                  </span>
                   <span>{en}</span>
                   {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-60" />}
                 </Link>

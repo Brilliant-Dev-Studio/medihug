@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { PhoneCall, PhoneOff } from 'lucide-react';
 
 const POLL_MS = 3000;
@@ -91,9 +92,9 @@ export default function IncomingCallRing() {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm px-6">
       <audio ref={audioRef} src="/mixkit-happy-bells-notification-937.wav" loop />
       <div className="w-full max-w-sm bg-white rounded-3xl p-8 flex flex-col items-center gap-4 text-center animate-[pulse_2s_ease-in-out_infinite]">
-        <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold text-white shrink-0" style={{ backgroundColor: 'var(--color-primary)' }}>
+        <div className="relative w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold text-white shrink-0" style={{ backgroundColor: 'var(--color-primary)' }}>
           {ringing.doctor.imageUrl
-            ? <img src={ringing.doctor.imageUrl} alt={doctorName} className="w-full h-full object-cover" />
+            ? <Image src={ringing.doctor.imageUrl} alt={doctorName} fill sizes="96px" className="object-cover" />
             : doctorName.split(' ').map(w => w[0]).join('').slice(0, 2)}
         </div>
         <div>

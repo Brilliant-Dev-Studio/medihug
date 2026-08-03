@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { ShoppingBag } from 'lucide-react';
 
 interface Product {
@@ -34,8 +35,8 @@ export default function PartnerProductsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map(p => (
             <div key={p.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div className="aspect-square bg-gray-50">
-                {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />}
+              <div className="relative aspect-square bg-gray-50">
+                {p.imageUrl && <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" className="object-cover" />}
               </div>
               <div className="p-3">
                 <p className="text-sm font-semibold text-gray-800 truncate">{p.nameEn ?? p.name}</p>

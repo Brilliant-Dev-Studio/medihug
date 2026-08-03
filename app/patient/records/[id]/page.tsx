@@ -4,17 +4,18 @@ import { theme } from '../../../lib/theme'; void theme;
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import {
   ChevronLeft, Star, Heart, Package, Shield, Truck,
-  CheckCircle2, ZoomIn, X, Loader2,
+  CheckCircle2, ZoomIn, X, Loader2, Minus, Plus, ShoppingCart,
 } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
 import { useFavorites } from '../../../lib/useFavorites';
+import { useCart } from '../../../lib/useCart';
 import IdentifyModal from '../../../components/IdentifyModal';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
-const VIBER_NUMBER = '959123456789';
 
 type Product = {
   id: string;
@@ -47,6 +48,8 @@ export default function ProductDetailPage() {
   const [notFound,  setNotFound]  = useState(false);
   const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('product');
   const [zoom,      setZoom]      = useState(false);
+  const [qty, setQty] = useState(1);
+  const { add: addToCart } = useCart();
 
   useEffect(() => {
     fetch(`/api/admin/products/${id}`)
@@ -85,12 +88,24 @@ export default function ProductDetailPage() {
     product.brand    ? { label_mm: 'ထုတ်လုပ်သူ', label_en: 'Brand',     value: product.brand }    : null,
   ].filter((s): s is NonNullable<typeof s> => s !== null);
 
-  const viberMessage = encodeURIComponent(
-    mm
-      ? `မင်္ဂလာပါ၊ ${product.name}${product.packSize ? ` (${product.packSize})` : ''} - ${product.price.toLocaleString()} Ks ကို မှာယူလိုပါသည်။`
-      : `Hello, I would like to order ${product.name}${product.packSize ? ` (${product.packSize})` : ''} - ${product.price.toLocaleString()} Ks.`
+  const handleAddToCart = () => {
+    addToCart(product.id, qty);
+    toast.success(mm ? 'ဈေးခြင်းထဲ ထည့်ပြီးပါပြီ' : 'Added to cart');
+    setQty(1);
+  };
+
+  const qtyStepper = (
+    <div className="flex items-center gap-2 rounded-xl border border-gray-200 px-1 py-1 w-fit">
+      <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-50">
+        <Minus className="w-3.5 h-3.5" />
+      </button>
+      <span className="w-6 text-center text-sm font-bold text-gray-700">{qty}</span>
+      <button onClick={() => setQty(q => Math.min(product.stock, q + 1))} disabled={qty >= product.stock}
+        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30">
+        <Plus className="w-3.5 h-3.5" />
+      </button>
+    </div>
   );
-  const viberUrl = `viber://chat?number=${VIBER_NUMBER}&text=${viberMessage}`;
 
   /* ── Lightbox ── */
   const lightbox = zoom && product.imageUrl && (
@@ -235,14 +250,13 @@ export default function ProductDetailPage() {
     </div>
   );
 
-  const viberButton = (
-    <a href={viberUrl}
-      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-bold text-sm transition-opacity hover:opacity-80 border-2 bg-white"
-      style={{ borderColor: '#7360f2', color: '#7360f2' }}>
-      <Image src="/viberlogo.png" alt="Viber" width={28} height={28} className="object-contain"
-        style={{ filter: 'invert(35%) sepia(80%) saturate(500%) hue-rotate(230deg)' }} />
-      {mm ? 'မှတဆင့် မှာယူမည်' : 'Order via Viber'}
-    </a>
+  const addToCartButton = (
+    <button onClick={handleAddToCart} disabled={product.stock <= 0}
+      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-bold text-sm text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+      style={{ backgroundColor: PRIMARY }}>
+      <ShoppingCart className="w-4 h-4" />
+      {mm ? 'ဈေးခြင်းထဲ ထည့်မည်' : 'Add to Cart'}
+    </button>
   );
 
   return (
@@ -301,16 +315,12 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
 
-                <div className="rounded-xl border border-purple-100 bg-purple-50 px-4 py-3">
-                  <p className="text-xs font-bold text-purple-700 mb-1">{mm ? 'မှာယူပုံ' : 'How to Order'}</p>
-                  <p className="text-xs text-purple-500 leading-relaxed">
-                    {mm
-                      ? 'Viber ကနေ ဆက်သွယ်ပြီး မှာယူနိုင်ပါသည်။ ဆောင်ရွက်ချိန် ၂၄ နာရီ အတွင်း ပြန်လည်ဆက်သွယ်မည်။'
-                      : 'Contact us via Viber to place your order. We will respond within 24 hours.'}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-gray-500">{mm ? 'အရေအတွက်' : 'Quantity'}</p>
+                  {qtyStepper}
                 </div>
 
-                {viberButton}
+                {addToCartButton}
 
                 <button onClick={() => toggleFav(product.id)}
                   className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border font-semibold text-sm transition-all"
@@ -337,18 +347,14 @@ export default function ProductDetailPage() {
 
           <div className="px-4 py-5 pb-36 flex flex-col gap-5">{productInfo}</div>
 
-          <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-100 px-4 py-3 flex gap-3">
+          <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-100 px-4 py-3 flex items-center gap-2.5">
             <button onClick={() => toggleFav(product.id)}
-              className="w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 transition-all"
+              className="w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0 transition-all"
               style={{ borderColor: favorited ? '#ef4444' : '#e5e7eb' }}>
-              <Heart className="w-5 h-5" fill={favorited ? '#ef4444' : 'none'} stroke={favorited ? '#ef4444' : '#9ca3af'} />
+              <Heart className="w-4.5 h-4.5" fill={favorited ? '#ef4444' : 'none'} stroke={favorited ? '#ef4444' : '#9ca3af'} />
             </button>
-            <a href={viberUrl} className="flex-1 flex items-center justify-center gap-2 rounded-xl font-bold text-sm border-2 bg-white py-2.5"
-              style={{ borderColor: '#7360f2', color: '#7360f2' }}>
-              <Image src="/viberlogo.png" alt="Viber" width={28} height={28} className="object-contain"
-                style={{ filter: 'invert(35%) sepia(80%) saturate(500%) hue-rotate(230deg)' }} />
-              {mm ? 'မှတဆင့် မှာယူမည်' : 'Order via Viber'}
-            </a>
+            {qtyStepper}
+            <div className="flex-1 min-w-0">{addToCartButton}</div>
           </div>
         </div>
       </div>

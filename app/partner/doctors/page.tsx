@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Stethoscope, Star } from 'lucide-react';
 
 const PRIMARY = '#3b5bdb';
@@ -38,7 +39,7 @@ export default function PartnerDoctorsPage() {
           {doctors.map(d => (
             <div key={d.id} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-3">
               {d.imageUrl ? (
-                <img src={d.imageUrl} alt={d.name} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                <Image src={d.imageUrl} alt={d.name} width={48} height={48} className="w-12 h-12 rounded-xl object-cover shrink-0" />
               ) : (
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
                   {d.name.charAt(0)}

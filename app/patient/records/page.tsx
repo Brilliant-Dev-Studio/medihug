@@ -8,10 +8,12 @@ import Link from 'next/link';
 import {
   Search, SlidersHorizontal, Star, Heart, Check,
   RotateCcw, ListFilter, Banknote, Tag, Layers,
-  ChevronLeft, ChevronRight, Package, Loader2,
+  ChevronLeft, ChevronRight, Package, Loader2, ShoppingCart,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useLang } from '../../lib/LanguageContext';
 import { useFavorites } from '../../lib/useFavorites';
+import { useCart } from '../../lib/useCart';
 import IdentifyModal from '../../components/IdentifyModal';
 
 const PRIMARY   = 'var(--color-primary)';
@@ -128,6 +130,7 @@ function RadioRow({ active, label, count, onClick }: { active: boolean; label: s
 function ProductCard({ product, mm, catLabel, favorited, onToggleFav }: {
   product: Product; mm: boolean; catLabel: string; favorited: boolean; onToggleFav: () => void;
 }) {
+  const { add: addToCart } = useCart();
   return (
     <Link href={`/patient/records/${product.id}`} className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
       {/* Image */}
@@ -162,8 +165,15 @@ function ProductCard({ product, mm, catLabel, favorited, onToggleFav }: {
           <span className="text-[10px] font-semibold text-gray-700">{product.rating.toFixed(1)}</span>
           <span className="text-[10px] text-gray-400">({product.reviewCount})</span>
         </div>
-        <div className="mt-auto pt-1">
+        <div className="mt-auto pt-1 flex items-center justify-between gap-2">
           <span className="text-sm font-bold" style={{ color: PRIMARY }}>{product.price.toLocaleString()} Ks</span>
+          <button onClick={e => {
+            e.preventDefault(); e.stopPropagation();
+            addToCart(product.id, 1);
+            toast.success(mm ? 'ဈေးခြင်းထဲ ထည့်ပြီးပါပြီ' : 'Added to cart');
+          }} className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
+            <ShoppingCart className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </Link>
