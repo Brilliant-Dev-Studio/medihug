@@ -57,6 +57,7 @@ model User {
 
   appointments        Appointment[]
   doctor              Doctor?
+  partnerClinic       Clinic?
   favoriteDoctors     FavoriteDoctor[]
   favoriteProducts    FavoriteProduct[]
   customTimeRequests  CustomTimeRequest[]
@@ -182,9 +183,11 @@ model Clinic {
   reviewCount Int        @default(0)
   isActive    Boolean    @default(true)
   isPartner   Boolean    @default(true)
+  ownerId     String?    @unique
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  owner        User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   doctors      ClinicDoctor[]
   appointments Appointment[]
   products     ClinicProduct[]

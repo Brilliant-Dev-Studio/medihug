@@ -10,6 +10,7 @@ export interface AdminTokenPayload {
   phone:    string;
   role:     string;
   doctorId?: string;
+  clinicId?: string;
 }
 
 export async function signAdminToken(payload: AdminTokenPayload): Promise<string> {
@@ -29,6 +30,8 @@ export async function verifyAdminToken(token: string): Promise<AdminTokenPayload
   }
 }
 
-// Doctor sessions reuse the same JWT shape/secret, just a different cookie name.
+// Doctor and Partner sessions reuse the same JWT shape/secret, just a different cookie name.
 export const signDoctorToken   = signAdminToken;
 export const verifyDoctorToken = verifyAdminToken;
+export const signPartnerToken   = signAdminToken;
+export const verifyPartnerToken = verifyAdminToken;

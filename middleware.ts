@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminToken, verifyDoctorToken } from '@/lib/jwt';
+import { verifyAdminToken, verifyDoctorToken, verifyPartnerToken } from '@/lib/jwt';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -62,9 +62,35 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
+  // Guard /partner routes (except /partner/login)
+  if (pathname.startsWith('/partner') && pathname !== '/partner/login') {
+    const token = req.cookies.get('partner_token')?.value;
+
+    if (!token) {
+      return NextResponse.redirect(new URL('/partner/login', req.url));
+    }
+
+    const payload = await verifyPartnerToken(token);
+
+    if (!payload || payload.role !== 'PARTNER' || !payload.clinicId) {
+      const res = NextResponse.redirect(new URL('/partner/login', req.url));
+      res.cookies.set('partner_token', '', { maxAge: 0, path: '/' });
+      return res;
+    }
+
+    const reqHeaders = new Headers(req.headers);
+    reqHeaders.set('x-partner-clinic-id', payload.clinicId);
+    reqHeaders.set('x-partner-user-id',   payload.id);
+    reqHeaders.set('x-partner-name',      encodeURIComponent(payload.name));
+
+    const res = NextResponse.next({ request: { headers: reqHeaders } });
+    res.headers.set('Cache-Control', 'no-store, must-revalidate');
+    return res;
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/doctor/:path*'],
+  matcher: ['/admin/:path*', '/doctor/:path*', '/partner/:path*'],
 };
