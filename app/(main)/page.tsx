@@ -10,6 +10,7 @@ import HealthCategories from '../components/HealthCategories';
 import TopSellingProducts from '../components/TopSellingProducts';
 import Testimonials from '../components/Testimonials';
 import OurDoctors from '../components/OurDoctors';
+import HealthcarePrograms from '../components/HealthcarePrograms';
 import PartnerClinics from '../components/PartnerClinics';
 import BlogArticles from '../components/BlogArticles';
 import SpecialOffersBanner from '../components/SpecialOffersBanner';
@@ -234,6 +235,7 @@ export default function Home() {
       <HealthCategories />
     </div>
     <OurDoctors />
+    <HealthcarePrograms />
     <TopSellingProducts />
     <Testimonials />
     <SpecialOffersBanner />

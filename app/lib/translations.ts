@@ -37,6 +37,10 @@ export const t = {
       'First Aid & Emergency': 'အရေးပေါ် ပထမဦးဆုံး အကူအညီ',
     },
 
+    // Healthcare Programs
+    healthcareProgramsTitle: 'ကျန်းမာရေး အစီအစဉ်များ',
+    healthcareProgramsSubtitle: 'သင့်အတွက် အထူးပြုစုစောင့်ရှောက်မှု အစီအစဉ်များ',
+
     // Top Selling Products
     topProductsTitle: 'အရောင်းရဆုံး ကုန်ပစ္စည်းများ',
     topProductsSubtitle: 'သုံးစွဲသူများ အကြိုက်ဆုံးများ',
@@ -117,6 +121,10 @@ export const t = {
       'Fitness & Supplements': 'Fitness & Supplements',
       'First Aid & Emergency': 'First Aid & Emergency',
     },
+
+    // Healthcare Programs
+    healthcareProgramsTitle: 'Healthcare Programs',
+    healthcareProgramsSubtitle: 'Specialized care programs built around you',
 
     // Top Selling Products
     topProductsTitle: 'Top Selling Products',

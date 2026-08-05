@@ -16,7 +16,10 @@ const SLOT_DURATION = 15;
 const DURATION_OPTIONS = [10, 15, 20, 30];
 const AVATAR_COLORS = ['#2ab5ad', '#8b5cf6', '#f59e0b', '#3b82f6', '#10b981', '#ef4444'];
 
-interface Slot    { id?: string; dayOfWeek: number; startTime: string; endTime: string; duration: number; maxPerSlot: number; }
+interface Slot    { id?: string; _key: string; dayOfWeek: number; startTime: string; endTime: string; duration: number; maxPerSlot: number; }
+
+const newKey = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+const withKeys = (list: Omit<Slot, '_key'>[]): Slot[] => list.map(s => ({ ...s, _key: s.id ?? newKey() }));
 interface Gallery { id?: string; imageUrl: string; captionMm: string; captionEn: string; order: number; }
 interface Doctor  {
   id: string; name: string; nameEn: string | null;
@@ -55,7 +58,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
     const res  = await fetch(`/api/admin/doctors/${id}`);
     const data = await res.json();
     setDoctor(data.doctor);
-    setSlots(data.doctor?.slots   ?? []);
+    setSlots(withKeys(data.doctor?.slots ?? []));
     setGallery(data.doctor?.gallery ?? []);
     setLoading(false);
   }, [id]);
@@ -126,11 +129,15 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
     if (slots.find(s => s.dayOfWeek === day))
       setSlots(s => s.filter(sl => sl.dayOfWeek !== day));
     else
-      setSlots(s => [...s, { dayOfWeek: day, startTime: '09:00', endTime: '17:00', duration: SLOT_DURATION, maxPerSlot: 1 }]);
+      setSlots(s => [...s, { _key: newKey(), dayOfWeek: day, startTime: '09:00', endTime: '17:00', duration: SLOT_DURATION, maxPerSlot: 1 }]);
   };
+  const addSlotForDay = (day: number) =>
+    setSlots(s => [...s, { _key: newKey(), dayOfWeek: day, startTime: '09:00', endTime: '17:00', duration: SLOT_DURATION, maxPerSlot: 1 }]);
+  const removeSlot = (key: string) =>
+    setSlots(s => s.filter(sl => sl._key !== key));
 
-  const updateSlot = (day: number, k: keyof Slot, v: string | number) =>
-    setSlots(s => s.map(sl => sl.dayOfWeek === day ? { ...sl, [k]: v } : sl));
+  const updateSlot = (key: string, k: keyof Slot, v: string | number) =>
+    setSlots(s => s.map(sl => sl._key === key ? { ...sl, [k]: v } : sl));
 
   const saveSlots = async () => {
     setSavingSlots(true); setError('');
@@ -141,7 +148,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
     const data = await res.json();
     if (!res.ok) { setError(data.error ?? 'Error'); setSavingSlots(false); return; }
     setDoctor(data.doctor);
-    setSlots(data.doctor?.slots ?? []);
+    setSlots(withKeys(data.doctor?.slots ?? []));
     setEditSlots(false); setSavingSlots(false);
   };
 
@@ -565,7 +572,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
                 {savingSlots ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Save
               </button>
-              <button onClick={() => { setSlots(doctor?.slots ?? []); setEditSlots(false); }}
+              <button onClick={() => { setSlots(withKeys(doctor?.slots ?? [])); setEditSlots(false); }}
                 className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
@@ -597,56 +604,84 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[...slots].sort((a, b) => a.dayOfWeek - b.dayOfWeek).map(slot => (
-                <div key={slot.dayOfWeek} className="rounded-2xl border border-gray-100 p-4 flex flex-col gap-3"
-                  style={{ backgroundColor: editSlots ? '#f9fafb' : '#f0fafa' }}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: PRIMARY }}>
-                        {DAYS[slot.dayOfWeek][0]}
+              {Object.entries(
+                slots.reduce((acc, sl) => {
+                  (acc[sl.dayOfWeek] ??= []).push(sl);
+                  return acc;
+                }, {} as Record<number, Slot[]>)
+              )
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .map(([dayStr, daySlots]) => {
+                  const day = Number(dayStr);
+                  return (
+                    <div key={day} className="rounded-2xl border border-gray-100 p-4 flex flex-col gap-3"
+                      style={{ backgroundColor: editSlots ? '#f9fafb' : '#f0fafa' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: PRIMARY }}>
+                          {DAYS[day][0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-700">{DAYS_MM[day]}</p>
+                          <p className="text-[10px] text-gray-400">{DAYS[day]}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-700">{DAYS_MM[slot.dayOfWeek]}</p>
-                        <p className="text-[10px] text-gray-400">{DAYS[slot.dayOfWeek]}</p>
+
+                      <div className="flex flex-col gap-3">
+                        {daySlots.map(slot => (
+                          <div key={slot._key} className="flex flex-col gap-2 pb-3 border-b border-gray-100 last:border-b-0 last:pb-0">
+                            {editSlots ? (
+                              <>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div><label className={lbl}>Start</label>
+                                    <input type="time" className={inp} value={slot.startTime}
+                                      onChange={e => updateSlot(slot._key, 'startTime', e.target.value)} /></div>
+                                  <div><label className={lbl}>End</label>
+                                    <input type="time" className={inp} value={slot.endTime}
+                                      onChange={e => updateSlot(slot._key, 'endTime', e.target.value)} /></div>
+                                  <div><label className={lbl}>Duration</label>
+                                    <select className={inp} value={slot.duration}
+                                      onChange={e => updateSlot(slot._key, 'duration', parseInt(e.target.value))}>
+                                      {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} min</option>)}
+                                    </select>
+                                  </div>
+                                  <div><label className={lbl}>Max / Slot</label>
+                                    <input type="number" min={1} className={inp} value={slot.maxPerSlot}
+                                      onChange={e => updateSlot(slot._key, 'maxPerSlot', parseInt(e.target.value) || 1)} /></div>
+                                </div>
+                                {daySlots.length > 1 && (
+                                  <button onClick={() => removeSlot(slot._key)}
+                                    className="self-end flex items-center gap-1 text-[11px] font-semibold text-red-400 hover:text-red-500 transition-colors">
+                                    <X className="w-3 h-3" /> Remove this time range
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                  <span className="font-semibold">{slot.startTime}</span>
+                                  <span className="text-gray-300">—</span>
+                                  <span className="font-semibold">{slot.endTime}</span>
+                                </div>
+                                <span className="text-xs font-semibold px-2.5 py-1 rounded-full text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
+                                  {slot.duration} min
+                                </span>
+                                <div className="text-xs text-gray-400">Max {slot.maxPerSlot}/slot</div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
+
+                      {editSlots && (
+                        <button onClick={() => addSlotForDay(day)}
+                          className="flex items-center justify-center gap-1.5 text-xs font-semibold py-2 rounded-lg hover:bg-white transition-colors" style={{ color: PRIMARY }}>
+                          <Plus className="w-3.5 h-3.5" /> Add another time range
+                        </button>
+                      )}
                     </div>
-                    {!editSlots && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>
-                        {slot.duration} min
-                      </span>
-                    )}
-                  </div>
-                  {editSlots ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div><label className={lbl}>Start</label>
-                        <input type="time" className={inp} value={slot.startTime}
-                          onChange={e => updateSlot(slot.dayOfWeek, 'startTime', e.target.value)} /></div>
-                      <div><label className={lbl}>End</label>
-                        <input type="time" className={inp} value={slot.endTime}
-                          onChange={e => updateSlot(slot.dayOfWeek, 'endTime', e.target.value)} /></div>
-                      <div><label className={lbl}>Duration</label>
-                        <select className={inp} value={slot.duration}
-                          onChange={e => updateSlot(slot.dayOfWeek, 'duration', parseInt(e.target.value))}>
-                          {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} min</option>)}
-                        </select>
-                      </div>
-                      <div><label className={lbl}>Max / Slot</label>
-                        <input type="number" min={1} className={inp} value={slot.maxPerSlot}
-                          onChange={e => updateSlot(slot.dayOfWeek, 'maxPerSlot', parseInt(e.target.value) || 1)} /></div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="font-semibold">{slot.startTime}</span>
-                        <span className="text-gray-300">—</span>
-                        <span className="font-semibold">{slot.endTime}</span>
-                      </div>
-                      <div className="text-xs text-gray-400">Max {slot.maxPerSlot}/slot</div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                  );
+                })}
             </div>
           )}
 

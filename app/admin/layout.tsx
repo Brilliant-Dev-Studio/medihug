@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
   ShieldCheck, Menu, X, ChevronRight, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
-  Bell, CalendarClock, Headset,
+  Bell, CalendarClock, Headset, HeartPulse,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -39,6 +39,7 @@ const navGroups = [
       { href: '/admin/product-categories', icon: Layers,      mm: 'Category',           en: 'Categories' },
       { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs' },
       { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories' },
+      { href: '/admin/healthcare-programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်များ', en: 'Healthcare Programs' },
       { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers' },
       { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads' },
       { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records' },

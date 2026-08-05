@@ -11,12 +11,15 @@ const PRIMARY = '#2ab5ad';
 
 interface Slot {
   id?:        string;
+  _key:       string;
   dayOfWeek:  number;
   startTime:  string;
   endTime:    string;
   duration:   number;
   maxPerSlot: number;
 }
+
+const newKey = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 interface SpecialtyItem { id: string; name: string; }
 
 const DAYS    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -54,10 +57,14 @@ export default function CreateDoctorPage() {
     if (slots.find(s => s.dayOfWeek === day))
       setSlots(s => s.filter(sl => sl.dayOfWeek !== day));
     else
-      setSlots(s => [...s, { dayOfWeek: day, startTime: '09:00', endTime: '17:00', duration: SLOT_DURATION, maxPerSlot: 1 }]);
+      setSlots(s => [...s, { _key: newKey(), dayOfWeek: day, startTime: '09:00', endTime: '17:00', duration: SLOT_DURATION, maxPerSlot: 1 }]);
   };
-  const updateSlot = (day: number, k: keyof Slot, v: string | number) =>
-    setSlots(s => s.map(sl => sl.dayOfWeek === day ? { ...sl, [k]: v } : sl));
+  const addSlotForDay = (day: number) =>
+    setSlots(s => [...s, { _key: newKey(), dayOfWeek: day, startTime: '09:00', endTime: '17:00', duration: SLOT_DURATION, maxPerSlot: 1 }]);
+  const removeSlot = (key: string) =>
+    setSlots(s => s.filter(sl => sl._key !== key));
+  const updateSlot = (key: string, k: keyof Slot, v: string | number) =>
+    setSlots(s => s.map(sl => sl._key === key ? { ...sl, [k]: v } : sl));
 
   const applyToAll = (source: Slot) =>
     setSlots(s => s.map(sl => ({ ...sl, startTime: source.startTime, endTime: source.endTime, duration: source.duration, maxPerSlot: source.maxPerSlot })));
@@ -284,56 +291,83 @@ export default function CreateDoctorPage() {
 
           {slots.length > 0 && (
             <div className="flex flex-col gap-3 mt-1">
-              {[...slots].sort((a,b) => a.dayOfWeek - b.dayOfWeek).map((slot, si) => (
-                <div key={slot.dayOfWeek} className="rounded-2xl border border-gray-100 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100" style={{ backgroundColor: `${PRIMARY}08` }}>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style={{ backgroundColor: PRIMARY }}>
-                        {DAYS[slot.dayOfWeek][0]}
+              {Object.entries(
+                slots.reduce((acc, sl) => {
+                  (acc[sl.dayOfWeek] ??= []).push(sl);
+                  return acc;
+                }, {} as Record<number, Slot[]>)
+              )
+                .sort(([a], [b]) => Number(a) - Number(b))
+                .map(([dayStr, daySlots], gi) => {
+                  const day = Number(dayStr);
+                  return (
+                    <div key={day} className="rounded-2xl border border-gray-100 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100" style={{ backgroundColor: `${PRIMARY}08` }}>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold text-white" style={{ backgroundColor: PRIMARY }}>
+                            {DAYS[day][0]}
+                          </div>
+                          <p className="text-sm font-bold text-gray-700">{DAYS_MM[day]} <span className="text-gray-400 font-normal">({DAYS[day]})</span></p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {gi === 0 && slots.length > 1 && (
+                            <button onClick={() => applyToAll(daySlots[0])} title="Apply this time to all slots"
+                              className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors" style={{ color: PRIMARY }}>
+                              <Copy className="w-3 h-3" /> Apply to all
+                            </button>
+                          )}
+                          <button onClick={() => toggleDay(day)} title="Remove this day" className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-white transition-colors">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-sm font-bold text-gray-700">{DAYS_MM[slot.dayOfWeek]} <span className="text-gray-400 font-normal">({DAYS[slot.dayOfWeek]})</span></p>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      {si === 0 && slots.length > 1 && (
-                        <button onClick={() => applyToAll(slot)} title="Apply this time to all selected days"
-                          className="flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg hover:bg-white transition-colors" style={{ color: PRIMARY }}>
-                          <Copy className="w-3 h-3" /> Apply to all
-                        </button>
-                      )}
-                      <button onClick={() => toggleDay(slot.dayOfWeek)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-white transition-colors">
-                        <X className="w-4 h-4" />
+
+                      <div className="divide-y divide-gray-50">
+                        {daySlots.map(slot => (
+                          <div key={slot._key} className="p-4 flex flex-col gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              <div><label className={lbl}>Start Time</label>
+                                <input type="time" className={inp} value={slot.startTime} onChange={e => updateSlot(slot._key,'startTime',e.target.value)} /></div>
+                              <div><label className={lbl}>End Time</label>
+                                <input type="time" className={inp} value={slot.endTime} onChange={e => updateSlot(slot._key,'endTime',e.target.value)} /></div>
+                              <div><label className={lbl}>Duration</label>
+                                <select className={inp} value={slot.duration}
+                                  onChange={e => updateSlot(slot._key, 'duration', parseInt(e.target.value))}>
+                                  {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} min</option>)}
+                                </select>
+                              </div>
+                              <div><label className={lbl}>Max per Slot</label>
+                                <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                                  <button type="button" onClick={() => updateSlot(slot._key,'maxPerSlot', Math.max(1, slot.maxPerSlot - 1))}
+                                    className="w-8 h-full py-2.5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0">
+                                    <Minus className="w-3.5 h-3.5" />
+                                  </button>
+                                  <input type="number" min={1} value={slot.maxPerSlot} readOnly
+                                    className="flex-1 min-w-0 bg-transparent text-center text-sm font-semibold text-gray-700 outline-none" />
+                                  <button type="button" onClick={() => updateSlot(slot._key,'maxPerSlot', slot.maxPerSlot + 1)}
+                                    className="w-8 h-full py-2.5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0">
+                                    <Plus className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            {daySlots.length > 1 && (
+                              <button onClick={() => removeSlot(slot._key)}
+                                className="self-end flex items-center gap-1 text-[11px] font-semibold text-red-400 hover:text-red-500 transition-colors">
+                                <X className="w-3 h-3" /> Remove this time range
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <button onClick={() => addSlotForDay(day)}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold py-2.5 border-t border-gray-100 hover:bg-gray-50 transition-colors" style={{ color: PRIMARY }}>
+                        <Plus className="w-3.5 h-3.5" /> Add another time range
                       </button>
                     </div>
-                  </div>
-
-                  <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div><label className={lbl}>Start Time</label>
-                      <input type="time" className={inp} value={slot.startTime} onChange={e => updateSlot(slot.dayOfWeek,'startTime',e.target.value)} /></div>
-                    <div><label className={lbl}>End Time</label>
-                      <input type="time" className={inp} value={slot.endTime} onChange={e => updateSlot(slot.dayOfWeek,'endTime',e.target.value)} /></div>
-                    <div><label className={lbl}>Duration</label>
-                      <select className={inp} value={slot.duration}
-                        onChange={e => updateSlot(slot.dayOfWeek, 'duration', parseInt(e.target.value))}>
-                        {DURATION_OPTIONS.map(d => <option key={d} value={d}>{d} min</option>)}
-                      </select>
-                    </div>
-                    <div><label className={lbl}>Max per Slot</label>
-                      <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                        <button type="button" onClick={() => updateSlot(slot.dayOfWeek,'maxPerSlot', Math.max(1, slot.maxPerSlot - 1))}
-                          className="w-8 h-full py-2.5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0">
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <input type="number" min={1} value={slot.maxPerSlot} readOnly
-                          className="flex-1 min-w-0 bg-transparent text-center text-sm font-semibold text-gray-700 outline-none" />
-                        <button type="button" onClick={() => updateSlot(slot.dayOfWeek,'maxPerSlot', slot.maxPerSlot + 1)}
-                          className="w-8 h-full py-2.5 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors shrink-0">
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           )}
 

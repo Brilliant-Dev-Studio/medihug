@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, BadgeCheck, Phone, ArrowRight, Star, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BadgeCheck, Phone, ArrowRight, Star, MapPin, Building2 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
@@ -23,11 +23,12 @@ interface Clinic {
 
 function SkeletonCard() {
   return (
-    <div className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white border border-gray-100 overflow-hidden">
-      <div className="h-40 bg-gray-100 animate-pulse" />
-      <div className="p-5 flex flex-col gap-2">
+    <div className="shrink-0 w-48 sm:w-72 rounded-xl bg-white border border-gray-100 overflow-hidden">
+      <div className="h-32 sm:h-40 bg-gray-100 animate-pulse" />
+      <div className="p-3 sm:p-5 flex flex-col gap-2">
         <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
         <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-1/2" />
+        <div className="h-9 bg-gray-100 rounded-full animate-pulse w-full mt-2" />
       </div>
     </div>
   );
@@ -95,21 +96,27 @@ export default function PartnerClinics() {
             const tags = mm ? c.tagsMm : c.tagsEn;
 
             return (
-              <div key={c.id} className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white border border-gray-100 overflow-hidden flex flex-col">
+              <div key={c.id} className="shrink-0 w-48 sm:w-72 rounded-xl bg-white border border-gray-100 overflow-hidden flex flex-col">
 
                 {/* Image */}
-                <div className="relative w-full h-40 overflow-hidden bg-gray-50">
-                  {c.imageUrl && <Image src={c.imageUrl} alt={name} fill className="object-cover" />}
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full max-w-[calc(100%-1.5rem)]">
-                    <BadgeCheck className="w-3.5 h-3.5 text-white shrink-0" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white truncate">{c.type}</span>
-                  </div>
+                <div className="relative w-full h-32 sm:h-40 overflow-hidden" style={{ backgroundColor: `${PRIMARY}08` }}>
+                  {c.imageUrl ? (
+                    <Image src={c.imageUrl} alt={name} fill className="object-contain p-4" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Building2 className="w-9 h-9" style={{ color: `${PRIMARY}40` }} />
+                    </div>
+                  )}
+                  <span className="absolute top-2 left-2 flex items-center gap-1 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm max-w-[calc(100%-1rem)]">
+                    <BadgeCheck className="w-3 h-3 shrink-0" style={{ color: PRIMARY }} />
+                    <span className="text-[9px] font-bold uppercase tracking-wide truncate" style={{ color: PRIMARY }}>{c.type}</span>
+                  </span>
                 </div>
 
                 {/* Body */}
-                <div className="p-3 sm:p-5 flex flex-col gap-2 sm:gap-3">
+                <div className="p-3 sm:p-5 flex flex-col gap-1.5 sm:gap-2.5 flex-1">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 leading-snug truncate">{name}</h3>
+                    <h3 className="text-sm sm:text-lg font-bold text-gray-900 leading-snug line-clamp-2 min-h-[2.4em] sm:min-h-[2.6em]">{name}</h3>
                     {location && (
                       <div className="flex items-center gap-1 mt-1">
                         <MapPin className="w-3 h-3 text-gray-400 shrink-0" />
@@ -118,45 +125,37 @@ export default function PartnerClinics() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-semibold text-gray-700">{c.rating.toFixed(1)}</span>
-                    {c.reviewCount > 0 && <span className="text-xs text-gray-400">({c.reviewCount})</span>}
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {Array.from({ length: 5 }).map((_, s) => (
+                      <Star key={s} className="w-3 h-3" fill={s < Math.round(c.rating) ? '#f59e0b' : 'none'} stroke={s < Math.round(c.rating) ? '#f59e0b' : '#d1d5db'} />
+                    ))}
+                    {c.reviewCount > 0 && <span className="text-[10px] text-gray-400 ml-0.5">({c.reviewCount})</span>}
                     {hours && (
-                      <>
-                        <span className="text-xs text-gray-300">·</span>
-                        <span className="text-xs text-gray-400">{hours}</span>
-                      </>
+                      <span className="text-[10px] text-gray-400 ml-1 truncate">{hours}</span>
                     )}
                   </div>
 
                   {tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="hidden sm:flex flex-wrap gap-1.5">
                       {tags.slice(0, 2).map(t => (
                         <span key={t} className="text-[10px] font-semibold text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full">{t}</span>
                       ))}
                     </div>
                   )}
 
-                  {c.phone && (
-                    <div className="flex items-center gap-1.5">
-                      <Phone className="w-3 h-3 text-gray-400 shrink-0" />
-                      <span className="text-xs text-gray-500">{c.phone}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-auto pt-1.5 sm:pt-2">
                     {c.phone && (
                       <a
                         href={`tel:${c.phone}`}
-                        className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-full border border-gray-200 flex items-center justify-center transition-colors hover:bg-gray-50"
+                        className="w-8 h-8 sm:w-11 sm:h-11 shrink-0 rounded-full border border-gray-200 flex items-center justify-center transition-colors hover:bg-gray-50"
                       >
-                        <Phone className="w-4 h-4 text-gray-700" />
+                        <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-700" />
                       </a>
                     )}
                     <Link
                       href={`/patient/clinics/${c.id}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-2.5 rounded-full text-white text-[11px] sm:text-xs font-bold hover:opacity-90 transition-opacity"
+                      style={{ backgroundColor: PRIMARY }}
                     >
                       {tr.viewDetails}
                       <ArrowRight className="w-3.5 h-3.5" />

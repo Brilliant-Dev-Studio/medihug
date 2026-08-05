@@ -432,6 +432,24 @@ model SpecialOffer {
 }
 
 // ─────────────────────────────────────────────
+// Healthcare Programs (landing page, between Doctors and Products)
+// ─────────────────────────────────────────────
+
+model HealthcareProgram {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  titleMm   String
+  titleEn   String?
+  descMm    String?
+  descEn    String?
+  ctaLink   String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
 // Ads (patient dashboard top slider)
 // ─────────────────────────────────────────────
 

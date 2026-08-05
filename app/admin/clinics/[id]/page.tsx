@@ -6,7 +6,7 @@ import TimePicker from '@/components/admin/TimePicker';
 import {
   ArrowLeft, Loader2, X, ShieldCheck,
   Phone, Globe, Clock, MapPin, Star, CheckCircle2,
-  Stethoscope, Package, Building2, Link2, Music2, Map, KeyRound,
+  Stethoscope, Package, Building2, Link2, Music2, Map, KeyRound, Search,
 } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
 import toast from 'react-hot-toast';
@@ -65,6 +65,9 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
   const [allDoctors, setAllDoctors]   = useState<Doctor[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [partnerTypes, setPartnerTypes] = useState<PartnerType[]>([]);
+
+  const [doctorSearch, setDoctorSearch]   = useState('');
+  const [productSearch, setProductSearch] = useState('');
 
   const [accPhone, setAccPhone]       = useState('');
   const [accPassword, setAccPassword] = useState('');
@@ -477,19 +480,37 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             {/* Add more doctors */}
             <details className="mt-1">
               <summary className="text-xs font-semibold cursor-pointer" style={{ color: PRIMARY }}>+ ဆရာဝန် ထပ်ထည့်ရန်</summary>
-              <div className="mt-2 space-y-1">
-                {allDoctors.filter(d => !linkedDoctorIds.includes(d.id)).map(d => (
-                  <div key={d.id} onClick={() => toggleDoctor(d.id)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border border-gray-100 hover:bg-teal-50 hover:border-teal-200 transition-colors">
-                    {d.imageUrl
-                      ? <img src={d.imageUrl} alt={d.name} className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
-                      : <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">{d.name[0]}</div>}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate">{d.name}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{d.specialty}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-2 space-y-2">
+                <div className="relative">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={doctorSearch}
+                    onChange={e => setDoctorSearch(e.target.value)}
+                    placeholder="ဆရာဝန် အမည် (သို့) အထူးကု ရှာပါ..."
+                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-xs focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors"
+                  />
+                </div>
+                <div className="max-h-56 overflow-y-auto space-y-1 -mx-1 px-1">
+                  {(() => {
+                    const q = doctorSearch.trim().toLowerCase();
+                    const results = allDoctors
+                      .filter(d => !linkedDoctorIds.includes(d.id))
+                      .filter(d => !q || d.name.toLowerCase().includes(q) || (d.nameEn ?? '').toLowerCase().includes(q) || d.specialty.toLowerCase().includes(q));
+                    if (results.length === 0) return <p className="text-xs text-gray-400 text-center py-4">ဆရာဝန် မတွေ့ပါ</p>;
+                    return results.map(d => (
+                      <div key={d.id} onClick={() => toggleDoctor(d.id)}
+                        className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border border-gray-100 hover:bg-teal-50 hover:border-teal-200 transition-colors">
+                        {d.imageUrl
+                          ? <img src={d.imageUrl} alt={d.name} className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
+                          : <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">{d.name[0]}</div>}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-700 truncate">{d.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{d.specialty}</p>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
               </div>
             </details>
           </Section>
@@ -514,19 +535,37 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <details className="mt-1">
               <summary className="text-xs font-semibold cursor-pointer" style={{ color: PRIMARY }}>+ Product ထပ်ထည့်ရန်</summary>
-              <div className="mt-2 space-y-1">
-                {allProducts.filter(p => !linkedProductIds.includes(p.id)).map(p => (
-                  <div key={p.id} onClick={() => toggleProduct(p.id)}
-                    className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border border-gray-100 hover:bg-teal-50 hover:border-teal-200 transition-colors">
-                    {p.imageUrl
-                      ? <img src={p.imageUrl} alt={p.name} className="h-7 w-7 rounded-xl object-cover flex-shrink-0" />
-                      : <div className="h-7 w-7 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><Package size={11} className="text-gray-400" /></div>}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-gray-700 truncate">{p.name}</p>
-                      <p className="text-[10px] text-gray-400">{p.price.toLocaleString()} Ks</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-2 space-y-2">
+                <div className="relative">
+                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={productSearch}
+                    onChange={e => setProductSearch(e.target.value)}
+                    placeholder="Product အမည် ရှာပါ..."
+                    className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-xs focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors"
+                  />
+                </div>
+                <div className="max-h-56 overflow-y-auto space-y-1 -mx-1 px-1">
+                  {(() => {
+                    const q = productSearch.trim().toLowerCase();
+                    const results = allProducts
+                      .filter(p => !linkedProductIds.includes(p.id))
+                      .filter(p => !q || p.name.toLowerCase().includes(q) || (p.nameEn ?? '').toLowerCase().includes(q));
+                    if (results.length === 0) return <p className="text-xs text-gray-400 text-center py-4">Product မတွေ့ပါ</p>;
+                    return results.map(p => (
+                      <div key={p.id} onClick={() => toggleProduct(p.id)}
+                        className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border border-gray-100 hover:bg-teal-50 hover:border-teal-200 transition-colors">
+                        {p.imageUrl
+                          ? <img src={p.imageUrl} alt={p.name} className="h-7 w-7 rounded-xl object-cover shrink-0" />
+                          : <div className="h-7 w-7 rounded-xl bg-gray-100 flex items-center justify-center shrink-0"><Package size={11} className="text-gray-400" /></div>}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-700 truncate">{p.name}</p>
+                          <p className="text-[10px] text-gray-400">{p.price.toLocaleString()} Ks</p>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
               </div>
             </details>
           </Section>
