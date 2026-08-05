@@ -102,7 +102,7 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
 
     await db.$transaction([
       db.doctor.delete({ where: { id } }),
-      db.user.delete({ where: { id: doctor.userId } }),
+      ...(doctor.userId ? [db.user.delete({ where: { id: doctor.userId } })] : []),
     ]);
 
     return NextResponse.json({ success: true });

@@ -190,7 +190,7 @@ export default function DoctorDashboardPage() {
 
   useEffect(() => {
     fetch('/api/doctor/dashboard')
-      .then(r => (r.ok ? r.json() : {}))
+      .then(r => (r.ok ? r.json() : Promise.resolve({} as { today?: Appt[]; counts?: Record<string, number>; weekly?: WeeklyPoint[] })))
       .then(d => {
         setToday(d.today ?? []);
         setCounts(d.counts ?? {});
