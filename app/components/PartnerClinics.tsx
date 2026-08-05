@@ -67,7 +67,7 @@ export default function PartnerClinics() {
           <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.partnerSubtitle}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/patient/categories" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
+          <Link href="/patient/clinics" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
             {tr.seeAll}
           </Link>
           <div className="flex gap-2">

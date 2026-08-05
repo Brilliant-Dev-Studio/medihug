@@ -325,7 +325,7 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
   const [openFee,  setOpenFee]  = useState(true);
 
   useEffect(() => {
-    fetch('/api/doctors?limit=100')
+    fetch('/api/doctors?limit=1000')
       .then(r => r.json())
       .then(d => { setAllDoctors(d.doctors ?? []); setLoading(false); })
       .catch(() => setLoading(false));

@@ -70,26 +70,17 @@ export default function HealthCategories() {
                 <Link
                   key={cat.id}
                   href={`/patient/records?category=${encodeURIComponent(cat.name)}`}
-                  className="group relative flex flex-col items-center gap-1.5 sm:gap-3 overflow-hidden rounded-2xl sm:rounded-3xl px-2 py-3 sm:px-4 sm:py-6 text-center transition-all duration-300 hover:-translate-y-1 border border-white/50 backdrop-blur-xl"
-                  style={{
-                    background: `linear-gradient(150deg, ${style.color}26 0%, ${style.color}0a 100%)`,
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6)',
-                  }}
+                  className="group relative flex flex-col items-center gap-2 sm:gap-4 rounded-2xl sm:rounded-3xl p-3 sm:p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  style={{ backgroundColor: style.bg, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                 >
-                  {/* Glass sheen */}
                   <div
-                    className="absolute inset-x-0 top-0 h-1/2 pointer-events-none"
-                    style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%)' }}
-                  />
-
-                  <div
-                    className="relative flex items-center justify-center rounded-full border border-white/60 backdrop-blur-md transition-transform duration-300 group-hover:scale-110 w-9 h-9 sm:w-14 sm:h-14"
-                    style={{ backgroundColor: `${style.color}22` }}
+                    className="flex items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 w-16 h-16 sm:w-16 sm:h-16"
+                    style={{ backgroundColor: `${style.color}1f` }}
                   >
-                    <Icon style={{ color: style.color }} className="w-4 h-4 sm:w-6 sm:h-6" strokeWidth={2.2} />
+                    <Icon style={{ color: style.color }} className="w-9 h-9 sm:w-9 sm:h-9" strokeWidth={2.2} />
                   </div>
 
-                  <span className="relative text-[10px] sm:text-sm font-semibold text-gray-800 leading-snug">
+                  <span className="text-xs sm:text-base font-bold text-gray-900 leading-tight">
                     {label}
                   </span>
                 </Link>

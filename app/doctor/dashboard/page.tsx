@@ -189,12 +189,15 @@ export default function DoctorDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/doctor/dashboard').then(r => r.json()).then(d => {
-      setToday(d.today ?? []);
-      setCounts(d.counts ?? {});
-      setWeekly(d.weekly ?? []);
-      setLoading(false);
-    });
+    fetch('/api/doctor/dashboard')
+      .then(r => (r.ok ? r.json() : {}))
+      .then(d => {
+        setToday(d.today ?? []);
+        setCounts(d.counts ?? {});
+        setWeekly(d.weekly ?? []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   const pieData = (['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const)

@@ -97,7 +97,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await db.doctor.update({ where: { id }, data: { isActive: false } });
+    const doctor = await db.doctor.findUnique({ where: { id }, select: { userId: true } });
+    if (!doctor) return NextResponse.json({ error: 'Doctor not found' }, { status: 404 });
+
+    await db.$transaction([
+      db.doctor.delete({ where: { id } }),
+      db.user.delete({ where: { id: doctor.userId } }),
+    ]);
+
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

@@ -5,10 +5,20 @@ import { db } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
-    const limit = parseInt(searchParams.get('limit') ?? '10');
+    const limit  = parseInt(searchParams.get('limit') ?? '10');
+    const type   = searchParams.get('type')   ?? '';
+    const search = searchParams.get('search') ?? '';
+
+    const where: Record<string, unknown> = { isActive: true, isPartner: true };
+    if (type)   where.type = { equals: type, mode: 'insensitive' };
+    if (search) where.OR = [
+      { name:   { contains: search, mode: 'insensitive' } },
+      { nameEn: { contains: search, mode: 'insensitive' } },
+      { type:   { contains: search, mode: 'insensitive' } },
+    ];
 
     const clinics = await db.clinic.findMany({
-      where: { isActive: true, isPartner: true },
+      where,
       orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
       take: limit,
     });

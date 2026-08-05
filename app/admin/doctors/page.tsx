@@ -5,9 +5,10 @@ import Link from 'next/link';
 import {
   Search, Filter, Plus, ChevronLeft, ChevronRight,
   ChevronDown, X, Eye, Star, Stethoscope,
-  Loader2, Download, Upload,
+  Loader2, Download, Upload, Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ConfirmModal from '@/components/admin/ConfirmModal';
 
 const PRIMARY = '#2ab5ad';
 
@@ -51,6 +52,8 @@ export default function AdminDoctorsPage() {
   const [showFilter,     setShowFilter]     = useState(false);
   const [filterSpecialties, setFilterSpecialties] = useState<SpecialtyItem[]>([]);
   const [importing, setImporting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Doctor | null>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   const PAGE_SIZE = 10;
 
@@ -70,6 +73,23 @@ export default function AdminDoctorsPage() {
   }, [search, specialty, isAvail, isActive, page]);
 
   useEffect(() => { fetchDoctors(); }, [fetchDoctors]);
+
+  const confirmRemove = async () => {
+    if (!removeTarget) return;
+    setRemovingId(removeTarget.id);
+    try {
+      const res = await fetch(`/api/admin/doctors/${removeTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) { toast.error('Failed to remove doctor'); return; }
+      toast.success('Doctor removed');
+      setDoctors(prev => prev.filter(d => d.id !== removeTarget.id));
+      setTotal(prev => Math.max(0, prev - 1));
+    } catch {
+      toast.error('Failed to remove doctor');
+    } finally {
+      setRemovingId(null);
+      setRemoveTarget(null);
+    }
+  };
 
   const hasFilter = specialty || isAvail || isActive;
   const resetFilters = () => { setSpecialty(''); setIsAvail(''); setIsActive(''); setPage(1); };
@@ -221,7 +241,7 @@ export default function AdminDoctorsPage() {
               <col className="w-28" />
               <col className="w-32" />
               <col className="w-28" />
-              <col className="w-20" />
+              <col className="w-24" />
             </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
@@ -279,11 +299,18 @@ export default function AdminDoctorsPage() {
                     </div>
                   </td>
                   <td className="px-3 py-2.5">
-                    <a href={`/admin/doctors/${d.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
-                      style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
-                      <Eye className="w-3.5 h-3.5" />
-                    </a>
+                    <div className="flex items-center gap-1.5">
+                      <a href={`/admin/doctors/${d.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                        style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
+                        <Eye className="w-3.5 h-3.5" />
+                      </a>
+                      <button onClick={() => setRemoveTarget(d)} disabled={removingId === d.id}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1.5 rounded-xl border transition-all hover:border-red-300 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
+                        {removingId === d.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );})}
@@ -313,6 +340,17 @@ export default function AdminDoctorsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={!!removeTarget}
+        title="Delete doctor permanently?"
+        message={removeTarget ? `"${removeTarget.name}" and all related data (appointments, reviews, slots, gallery) will be permanently deleted. This cannot be undone.` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={removingId === removeTarget?.id}
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }

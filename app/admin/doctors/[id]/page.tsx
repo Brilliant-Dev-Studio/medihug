@@ -273,11 +273,11 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
 
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>Experience (Years)</label>
-              <input type="number" min={0} className={inp} value={infoForm.experience ?? 0}
-                onChange={e => setInfoForm(f => ({ ...f, experience: parseInt(e.target.value) || 0 }))} /></div>
+              <input type="number" min={0} className={inp} value={!infoForm.experience ? '' : infoForm.experience}
+                onChange={e => setInfoForm(f => ({ ...f, experience: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 }))} /></div>
             <div><label className={lbl}>Price (MMK)</label>
-              <input type="number" min={0} className={inp} value={infoForm.price ?? 0}
-                onChange={e => setInfoForm(f => ({ ...f, price: parseInt(e.target.value) || 0 }))} /></div>
+              <input type="number" min={0} className={inp} value={!infoForm.price ? '' : infoForm.price}
+                onChange={e => setInfoForm(f => ({ ...f, price: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 }))} /></div>
           </div>
 
           <div><label className={lbl}>Location</label>

@@ -1,92 +1,89 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search, Filter, ChevronLeft, ChevronRight,
-  Eye, CheckCircle2, XCircle, ChevronDown, X,
+  Eye, CheckCircle2, XCircle, ChevronDown, X, Trash2, Loader2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import ConfirmModal from '@/components/admin/ConfirmModal';
 
 const PRIMARY = '#2ab5ad';
 
-/* ─────────────────────────────────────────────
-   Types & Mock Data
-───────────────────────────────────────────── */
-type Gender = 'Male' | 'Female';
-type Status = 'Active' | 'Inactive';
-
 interface Patient {
-  id:         number;
-  name:       string;
-  phone:      string;
-  gender:     Gender;
-  age:        number;
-  birthday:   string;
-  state:      string;
-  township:   string;
-  joinedDate: string;
-  status:     Status;
+  id: string; name: string; phone: string;
+  gender: 'MALE' | 'FEMALE' | null;
+  birthday: string | null;
+  state: string | null; township: string | null;
+  isActive: boolean; createdAt: string;
+  _count: { appointments: number };
 }
 
 const STATES = ['Yangon', 'Mandalay', 'Naypyidaw', 'Bago', 'Sagaing', 'Magway', 'Ayeyarwady', 'Tanintharyi', 'Mon', 'Kayah', 'Kayin', 'Chin', 'Kachin', 'Shan', 'Rakhine'];
-
-const MOCK_PATIENTS: Patient[] = [
-  { id: 1,  name: 'Ma Hnin Wai',       phone: '09251234567', gender: 'Female', age: 28, birthday: '1998-03-12', state: 'Yangon',      township: 'Hlaing',        joinedDate: '2026-01-05', status: 'Active'   },
-  { id: 2,  name: 'Ko Zaw Lin',        phone: '09261234567', gender: 'Male',   age: 35, birthday: '1991-07-22', state: 'Mandalay',    township: 'Chanmyathazi',  joinedDate: '2026-01-12', status: 'Active'   },
-  { id: 3,  name: 'Daw Khin May',      phone: '09791234567', gender: 'Female', age: 52, birthday: '1974-11-05', state: 'Yangon',      township: 'Sanchaung',     joinedDate: '2026-02-03', status: 'Active'   },
-  { id: 4,  name: 'Ko Naing Htike',    phone: '09421234567', gender: 'Male',   age: 41, birthday: '1985-01-30', state: 'Bago',        township: 'Bago Township', joinedDate: '2026-02-18', status: 'Inactive' },
-  { id: 5,  name: 'Ma Ei Phyu',        phone: '09501234567', gender: 'Female', age: 24, birthday: '2002-09-14', state: 'Yangon',      township: 'Thingangyun',   joinedDate: '2026-02-25', status: 'Active'   },
-  { id: 6,  name: 'U Kyaw Thu',        phone: '09681234567', gender: 'Male',   age: 60, birthday: '1966-04-08', state: 'Sagaing',     township: 'Monywa',        joinedDate: '2026-03-07', status: 'Active'   },
-  { id: 7,  name: 'Ma Thida Oo',       phone: '09311234567', gender: 'Female', age: 33, birthday: '1993-06-19', state: 'Mandalay',    township: 'Amarapura',     joinedDate: '2026-03-15', status: 'Active'   },
-  { id: 8,  name: 'Ko Min Thura',      phone: '09451234567', gender: 'Male',   age: 29, birthday: '1997-12-01', state: 'Yangon',      township: 'Insein',        joinedDate: '2026-03-22', status: 'Inactive' },
-  { id: 9,  name: 'Daw Su Su Myint',   phone: '09211234567', gender: 'Female', age: 47, birthday: '1979-08-25', state: 'Ayeyarwady',  township: 'Pathein',       joinedDate: '2026-04-01', status: 'Active'   },
-  { id: 10, name: 'Ko Aung Kyaw',      phone: '09751234567', gender: 'Male',   age: 38, birthday: '1988-02-14', state: 'Yangon',      township: 'Tamwe',         joinedDate: '2026-04-10', status: 'Active'   },
-  { id: 11, name: 'Ma Nwe Nwe Oo',     phone: '09551234567', gender: 'Female', age: 22, birthday: '2004-05-07', state: 'Mon',         township: 'Mawlamyine',    joinedDate: '2026-04-18', status: 'Active'   },
-  { id: 12, name: 'Ko Pyae Sone',      phone: '09881234567', gender: 'Male',   age: 31, birthday: '1995-10-20', state: 'Yangon',      township: 'Kamayut',       joinedDate: '2026-04-25', status: 'Active'   },
-  { id: 13, name: 'Daw Myint Myint',   phone: '09201234567', gender: 'Female', age: 55, birthday: '1971-03-18', state: 'Magway',      township: 'Magway Township',joinedDate: '2026-05-02', status: 'Inactive' },
-  { id: 14, name: 'Ko Htet Aung',      phone: '09601234567', gender: 'Male',   age: 26, birthday: '2000-07-11', state: 'Yangon',      township: 'Dagon',         joinedDate: '2026-05-09', status: 'Active'   },
-  { id: 15, name: 'Ma Kay Zin Thaw',   phone: '09701234567', gender: 'Female', age: 30, birthday: '1996-11-28', state: 'Naypyidaw',   township: 'Ottarathiri',   joinedDate: '2026-05-16', status: 'Active'   },
-  { id: 16, name: 'U Win Naing',       phone: '09401234567', gender: 'Male',   age: 49, birthday: '1977-01-03', state: 'Shan',        township: 'Taunggyi',      joinedDate: '2026-05-22', status: 'Active'   },
-  { id: 17, name: 'Ma Phyo Wai',       phone: '09901234567', gender: 'Female', age: 20, birthday: '2006-04-15', state: 'Yangon',      township: 'Shwepyithar',   joinedDate: '2026-06-01', status: 'Active'   },
-  { id: 18, name: 'Ko Sithu Kyaw',     phone: '09271234567', gender: 'Male',   age: 44, birthday: '1982-09-09', state: 'Kachin',      township: 'Myitkyina',     joinedDate: '2026-06-08', status: 'Inactive' },
-  { id: 19, name: 'Daw Aye Aye Win',   phone: '09811234567', gender: 'Female', age: 58, birthday: '1968-06-30', state: 'Yangon',      township: 'Mingaladon',    joinedDate: '2026-06-15', status: 'Active'   },
-  { id: 20, name: 'Ko Thiha Zaw',      phone: '09241234567', gender: 'Male',   age: 37, birthday: '1989-12-22', state: 'Rakhine',     township: 'Sittwe',        joinedDate: '2026-06-22', status: 'Active'   },
-];
-
 const PAGE_SIZE_OPTIONS = [5, 10, 20];
+const AVATAR_COLORS = ['#2ab5ad','#8b5cf6','#f59e0b','#3b82f6','#10b981'];
 
+function age(birthday: string | null) {
+  if (!birthday) return '—';
+  const b = new Date(birthday);
+  const now = new Date();
+  let a = now.getFullYear() - b.getFullYear();
+  if (now.getMonth() < b.getMonth() || (now.getMonth() === b.getMonth() && now.getDate() < b.getDate())) a--;
+  return a;
+}
 
-/* ─────────────────────────────────────────────
-   Main Page
-───────────────────────────────────────────── */
 export default function AdminPatientsPage() {
   const router = useRouter();
+  const [patients,   setPatients]   = useState<Patient[]>([]);
+  const [total,      setTotal]      = useState(0);
+  const [loading,    setLoading]    = useState(true);
   const [search,     setSearch]     = useState('');
-  const [genderF,    setGenderF]    = useState<Gender | ''>('');
-  const [statusF,    setStatusF]    = useState<Status | ''>('');
+  const [genderF,    setGenderF]    = useState('');
+  const [statusF,    setStatusF]    = useState('');
   const [stateF,     setStateF]     = useState('');
   const [page,       setPage]       = useState(1);
   const [pageSize,   setPageSize]   = useState(10);
   const [showFilter, setShowFilter] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<Patient | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
-  /* ── Filter & search ── */
-  const filtered = useMemo(() => {
-    return MOCK_PATIENTS.filter(p => {
-      if (search   && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.phone.includes(search)) return false;
-      if (genderF  && p.gender !== genderF)  return false;
-      if (statusF  && p.status !== statusF)  return false;
-      if (stateF   && p.state  !== stateF)   return false;
-      return true;
+  const fetchPatients = useCallback(async () => {
+    setLoading(true);
+    const p = new URLSearchParams({
+      search, gender: genderF, isActive: statusF, state: stateF,
+      page: String(page), pageSize: String(pageSize),
     });
-  }, [search, genderF, statusF, stateF]);
+    const res  = await fetch(`/api/admin/users?${p}`);
+    const data = await res.json();
+    setPatients(data.users ?? []);
+    setTotal(data.total ?? 0);
+    setLoading(false);
+  }, [search, genderF, statusF, stateF, page, pageSize]);
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated  = filtered.slice((page - 1) * pageSize, page * pageSize);
+  useEffect(() => { fetchPatients(); }, [fetchPatients]);
 
+  const totalPages = Math.ceil(total / pageSize);
   const resetFilters = () => { setGenderF(''); setStatusF(''); setStateF(''); setPage(1); };
   const hasFilter    = genderF || statusF || stateF;
+  const activeCount  = patients.filter(p => p.isActive).length;
 
-  const activeCount  = MOCK_PATIENTS.filter(p => p.status === 'Active').length;
+  const confirmRemove = async () => {
+    if (!removeTarget) return;
+    setRemovingId(removeTarget.id);
+    try {
+      const res = await fetch(`/api/admin/users/${removeTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) { toast.error('Failed to delete patient'); return; }
+      toast.success('Patient deleted');
+      setPatients(prev => prev.filter(p => p.id !== removeTarget.id));
+      setTotal(prev => Math.max(0, prev - 1));
+    } catch {
+      toast.error('Failed to delete patient');
+    } finally {
+      setRemovingId(null);
+      setRemoveTarget(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -94,9 +91,9 @@ export default function AdminPatientsPage() {
       {/* ── Summary chips ── */}
       <div className="flex flex-wrap gap-3">
         {[
-          { label: 'Total Patients', value: MOCK_PATIENTS.length, color: PRIMARY,   bg: '#e6f7f7' },
-          { label: 'Active',         value: activeCount,           color: '#10b981', bg: '#ecfdf5' },
-          { label: 'Inactive',       value: MOCK_PATIENTS.length - activeCount, color: '#ef4444', bg: '#fef2f2' },
+          { label: 'Total Patients', value: total,                          color: PRIMARY,   bg: '#e6f7f7' },
+          { label: 'Active',         value: activeCount,                    color: '#10b981', bg: '#ecfdf5' },
+          { label: 'Inactive',       value: patients.length - activeCount,  color: '#ef4444', bg: '#fef2f2' },
         ].map(s => (
           <div key={s.label} className="flex items-center gap-2.5 bg-white border border-gray-100 rounded-2xl px-4 py-2.5">
             <span className="text-lg font-bold" style={{ color: s.color }}>{s.value}</span>
@@ -108,7 +105,6 @@ export default function AdminPatientsPage() {
       {/* ── Search + filter bar ── */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">
 
-        {/* Search */}
         <div className="flex-1 flex items-center gap-2.5 bg-gray-50 rounded-xl px-3.5 py-2.5">
           <Search className="w-4 h-4 text-gray-400 shrink-0" />
           <input
@@ -125,7 +121,6 @@ export default function AdminPatientsPage() {
           )}
         </div>
 
-        {/* Filter toggle */}
         <button
           onClick={() => setShowFilter(f => !f)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all"
@@ -140,7 +135,6 @@ export default function AdminPatientsPage() {
           {hasFilter && <span className="w-4 h-4 rounded-full bg-white text-[10px] font-bold flex items-center justify-center" style={{ color: PRIMARY }}>{[genderF, statusF, stateF].filter(Boolean).length}</span>}
         </button>
 
-        {/* Page size */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400 shrink-0">Show</span>
           <div className="relative">
@@ -160,43 +154,40 @@ export default function AdminPatientsPage() {
       {showFilter && (
         <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-wrap gap-4 items-end">
 
-          {/* Gender */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gender</label>
             <div className="flex gap-1.5">
-              {(['', 'Male', 'Female'] as const).map(g => (
-                <button key={g} onClick={() => { setGenderF(g as Gender | ''); setPage(1); }}
+              {([['','All'],['MALE','Male'],['FEMALE','Female']] as [string,string][]).map(([v,l]) => (
+                <button key={v} onClick={() => { setGenderF(v); setPage(1); }}
                   className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
                   style={{
-                    backgroundColor: genderF === g ? `${PRIMARY}15` : 'transparent',
-                    borderColor:     genderF === g ? PRIMARY : '#e5e7eb',
-                    color:           genderF === g ? PRIMARY : '#9ca3af',
+                    backgroundColor: genderF === v ? `${PRIMARY}15` : 'transparent',
+                    borderColor:     genderF === v ? PRIMARY : '#e5e7eb',
+                    color:           genderF === v ? PRIMARY : '#9ca3af',
                   }}>
-                  {g || 'All'}
+                  {l}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Status */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</label>
             <div className="flex gap-1.5">
-              {(['', 'Active', 'Inactive'] as const).map(s => (
-                <button key={s} onClick={() => { setStatusF(s as Status | ''); setPage(1); }}
+              {([['','All'],['true','Active'],['false','Inactive']] as [string,string][]).map(([v,l]) => (
+                <button key={v} onClick={() => { setStatusF(v); setPage(1); }}
                   className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all"
                   style={{
-                    backgroundColor: statusF === s ? `${PRIMARY}15` : 'transparent',
-                    borderColor:     statusF === s ? PRIMARY : '#e5e7eb',
-                    color:           statusF === s ? PRIMARY : '#9ca3af',
+                    backgroundColor: statusF === v ? `${PRIMARY}15` : 'transparent',
+                    borderColor:     statusF === v ? PRIMARY : '#e5e7eb',
+                    color:           statusF === v ? PRIMARY : '#9ca3af',
                   }}>
-                  {s || 'All'}
+                  {l}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* State */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">State / Region</label>
             <div className="relative">
@@ -212,7 +203,6 @@ export default function AdminPatientsPage() {
             </div>
           </div>
 
-          {/* Reset */}
           {hasFilter && (
             <button onClick={resetFilters}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-400 border border-red-100 hover:bg-red-50 transition-colors">
@@ -225,14 +215,12 @@ export default function AdminPatientsPage() {
       {/* ── Table ── */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
 
-        {/* Result count */}
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
           <p className="text-xs text-gray-400">
-            Showing <span className="font-bold text-gray-600">{(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)}</span> of <span className="font-bold text-gray-600">{filtered.length}</span> patients
+            Showing <span className="font-bold text-gray-600">{patients.length}</span> of <span className="font-bold text-gray-600">{total}</span> patients
           </p>
         </div>
 
-        {/* Desktop table */}
         <div className="overflow-x-auto">
           <table className="w-full min-w-175">
             <thead>
@@ -245,41 +233,53 @@ export default function AdminPatientsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {paginated.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={9} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" /></td></tr>
+              ) : patients.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-16 text-center text-sm text-gray-400">No patients found.</td>
                 </tr>
-              ) : paginated.map((p, i) => (
+              ) : patients.map((p, i) => (
                 <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-4 py-3.5 text-xs text-gray-400">{(page - 1) * pageSize + i + 1}</td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                        style={{ backgroundColor: ['#2ab5ad','#8b5cf6','#f59e0b','#3b82f6','#10b981'][p.id % 5] }}>
+                        style={{ backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
                         {p.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
                       </div>
                       <p className="text-sm font-semibold text-gray-700 whitespace-nowrap">{p.name}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{p.phone}</td>
-                  <td className="px-4 py-3.5 text-sm text-gray-500">{p.gender}</td>
-                  <td className="px-4 py-3.5 text-sm text-gray-500">{p.age}</td>
-                  <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{p.township}, {p.state}</td>
-                  <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{p.joinedDate}</td>
+                  <td className="px-4 py-3.5 text-sm text-gray-500">{p.gender ? (p.gender === 'MALE' ? 'Male' : 'Female') : '—'}</td>
+                  <td className="px-4 py-3.5 text-sm text-gray-500">{age(p.birthday)}</td>
+                  <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{[p.township, p.state].filter(Boolean).join(', ') || '—'}</td>
+                  <td className="px-4 py-3.5 text-sm text-gray-500 whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString()}</td>
                   <td className="px-4 py-3.5">
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${p.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-400'}`}>
-                      {p.status === 'Active' ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                      {p.status}
+                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${p.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-400'}`}>
+                      {p.isActive ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      {p.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-4 py-3.5">
-                    <button
-                      onClick={() => router.push(`/admin/users/${p.id}`)}
-                      className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
-                      style={{ borderColor: '#e5e7eb', color: '#6b7280' }}
-                    >
-                      <Eye className="w-3.5 h-3.5" /> View
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => router.push(`/admin/users/${p.id}`)}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                        style={{ borderColor: '#e5e7eb', color: '#6b7280' }}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setRemoveTarget(p)}
+                        disabled={removingId === p.id}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all hover:border-red-300 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        style={{ borderColor: '#e5e7eb', color: '#6b7280' }}
+                      >
+                        {removingId === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -287,7 +287,6 @@ export default function AdminPatientsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
             <button
@@ -325,6 +324,16 @@ export default function AdminPatientsPage() {
         )}
       </div>
 
+      <ConfirmModal
+        open={!!removeTarget}
+        title="Delete patient permanently?"
+        message={removeTarget ? `"${removeTarget.name}" and all related data (appointments${removeTarget._count.appointments ? ` — ${removeTarget._count.appointments} record(s)` : ''}, favorites, custom time requests) will be permanently deleted. This cannot be undone.` : ''}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={removingId === removeTarget?.id}
+        onConfirm={confirmRemove}
+        onCancel={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }

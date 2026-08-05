@@ -169,11 +169,11 @@ export default function CreateDoctorPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>Experience (Years)</label>
-              <input type="number" min={0} className={inp} value={form.experience}
-                onChange={e => set('experience', parseInt(e.target.value) || 0)} /></div>
+              <input type="number" min={0} className={inp} value={form.experience === 0 ? '' : form.experience}
+                onChange={e => set('experience', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} /></div>
             <div><label className={lbl}>Price (MMK)</label>
-              <input type="number" min={0} className={inp} value={form.price}
-                onChange={e => set('price', parseInt(e.target.value) || 0)} /></div>
+              <input type="number" min={0} className={inp} value={form.price === 0 ? '' : form.price}
+                onChange={e => set('price', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)} /></div>
           </div>
 
           <div><label className={lbl}>Location</label>
