@@ -54,6 +54,8 @@ export default function AdminDoctorsPage() {
   const [importing, setImporting] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Doctor | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [suggestTarget, setSuggestTarget] = useState<Doctor | null>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   const PAGE_SIZE = 10;
 
@@ -88,6 +90,29 @@ export default function AdminDoctorsPage() {
     } finally {
       setRemovingId(null);
       setRemoveTarget(null);
+    }
+  };
+
+  const confirmToggleSuggested = async () => {
+    if (!suggestTarget) return;
+    const doctor = suggestTarget;
+    setTogglingId(doctor.id);
+    const next = !doctor.isSuggested;
+    setDoctors(prev => prev.map(d => d.id === doctor.id ? { ...d, isSuggested: next } : d));
+    try {
+      const res = await fetch(`/api/admin/doctors/${doctor.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isSuggested: next }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success(next ? 'Marked as suggested' : 'Removed from suggested');
+    } catch {
+      setDoctors(prev => prev.map(d => d.id === doctor.id ? { ...d, isSuggested: !next } : d));
+      toast.error('Failed to update suggestion');
+    } finally {
+      setTogglingId(null);
+      setSuggestTarget(null);
     }
   };
 
@@ -245,7 +270,7 @@ export default function AdminDoctorsPage() {
             </colgroup>
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                {['#','Doctor','Specialty','Exp','Price','Slots','Status','Action'].map(h => (
+                {['#','Doctor','Specialty','Exp','Price','Slots','Suggestion','Action'].map(h => (
                   <th key={h} className="px-3 py-2.5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -292,10 +317,24 @@ export default function AdminDoctorsPage() {
                     )}
                   </td>
                   <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span title={d.isActive ? 'Active':'Inactive'} className={`w-2 h-2 rounded-full shrink-0 ${d.isActive ? 'bg-green-500':'bg-red-300'}`} />
-                      <span title={d.isAvailable ? 'Available':'Unavailable'} className={`w-2 h-2 rounded-full shrink-0 ${d.isAvailable ? 'bg-blue-500':'bg-gray-300'}`} />
-                      {d.isSuggested && <span title="Suggested"><Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" /></span>}
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <button
+                        onClick={() => setSuggestTarget(d)}
+                        disabled={togglingId === d.id}
+                        title={d.isSuggested ? 'Suggested — click to unsuggest' : 'Click to mark as suggested'}
+                        className="flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        <Star className={`w-3 h-3 shrink-0 ${d.isSuggested ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                        <span
+                          className="relative inline-flex items-center w-7 h-4 rounded-full transition-colors shrink-0"
+                          style={{ backgroundColor: d.isSuggested ? '#f59e0b' : '#e5e7eb' }}
+                        >
+                          <span
+                            className="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all"
+                            style={{ left: d.isSuggested ? '14px' : '2px' }}
+                          />
+                        </span>
+                      </button>
                     </div>
                   </td>
                   <td className="px-3 py-2.5">
@@ -350,6 +389,21 @@ export default function AdminDoctorsPage() {
         loading={removingId === removeTarget?.id}
         onConfirm={confirmRemove}
         onCancel={() => setRemoveTarget(null)}
+      />
+
+      <ConfirmModal
+        open={!!suggestTarget}
+        title={suggestTarget?.isSuggested ? 'Remove from suggested?' : 'Mark as suggested?'}
+        message={suggestTarget
+          ? (suggestTarget.isSuggested
+            ? `"${suggestTarget.name}" will no longer appear in the "Our Suggesting Doctors" section.`
+            : `"${suggestTarget.name}" will appear in the "Our Suggesting Doctors" section on the homepage.`)
+          : ''}
+        confirmLabel={suggestTarget?.isSuggested ? 'Remove' : 'Suggest'}
+        variant={suggestTarget?.isSuggested ? 'danger' : 'default'}
+        loading={togglingId === suggestTarget?.id}
+        onConfirm={confirmToggleSuggested}
+        onCancel={() => setSuggestTarget(null)}
       />
     </div>
   );

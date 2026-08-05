@@ -38,7 +38,7 @@ export default function OurDoctors() {
   const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('doctor');
 
   useEffect(() => {
-    fetch('/api/doctors?limit=10')
+    fetch('/api/doctors?suggested=true&limit=10')
       .then(r => r.json())
       .then(d => { setDoctors(d.doctors ?? []); setLoading(false); })
       .catch(() => setLoading(false));

@@ -139,9 +139,9 @@ export default function ClinicsPage() {
                 <div key={c.id} className="rounded-2xl bg-white border border-gray-100 overflow-hidden flex flex-col">
                   <div className="relative w-full h-40 overflow-hidden bg-gray-50">
                     {c.imageUrl && <Image src={c.imageUrl} alt={name} fill className="object-cover" />}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                      <BadgeCheck className="w-3.5 h-3.5 text-white" />
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-white">{c.type}</span>
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full max-w-[calc(100%-1.5rem)]">
+                      <BadgeCheck className="w-3.5 h-3.5 text-white shrink-0" />
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-white truncate">{c.type}</span>
                     </div>
                   </div>
 

@@ -6,9 +6,10 @@ import TimePicker from '@/components/admin/TimePicker';
 import {
   ArrowLeft, Loader2, X, ShieldCheck,
   Phone, Globe, Clock, MapPin, Star, CheckCircle2,
-  Stethoscope, Package, Building2, Link2, Music2, Map,
+  Stethoscope, Package, Building2, Link2, Music2, Map, KeyRound,
 } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
+import toast from 'react-hot-toast';
 
 const PRIMARY = '#2ab5ad';
 
@@ -32,6 +33,7 @@ interface Clinic {
   isActive: boolean; isPartner: boolean;
   doctors?:  { doctor: Doctor }[];
   products?: { product: Product }[];
+  owner?: { id: string; phone: string; isActive: boolean } | null;
 }
 
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -63,6 +65,11 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
   const [allDoctors, setAllDoctors]   = useState<Doctor[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [partnerTypes, setPartnerTypes] = useState<PartnerType[]>([]);
+
+  const [accPhone, setAccPhone]       = useState('');
+  const [accPassword, setAccPassword] = useState('');
+  const [accSaving, setAccSaving]     = useState(false);
+  const [accError, setAccError]       = useState('');
 
   const [form, setForm] = useState({
     name: '', nameEn: '', type: '',
@@ -102,6 +109,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       });
       setAllDoctors(dd.doctors ?? []);
       setAllProducts(pd.products ?? []);
+      setAccPhone(c.owner?.phone ?? '');
       setLoading(false);
     });
   }, [id]);
@@ -147,6 +155,40 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       const d = await res.json();
       setClinic(d.clinic);
     } finally { setSaving(false); }
+  };
+
+  const saveAccount = async () => {
+    if (!accPhone.trim()) { setAccError('Login phone လိုအပ်သည်။'); return; }
+    setAccSaving(true); setAccError('');
+    try {
+      const res = await fetch(`/api/admin/clinics/${id}/account`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: accPhone, password: accPassword || undefined }),
+      });
+      const d = await res.json();
+      if (!res.ok) { setAccError(d.error ?? 'Error'); return; }
+      setClinic(prev => prev ? { ...prev, owner: d.owner } : prev);
+      setAccPassword('');
+      toast.success(d.created ? 'Partner account created' : 'Partner account updated');
+    } catch {
+      setAccError('Server error');
+    } finally { setAccSaving(false); }
+  };
+
+  const toggleAccountActive = async () => {
+    if (!clinic?.owner) return;
+    const next = !clinic.owner.isActive;
+    setAccSaving(true);
+    try {
+      const res = await fetch(`/api/admin/clinics/${id}/account`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: clinic.owner.phone, isActive: next }),
+      });
+      const d = await res.json();
+      if (!res.ok) { toast.error(d.error ?? 'Error'); return; }
+      setClinic(prev => prev ? { ...prev, owner: d.owner } : prev);
+      toast.success(next ? 'Login enabled' : 'Login disabled');
+    } finally { setAccSaving(false); }
   };
 
   const toggleDoctor = async (doctorId: string) => {
@@ -368,6 +410,47 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               ))}
             </div>
+          </Section>
+
+          <Section title="Partner Login Account" icon={<KeyRound size={14} />}>
+            {clinic?.owner ? (
+              <>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Login access</p>
+                    <p className="text-xs text-gray-400">{clinic.owner.isActive ? 'Partner can log in' : 'Login disabled'}</p>
+                  </div>
+                  <Toggle on={clinic.owner.isActive} onChange={toggleAccountActive} label="Login access" />
+                </div>
+                <div>
+                  <label className={lbl}>Login Phone</label>
+                  <input className={inp} value={accPhone} onChange={e => setAccPhone(e.target.value)} placeholder="09..." />
+                </div>
+                <div>
+                  <label className={lbl}>Reset Password (leave blank to keep current)</label>
+                  <input type="password" className={inp} value={accPassword} onChange={e => setAccPassword(e.target.value)} placeholder="New password" />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-400">ဒီ partner အတွက် login account မရှိသေးပါ — ဖန်တီးပေးရန် အောက်တွင် ဖြည့်ပါ။</p>
+                <div>
+                  <label className={lbl}>Login Phone *</label>
+                  <input className={inp} value={accPhone} onChange={e => setAccPhone(e.target.value)} placeholder="09..." />
+                </div>
+                <div>
+                  <label className={lbl}>Password *</label>
+                  <input type="password" className={inp} value={accPassword} onChange={e => setAccPassword(e.target.value)} placeholder="At least 6 characters" />
+                </div>
+              </>
+            )}
+            {accError && <p className="text-xs text-red-500">{accError}</p>}
+            <button onClick={saveAccount} disabled={accSaving}
+              className="w-full py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60 hover:opacity-90"
+              style={{ backgroundColor: PRIMARY }}>
+              {accSaving ? <Loader2 size={16} className="animate-spin" /> : null}
+              {clinic?.owner ? 'Update Login' : 'Create Partner Account'}
+            </button>
           </Section>
         </div>
 

@@ -54,13 +54,6 @@ export default function PartnerClinics() {
 
   return (
     <section className="relative w-full py-10 overflow-hidden">
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M14 7 L14 21 M7 14 L21 14' stroke='%230d2b6e' stroke-opacity='0.06' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'repeat',
-        }}
-      />
       <div className="relative z-10 max-w-6xl mx-auto px-6 flex items-center justify-between mb-8">
         <div>
           <h2 className="text-xl sm:text-3xl font-bold text-gray-900">{tr.partnerTitle}</h2>
@@ -107,9 +100,9 @@ export default function PartnerClinics() {
                 {/* Image */}
                 <div className="relative w-full h-40 overflow-hidden bg-gray-50">
                   {c.imageUrl && <Image src={c.imageUrl} alt={name} fill className="object-cover" />}
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                    <BadgeCheck className="w-3.5 h-3.5 text-white" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white">{c.type}</span>
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full max-w-[calc(100%-1.5rem)]">
+                    <BadgeCheck className="w-3.5 h-3.5 text-white shrink-0" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-white truncate">{c.type}</span>
                   </div>
                 </div>
 

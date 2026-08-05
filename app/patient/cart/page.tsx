@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ShoppingCart, ShoppingBag, Minus, Plus, Trash2, Package, Loader2, ArrowLeft,
-  ShieldCheck, Truck, Sparkles, Check, Store,
+  Sparkles, Check, Store,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import { useCart } from '../../lib/useCart';
@@ -200,18 +200,6 @@ export default function CartPage() {
                       </div>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* Trust strip */}
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="bg-white rounded-2xl border border-gray-100 flex items-center gap-2 px-4 py-3">
-                  <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: PRIMARY }} />
-                  <span className="text-[11px] font-semibold text-gray-500 leading-tight">{mm ? 'စစ်မှန်သော ကုန်ပစ္စည်း' : 'Genuine Products'}</span>
-                </div>
-                <div className="bg-white rounded-2xl border border-gray-100 flex items-center gap-2 px-4 py-3">
-                  <Truck className="w-4 h-4 shrink-0" style={{ color: PRIMARY }} />
-                  <span className="text-[11px] font-semibold text-gray-500 leading-tight">{mm ? 'လျင်မြန်သော ပို့ဆောင်ရေး' : 'Fast Delivery'}</span>
                 </div>
               </div>
             </div>

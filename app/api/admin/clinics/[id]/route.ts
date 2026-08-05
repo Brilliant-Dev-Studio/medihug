@@ -21,6 +21,7 @@ const INCLUDE = {
     },
   },
   _count: { select: { doctors: true } },
+  owner: { select: { id: true, phone: true, isActive: true } },
 };
 
 /* ── GET /api/admin/clinics/[id] ── */
