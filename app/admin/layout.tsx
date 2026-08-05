@@ -26,6 +26,7 @@ const navGroups = [
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients' },
       { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors' },
       { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments' },
+      { href: '/admin/orders',       icon: ShoppingBag,  mm: 'အော်ဒါများ',       en: 'Orders' },
       { href: '/admin/custom-time-requests', icon: CalendarClock, mm: 'အထူးအချိန်တောင်းဆိုမှုများ', en: 'Custom Time Requests' },
       { href: '/admin/clinics',       icon: Building2,    mm: 'မိတ်ဖက်များ', en: 'Partners' },
       { href: '/admin/partner-types', icon: Tags,         mm: 'မိတ်ဖက် အမျိုးအစားများ',    en: 'Partner Types' },

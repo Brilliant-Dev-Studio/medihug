@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   ShoppingCart, ShoppingBag, Minus, Plus, Trash2, Package, Loader2, ArrowLeft,
@@ -29,6 +30,7 @@ function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => voi
 }
 
 export default function CartPage() {
+  const router = useRouter();
   const { lang } = useLang();
   const mm = lang === 'mm';
   const { lines, setQuantity, removeItem } = useCart();
@@ -63,6 +65,11 @@ export default function CartPage() {
   const allIds = lines.map(l => l.productId);
   const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allIds));
+
+  const goToCheckout = () => {
+    if (selected.size === 0) return;
+    router.push(`/patient/checkout?ids=${[...selected].join(',')}`);
+  };
 
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
   const selectedCount = lines.filter(l => selected.has(l.productId)).reduce((sum, l) => sum + l.quantity, 0);
@@ -217,14 +224,11 @@ export default function CartPage() {
                   <p className="text-sm font-bold text-gray-700">{mm ? 'စုစုပေါင်း' : 'Total'}</p>
                   <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{selectedTotal.toLocaleString()} <span className="text-sm font-semibold text-gray-400">Ks</span></p>
                 </div>
-                <button disabled
-                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-white opacity-50 cursor-not-allowed mt-1"
+                <button onClick={goToCheckout} disabled={selectedCount === 0}
+                  className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-opacity mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
                   {mm ? `အော်ဒါတင်မည် (${selectedCount})` : `Checkout (${selectedCount})`}
                 </button>
-                <p className="text-[11px] text-gray-400 text-center -mt-1">
-                  {mm ? 'Checkout function ကို မကြာမီ ထည့်သွင်းပေးပါမည်' : "Checkout isn't live yet — coming soon."}
-                </p>
               </div>
             </div>
           </div>
@@ -239,8 +243,8 @@ export default function CartPage() {
             <p className="text-[10px] text-gray-400 leading-none">{mm ? 'စုစုပေါင်း' : 'Total'}</p>
             <p className="text-base font-bold leading-tight" style={{ color: PRIMARY }}>{selectedTotal.toLocaleString()} Ks</p>
           </div>
-          <button disabled
-            className="px-6 py-3 rounded-2xl text-sm font-bold text-white opacity-50 cursor-not-allowed shrink-0"
+          <button onClick={goToCheckout} disabled={selectedCount === 0}
+            className="px-6 py-3 rounded-2xl text-sm font-bold text-white transition-opacity shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
             {mm ? `အော်ဒါတင်မည် (${selectedCount})` : `Checkout (${selectedCount})`}
           </button>

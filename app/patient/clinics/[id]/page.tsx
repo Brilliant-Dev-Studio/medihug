@@ -7,8 +7,9 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Phone, Clock, MapPin, Globe, Star,
   Stethoscope, ShoppingBag, CheckCircle2, Heart,
-  Building2, ChevronRight, Share2, Pill,
+  Building2, ChevronRight, Share2, Pill, Navigation,
 } from 'lucide-react';
+import { FaFacebook, FaTiktok } from 'react-icons/fa6';
 import { useLang } from '../../../lib/LanguageContext';
 
 const PRIMARY   = 'var(--color-primary)';
@@ -36,6 +37,7 @@ interface Clinic {
   phone: string | null; openTime: string | null; closeTime: string | null;
   address: string | null; addressEn: string | null;
   website: string | null;
+  facebookUrl: string | null; tiktokUrl: string | null; mapUrl: string | null;
   aboutMm: string | null; aboutEn: string | null;
   tagsMm: string[]; tagsEn: string[];
   imageUrl: string | null; coverUrl: string | null;
@@ -278,20 +280,64 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
             )}
-            {clinic.website && (
-              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
-                  <Globe className="w-4 h-4 text-blue-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-gray-400 font-medium">{mm ? 'ဝက်ဘ်ဆိုက်' : 'Website'}</p>
-                  <p className="text-sm font-semibold text-blue-500 truncate">{clinic.website}</p>
-                </div>
-              </div>
-            )}
           </div>
+
+          {/* social / website icon row */}
+          {(clinic.website || clinic.facebookUrl || clinic.tiktokUrl) && (
+            <div className="flex items-center gap-2.5 mt-3">
+              {clinic.website && (
+                <a href={clinic.website} target="_blank" rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors">
+                  <Globe className="w-4 h-4 text-blue-400" />
+                </a>
+              )}
+              {clinic.facebookUrl && (
+                <a href={clinic.facebookUrl} target="_blank" rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-blue-50 hover:bg-blue-100 flex items-center justify-center transition-colors">
+                  <FaFacebook className="w-4 h-4 text-blue-600" />
+                </a>
+              )}
+              {clinic.tiktokUrl && (
+                <a href={clinic.tiktokUrl} target="_blank" rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-gray-900 hover:bg-gray-800 flex items-center justify-center transition-colors">
+                  <FaTiktok className="w-4 h-4 text-white" />
+                </a>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ── map ── */}
+      {(address || clinic.mapUrl) && (
+        <div className="px-4 mt-4 lg:max-w-5xl lg:mx-auto lg:px-6">
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <a
+              href={clinic.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address ?? name)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="relative block w-full h-48"
+            >
+              <iframe
+                src={`https://www.google.com/maps?q=${encodeURIComponent(address ?? name)}&output=embed`}
+                className="w-full h-full border-0 pointer-events-none"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Google Map"
+              />
+            </a>
+            <a
+              href={clinic.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address ?? name)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-3 border-t border-gray-100 hover:bg-gray-50 transition-colors"
+            >
+              <Navigation className="w-4 h-4" style={{ color: PRIMARY }} />
+              <span className="text-sm font-semibold" style={{ color: PRIMARY }}>
+                {mm ? 'Google Maps တွင် ဖွင့်ရန်' : 'Open in Google Maps'}
+              </span>
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* ── body ── */}
       <div className="px-4 pt-4 pb-28 flex flex-col gap-4 lg:max-w-5xl lg:mx-auto lg:px-6 mt-2">
