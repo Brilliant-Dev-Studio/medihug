@@ -19,6 +19,9 @@ export async function POST(req: NextRequest) {
     if (!doctor) {
       return NextResponse.json({ error: 'Doctor not found.' }, { status: 404 });
     }
+    if (!doctor.allowsCustomTimeRequests) {
+      return NextResponse.json({ error: 'This doctor does not accept custom time requests.' }, { status: 403 });
+    }
 
     let user = await db.user.findUnique({ where: { phone } });
     if (!user) {

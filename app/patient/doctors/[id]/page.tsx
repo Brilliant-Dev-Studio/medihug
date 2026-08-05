@@ -39,6 +39,7 @@ interface Doctor {
   clinicNote: string | null; clinicNoteEn: string | null;
   clinicTypesMm: string[]; clinicTypesEn: string[];
   languages: string[]; location: string | null;
+  allowsCustomTimeRequests: boolean;
   slots: DoctorSlot[];
   gallery: DoctorGallery[];
 }
@@ -542,12 +543,14 @@ export default function DoctorDetailPage() {
       )}
 
       {/* Request a custom time */}
-      <button onClick={() => setShowCustomRequest(true)}
-        className="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold border-2 border-dashed transition-colors hover:bg-gray-50"
-        style={{ borderColor: '#e5e7eb', color: PRIMARY }}>
-        <CalendarClock className="w-4 h-4" />
-        {mm ? 'အခြားအချိန် သီးသန့် တောင်းဆိုမည်' : 'Request a Different Time'}
-      </button>
+      {doctor.allowsCustomTimeRequests && (
+        <button onClick={() => setShowCustomRequest(true)}
+          className="flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-bold border-2 border-dashed transition-colors hover:bg-gray-50"
+          style={{ borderColor: '#e5e7eb', color: PRIMARY }}>
+          <CalendarClock className="w-4 h-4" />
+          {mm ? 'အခြားအချိန် သီးသန့် တောင်းဆိုမည်' : 'Request a Different Time'}
+        </button>
+      )}
 
       {/* Confirm bar */}
       {showConfirm && (

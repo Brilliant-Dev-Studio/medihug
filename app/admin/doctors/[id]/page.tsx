@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Stethoscope, Phone, Clock, Star, DollarSign,
   CheckCircle2, XCircle, Pencil, Plus, X, Check, Loader2, Save,
-  Images, Trash2, GripVertical,
+  Images, Trash2, GripVertical, CalendarClock,
 } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
 
@@ -27,6 +27,7 @@ interface Doctor  {
   phoneSecondary: string | null; viber: string | null;
   imageUrl: string | null; experience: number; rating: number;
   price: number; isAvailable: boolean; isActive: boolean; isSuggested: boolean;
+  allowsCustomTimeRequests: boolean;
   qualifications: string | null; careerMm: string | null; careerEn: string | null;
   clinicNote: string | null; clinicNoteEn: string | null;
   clinicTypesMm: string[]; clinicTypesEn: string[];
@@ -76,6 +77,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       viber: doctor.viber ?? '', experience: doctor.experience,
       price: doctor.price, isAvailable: doctor.isAvailable, isActive: doctor.isActive,
       isSuggested: doctor.isSuggested,
+      allowsCustomTimeRequests: doctor.allowsCustomTimeRequests,
       qualifications: doctor.qualifications ?? '',
       careerMm: doctor.careerMm ?? '', careerEn: doctor.careerEn ?? '',
       clinicNote: doctor.clinicNote ?? '', clinicNoteEn: doctor.clinicNoteEn ?? '',
@@ -104,6 +106,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       isAvailable:   infoForm.isAvailable,
       isActive:      infoForm.isActive,
       isSuggested:   infoForm.isSuggested,
+      allowsCustomTimeRequests: infoForm.allowsCustomTimeRequests,
       qualifications: infoForm.qualifications,
       careerMm:      infoForm.careerMm,
       careerEn:      infoForm.careerEn,
@@ -244,6 +247,10 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
                 Suggested
               </span>
             )}
+            <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${doctor.allowsCustomTimeRequests ? 'bg-purple-50 text-purple-500' : 'bg-gray-100 text-gray-400'}`}>
+              <CalendarClock className="w-3 h-3" />
+              {doctor.allowsCustomTimeRequests ? 'Custom Time Requests On' : 'Custom Time Requests Off'}
+            </span>
           </div>
         </div>
         <button onClick={startEditInfo}
@@ -359,6 +366,15 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
                   style={{ left: infoForm.isSuggested ? '1.25rem' : '0.125rem' }} />
               </button>
               <span className="text-sm text-gray-600">Suggested</span>
+            </label>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <button onClick={() => setInfoForm(f => ({ ...f, allowsCustomTimeRequests: !f.allowsCustomTimeRequests }))}
+                className="w-10 h-6 rounded-full transition-all relative shrink-0"
+                style={{ backgroundColor: infoForm.allowsCustomTimeRequests ? '#8b5cf6' : '#d1d5db' }}>
+                <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+                  style={{ left: infoForm.allowsCustomTimeRequests ? '1.25rem' : '0.125rem' }} />
+              </button>
+              <span className="text-sm text-gray-600">Custom Time Requests</span>
             </label>
           </div>
 

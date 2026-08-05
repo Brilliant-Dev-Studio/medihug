@@ -96,6 +96,7 @@ model Doctor {
   isAvailable    Boolean  @default(true)
   isActive       Boolean  @default(true)
   isSuggested    Boolean  @default(false)
+  allowsCustomTimeRequests Boolean @default(true)
   qualifications String?
   careerMm       String?
   careerEn       String?
