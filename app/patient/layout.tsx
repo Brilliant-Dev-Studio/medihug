@@ -15,6 +15,7 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import PatientAvatar from '@/components/PatientAvatar';
 import IncomingCallRing from '@/components/IncomingCallRing';
 import SupportChatWidget from '@/components/SupportChatWidget';
+import PatientAIChatWidget from '@/components/PatientAIChatWidget';
 import { useCart } from '../lib/useCart';
 
 // TODO: no patient auth/session exists yet in this codebase — replace with the real logged-in patient id once patient login is wired up.
@@ -99,6 +100,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <ThemeProvider>
     <IncomingCallRing />
     <SupportChatWidget />
+    <PatientAIChatWidget stacked />
     <div className="min-h-screen bg-gray-50 flex">
 
       {/* ── Sidebar (desktop lg+) ── */}

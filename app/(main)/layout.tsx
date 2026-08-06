@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLang } from '../lib/LanguageContext';
+import PatientAIChatWidget from '@/components/PatientAIChatWidget';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { setLang } = useLang();
@@ -20,6 +21,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <Header />
       {children}
       <Footer />
+      <PatientAIChatWidget />
     </>
   );
 }

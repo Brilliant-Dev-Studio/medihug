@@ -25,6 +25,7 @@
     "@types/pg": "^8.20.0",
     "agora-rtc-sdk-ng": "^4.24.6",
     "agora-token": "^2.0.5",
+    "ai": "^7.0.55",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
     "firebase": "^12.15.0",
@@ -46,7 +47,8 @@
     "recharts": "^3.9.0",
     "remark-gfm": "^4.0.1",
     "swiper": "^12.2.0",
-    "tiptap-markdown": "^0.9.0"
+    "tiptap-markdown": "^0.9.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

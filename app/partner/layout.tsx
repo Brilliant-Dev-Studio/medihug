@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag } from 'lucide-react';
+import PartnerAIChatWidget from '@/components/PartnerAIChatWidget';
 
 const PRIMARY = '#3b5bdb';
 
@@ -160,6 +161,8 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
         <main className="flex-1 min-w-0">{children}</main>
       </div>
+
+      <PartnerAIChatWidget />
     </div>
   );
 }

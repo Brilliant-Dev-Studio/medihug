@@ -542,3 +542,16 @@ model SupportMessage {
 
   @@index([conversationId])
 }
+
+// ─────────────────────────────────────────────
+// AI Chat rate limiting (per identifier, per day)
+// ─────────────────────────────────────────────
+
+model AiChatUsage {
+  id         String @id @default(cuid())
+  identifier String // patient: IP address; partner: authenticated user id
+  date       String // "YYYY-MM-DD", UTC
+  count      Int    @default(0)
+
+  @@unique([identifier, date])
+}
