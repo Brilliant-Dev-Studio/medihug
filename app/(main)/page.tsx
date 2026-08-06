@@ -10,6 +10,7 @@ import HealthCategories from '../components/HealthCategories';
 import TopSellingProducts from '../components/TopSellingProducts';
 import Testimonials from '../components/Testimonials';
 import OurDoctors from '../components/OurDoctors';
+import DoctorSpecialties from '../components/DoctorSpecialties';
 import HealthcarePrograms from '../components/HealthcarePrograms';
 import PartnerClinics from '../components/PartnerClinics';
 import BlogArticles from '../components/BlogArticles';
@@ -234,6 +235,7 @@ export default function Home() {
       <AdSlider />
       <HealthCategories />
     </div>
+    <DoctorSpecialties />
     <OurDoctors />
     <HealthcarePrograms />
     <TopSellingProducts />

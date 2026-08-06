@@ -64,7 +64,7 @@ export default function OurDoctors() {
           <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.doctorsSubtitle}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/patient/doctors" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
+          <Link href="/doctors" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
             {tr.seeAll}
           </Link>
           <div className="flex gap-2">

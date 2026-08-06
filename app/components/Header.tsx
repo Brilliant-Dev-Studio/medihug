@@ -84,6 +84,7 @@ export default function Header() {
         <nav className="hidden md:flex items-center gap-6">
           {[
             { href: '/', label: tr.home },
+            { href: '/doctors', label: tr.navDoctors },
             { href: '/blog', label: tr.navBlog },
             { href: '/contact', label: tr.contact },
             { href: '/privacy', label: tr.privacy },
@@ -148,6 +149,7 @@ export default function Header() {
         <div className="md:hidden w-full bg-white border-b border-gray-100 shadow-md px-6 py-6 flex flex-col gap-4">
           {[
             { href: '/', label: tr.home },
+            { href: '/doctors', label: tr.navDoctors },
             { href: '/blog', label: tr.navBlog },
             { href: '/contact', label: tr.contact },
             { href: '/privacy', label: tr.privacy },

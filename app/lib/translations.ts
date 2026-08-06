@@ -10,6 +10,7 @@ export const t = {
     signin: 'ဝင်ရောက်ရန်',
     register: 'စာရင်းသွင်းရန်',
     navBlog: 'ဆောင်းပါးများ',
+    navDoctors: 'ဆရာဝန်များ',
 
     // Hero
     heroBadge: 'MediHug ကျန်းမာရေးပလက်ဖောင်း',
@@ -95,6 +96,7 @@ export const t = {
     signin: 'Sign in',
     register: 'Register now',
     navBlog: 'Blog',
+    navDoctors: 'Doctors',
 
     // Hero
     heroBadge: 'MediHug Health Platform',
