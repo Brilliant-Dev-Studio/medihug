@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Star, CheckCircle2 } from 'lucide-react';
 import BlurText from '../components/BlurText';
+import AIAssistantSection from '../components/AIAssistantSection';
 import AdSlider from '../components/AdSlider';
 import HealthCategories from '../components/HealthCategories';
 import TopSellingProducts from '../components/TopSellingProducts';
@@ -236,6 +237,7 @@ export default function Home() {
       <HealthCategories />
     </div>
     <DoctorSpecialties />
+    <AIAssistantSection />
     <OurDoctors />
     <HealthcarePrograms />
     <TopSellingProducts />
