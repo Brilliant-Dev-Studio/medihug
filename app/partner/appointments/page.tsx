@@ -6,6 +6,27 @@ import { STATUS_STYLE, type Appointment } from '@/app/admin/appointments/shared'
 
 const PAGE_SIZE = 20;
 
+function Skel({ className }: { className: string }) {
+  return <div className={`bg-gray-100 rounded-md animate-pulse ${className}`} />;
+}
+
+function AppointmentsSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-50">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-4 px-5 py-4">
+          <div className="min-w-0 flex-1 flex flex-col gap-2">
+            <Skel className="h-3.5 w-40" />
+            <Skel className="h-3 w-28" />
+          </div>
+          <Skel className="h-3 w-24 shrink-0" />
+          <Skel className="h-6 w-20 rounded-full shrink-0" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PartnerAppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [total, setTotal] = useState(0);
@@ -30,7 +51,7 @@ export default function PartnerAppointmentsPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <AppointmentsSkeleton />
       ) : appointments.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
           <Calendar className="w-8 h-8 mx-auto text-gray-200 mb-2" />

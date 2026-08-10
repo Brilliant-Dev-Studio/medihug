@@ -12,6 +12,27 @@ interface Doctor {
   imageUrl: string | null; rating: number; reviewCount: number;
 }
 
+function Skel({ className }: { className: string }) {
+  return <div className={`bg-gray-100 rounded-md animate-pulse ${className}`} />;
+}
+
+function DoctorsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-3">
+          <Skel className="w-12 h-12 rounded-xl shrink-0" />
+          <div className="min-w-0 flex-1 flex flex-col gap-2">
+            <Skel className="h-3.5 w-2/3" />
+            <Skel className="h-3 w-1/2" />
+            <Skel className="h-2.5 w-1/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PartnerDoctorsPage() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +49,7 @@ export default function PartnerDoctorsPage() {
       <h1 className="text-lg font-bold text-gray-800">Doctors</h1>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <DoctorsSkeleton />
       ) : doctors.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
           <Stethoscope className="w-8 h-8 mx-auto text-gray-200 mb-2" />

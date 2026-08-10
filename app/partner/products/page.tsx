@@ -9,6 +9,29 @@ interface Product {
   imageUrl: string | null; price: number; stock: number;
 }
 
+function Skel({ className }: { className: string }) {
+  return <div className={`bg-gray-100 rounded-md animate-pulse ${className}`} />;
+}
+
+function ProductsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <Skel className="aspect-square rounded-none" />
+          <div className="p-3 flex flex-col gap-2">
+            <Skel className="h-3.5 w-3/4" />
+            <div className="flex items-center justify-between">
+              <Skel className="h-3 w-1/3" />
+              <Skel className="h-2.5 w-1/4" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function PartnerProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +48,7 @@ export default function PartnerProductsPage() {
       <h1 className="text-lg font-bold text-gray-800">Products</h1>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <ProductsSkeleton />
       ) : products.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
           <ShoppingBag className="w-8 h-8 mx-auto text-gray-200 mb-2" />

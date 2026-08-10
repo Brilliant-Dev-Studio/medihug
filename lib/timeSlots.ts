@@ -28,6 +28,16 @@ export function maxPerSlotFor(time: string, windows: SlotWindow[]): number {
   return win?.maxPerSlot ?? 1;
 }
 
+/** Combines an appointment's `date` (DateTime) with its `time` label's start time ("09:00" or "09:00 → 09:30 (30 min)") into a local Date, or null if unparseable. */
+export function combineDateAndTime(dateIso: string, time: string | null): Date | null {
+  if (!time) return null;
+  const match = time.match(/\d{2}:\d{2}/);
+  if (!match) return null;
+  const [h, m] = match[0].split(':').map(Number);
+  const d = new Date(dateIso);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
+}
+
 export function dayBounds(dateIso: string): { start: Date; end: Date } {
   const d = new Date(dateIso);
   const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());

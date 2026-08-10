@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { effectiveCommissionPercent, computePatientPrice, getPlatformSettings } from '@/lib/commission';
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,14 +20,22 @@ export async function GET(req: NextRequest) {
       { specialty: { contains: search, mode: 'insensitive' } },
     ];
 
-    const doctors = await db.doctor.findMany({
-      where,
-      include: { slots: { orderBy: { dayOfWeek: 'asc' } } },
-      orderBy: { createdAt: 'asc' },
-      take: limit,
-    });
+    const [doctors, settings] = await Promise.all([
+      db.doctor.findMany({
+        where,
+        include: { slots: { orderBy: { dayOfWeek: 'asc' } } },
+        orderBy: { createdAt: 'asc' },
+        take: limit,
+      }),
+      getPlatformSettings(),
+    ]);
 
-    return NextResponse.json({ doctors });
+    const withPatientPrice = doctors.map(d => ({
+      ...d,
+      patientPrice: computePatientPrice(d.price, effectiveCommissionPercent(d.commissionPercent, settings.defaultCommissionPercent)),
+    }));
+
+    return NextResponse.json({ doctors: withPatientPrice });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

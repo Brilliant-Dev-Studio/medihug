@@ -14,7 +14,7 @@ interface Specialty { id: string; name: string; nameEn: string | null; }
 interface Doctor {
   id: string; name: string; nameEn: string | null;
   specialty: string; imageUrl: string | null;
-  experience: number; rating: number; reviewCount: number; price: number;
+  experience: number; rating: number; reviewCount: number; price: number; patientPrice: number;
 }
 
 function SkeletonCard() {
@@ -164,7 +164,7 @@ function DoctorsBySpecialty({ spec, onBack }: { spec: string; onBack: () => void
                         <span>{d.experience} {mm ? 'နှစ်' : 'yrs'}</span>
                       </div>
                       <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
-                        <p className="text-sm font-bold" style={{ color: PRIMARY }}>{d.price.toLocaleString()} MMK</p>
+                        <p className="text-sm font-bold" style={{ color: PRIMARY }}>{d.patientPrice.toLocaleString()} MMK</p>
                         <span className="flex items-center gap-0.5 text-xs font-semibold" style={{ color: PRIMARY }}>
                           {mm ? 'ကြည့်ရန်' : 'View'} <ArrowRight className="w-3 h-3" />
                         </span>

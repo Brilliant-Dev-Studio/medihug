@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { effectiveCommissionPercent, computePatientPrice, getPlatformSettings } from '@/lib/commission';
 
 /* ── GET /api/patient/favorites/doctors?phone=xxx&full=true ── */
 export async function GET(req: NextRequest) {
@@ -18,7 +19,14 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (full) return NextResponse.json({ doctors: favorites.map(f => f.doctor) });
+    if (full) {
+      const settings = await getPlatformSettings();
+      const doctors = favorites.map(f => ({
+        ...f.doctor,
+        patientPrice: computePatientPrice(f.doctor.price, effectiveCommissionPercent(f.doctor.commissionPercent, settings.defaultCommissionPercent)),
+      }));
+      return NextResponse.json({ doctors });
+    }
     return NextResponse.json({ ids: favorites.map(f => f.doctorId) });
   } catch (e) {
     console.error(e);

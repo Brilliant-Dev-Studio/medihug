@@ -5,8 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag } from 'lucide-react';
-import PartnerAIChatWidget from '@/components/PartnerAIChatWidget';
+import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck } from 'lucide-react';
 
 const PRIMARY = '#3b5bdb';
 
@@ -17,6 +16,8 @@ const navItems = [
   { href: '/partner/appointments', icon: Calendar,        label: 'Appointments' },
   { href: '/partner/doctors',      icon: Stethoscope,     label: 'Doctors' },
   { href: '/partner/products',     icon: ShoppingBag,     label: 'Products' },
+  { href: '/partner/orders',       icon: Receipt,         label: 'Orders' },
+  { href: '/partner/login-history', icon: ShieldCheck,    label: 'Login History' },
   { href: '/partner/profile',      icon: Building2,       label: 'Clinic Profile' },
 ];
 
@@ -161,8 +162,6 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
         <main className="flex-1 min-w-0">{children}</main>
       </div>
-
-      <PartnerAIChatWidget />
     </div>
   );
 }

@@ -22,7 +22,7 @@ interface Doctor {
   id: string; name: string; nameEn: string | null;
   specialty: string; bio: string | null;
   experience: number; rating: number; reviewCount: number;
-  price: number; imageUrl: string | null;
+  price: number; patientPrice: number; imageUrl: string | null;
   isAvailable: boolean; slots: Slot[];
 }
 
@@ -156,7 +156,7 @@ function DoctorSearchBox({ doctors, value, onChange, mm, placeholder, pillClassN
                   <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
                   <p className="text-xs text-gray-400 truncate">{d.specialty}</p>
                 </div>
-                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{d.price.toLocaleString()} MMK</span>
+                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{d.patientPrice.toLocaleString()} MMK</span>
               </Link>
             );
           })}
@@ -214,7 +214,7 @@ function DoctorCardMobile({ doc, idx, mm, favorited, onToggleFav }: {
             <p className="text-sm text-gray-500 mt-0.5">{doc.specialty}</p>
             <p className="text-sm text-gray-500">{mm ? `အတွေ့အကြုံ (${doc.experience}) နှစ်` : `${doc.experience} yrs exp`}</p>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-sm font-bold" style={{ color: PRIMARY }}>{doc.price.toLocaleString()} MMK</span>
+              <span className="text-sm font-bold" style={{ color: PRIMARY }}>{doc.patientPrice.toLocaleString()} MMK</span>
               <span className="text-gray-300">|</span>
               <div className="flex items-center gap-1">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -285,7 +285,7 @@ function DoctorCardDesktop({ doc, idx, mm, favorited, onToggleFav }: {
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-[10px] text-gray-400">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation fee'}</p>
-              <p className="text-base font-bold" style={{ color: PRIMARY }}>{doc.price.toLocaleString()} MMK</p>
+              <p className="text-base font-bold" style={{ color: PRIMARY }}>{doc.patientPrice.toLocaleString()} MMK</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -360,7 +360,7 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
       return true;
     })
     .filter(d => filterSpec === 'all' ? true : d.specialty === filterSpec)
-    .filter(d => d.price >= priceMin && d.price <= priceMax);
+    .filter(d => d.patientPrice >= priceMin && d.patientPrice <= priceMax);
 
   const hasFilter  = filterExp !== 'all' || filterSpec !== 'all' || priceMin > 0 || priceMax < 50000;
   const activeCount = (filterExp !== 'all' ? 1 : 0) + (filterSpec !== 'all' ? 1 : 0) + (priceMin > 0 || priceMax < 50000 ? 1 : 0);

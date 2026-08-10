@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { Knock } from '@knocklabs/node';
 import { db } from '@/lib/db';
 import { parseSlotTimes, maxPerSlotFor, dayBounds } from '@/lib/timeSlots';
+import { effectiveCommissionPercent, computePatientPrice, computePlatformCut, getPlatformSettings } from '@/lib/commission';
 
 const knock = new Knock({ apiKey: process.env.KNOCK_API_KEY! });
 
@@ -12,17 +13,29 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       name, phone, doctorId, date, time, reason, note,
-      paymentMethod, fee, receiptUrl, intake,
+      paymentMethod, receiptUrl, intake,
     } = body;
 
     if (!name || !phone || !doctorId || !date) {
       return NextResponse.json({ error: 'name, phone, doctorId, date are required.' }, { status: 400 });
     }
 
-    const doctor = await db.doctor.findUnique({ where: { id: doctorId } });
+    const [doctor, settings] = await Promise.all([
+      db.doctor.findUnique({ where: { id: doctorId } }),
+      getPlatformSettings(),
+    ]);
     if (!doctor) {
       return NextResponse.json({ error: 'Doctor not found.' }, { status: 404 });
     }
+
+    // Fee is always derived server-side from the live doctor price + commission % — the client
+    // never gets to dictate what gets charged. Session count is re-derived from the same slot
+    // label already used for capacity validation below, not trusted from the request body.
+    const sessionCount = time ? Math.max(1, parseSlotTimes(time).length) : 1;
+    const percent = effectiveCommissionPercent(doctor.commissionPercent, settings.defaultCommissionPercent);
+    const fee = computePatientPrice(doctor.price, percent) * sessionCount;
+    const platformFeeAmount = computePlatformCut(doctor.price, percent) * sessionCount;
+    const doctorPayoutAmount = doctor.price * sessionCount;
 
     const appointment = await db.$transaction(async (tx) => {
       if (time) {
@@ -69,7 +82,9 @@ export async function POST(req: NextRequest) {
           reason:        reason ?? null,
           note:          note ?? null,
           paymentMethod: paymentMethod ?? null,
-          fee:           fee ?? null,
+          fee,
+          platformFeeAmount,
+          doctorPayoutAmount,
           receiptUrl:    receiptUrl ?? null,
           intake:        intake ?? undefined,
         },

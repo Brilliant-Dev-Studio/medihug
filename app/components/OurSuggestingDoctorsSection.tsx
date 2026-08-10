@@ -16,7 +16,7 @@ const AVATAR_COLORS = ['#2ab5ad', '#8b5cf6', '#f59e0b', '#3b82f6', '#10b981', '#
 
 interface DoctorItem {
   id: string; name: string; nameEn: string | null;
-  specialty: string; rating: number; reviewCount: number; price: number;
+  specialty: string; rating: number; reviewCount: number; price: number; patientPrice: number;
   imageUrl: string | null; experience: number; isAvailable: boolean;
   languages: string[];
 }
@@ -105,7 +105,7 @@ function DoctorCard({ d, i, mm, favorited, onToggleFav }: { d: DoctorItem; i: nu
           <div className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1 lg:py-1.5" style={{ backgroundColor: `${PRIMARY}0d` }}>
             <p className="hidden lg:block text-[9px] font-semibold uppercase tracking-wide text-gray-400 leading-none mb-0.5">{mm ? 'ကုန်ကျစရိတ်' : 'Fee'}</p>
             <p className="text-[11px] lg:text-base font-extrabold leading-none" style={{ color: PRIMARY }}>
-              {d.price.toLocaleString()}<span className="text-[9px] lg:text-[11px] font-semibold text-gray-400 ml-0.5">{mm ? 'ကျပ်' : 'MMK'}</span>
+              {d.patientPrice.toLocaleString()}<span className="text-[9px] lg:text-[11px] font-semibold text-gray-400 ml-0.5">{mm ? 'ကျပ်' : 'MMK'}</span>
             </p>
           </div>
           <div className="hidden lg:flex items-center gap-1 text-xs text-gray-400">

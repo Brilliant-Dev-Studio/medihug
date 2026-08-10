@@ -47,7 +47,11 @@ export default function PartnerDashboardPage() {
         </div>
         <div>
           <p className="text-white/70 text-xs font-semibold uppercase tracking-widest">ကြိုဆိုပါသည်</p>
-          <h1 className="text-white text-xl font-bold">{loading ? '...' : (clinic?.nameEn ?? clinic?.name ?? 'Partner')}</h1>
+          {loading ? (
+            <div className="h-6 w-40 rounded-md bg-white/20 animate-pulse mt-1" />
+          ) : (
+            <h1 className="text-white text-xl font-bold">{clinic?.nameEn ?? clinic?.name ?? 'Partner'}</h1>
+          )}
         </div>
       </div>
 
@@ -58,8 +62,12 @@ export default function PartnerDashboardPage() {
               <c.icon className="w-5 h-5" style={{ color: PRIMARY }} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{loading ? '—' : c.num}</p>
-              <p className="text-xs text-gray-400">{c.label}</p>
+              {loading ? (
+                <div className="h-7 w-8 rounded-md bg-gray-100 animate-pulse" />
+              ) : (
+                <p className="text-2xl font-bold text-gray-800">{c.num}</p>
+              )}
+              <p className="text-xs text-gray-400 mt-1">{c.label}</p>
             </div>
           </a>
         ))}

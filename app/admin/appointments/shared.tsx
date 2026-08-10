@@ -24,6 +24,7 @@ export interface Appointment {
   fee: number | null;
   receiptUrl: string | null;
   intake: IntakeData | null;
+  aiSummary?: string | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
   createdAt: string;

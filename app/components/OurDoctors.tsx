@@ -13,7 +13,7 @@ const PRIMARY = '#0d2b6e';
 interface Doctor {
   id: string; name: string; nameEn: string | null;
   specialty: string; experience: number; rating: number;
-  reviewCount: number; price: number; imageUrl: string | null;
+  reviewCount: number; price: number; patientPrice: number; imageUrl: string | null;
   languages: string[];
 }
 
@@ -119,7 +119,7 @@ export default function OurDoctors() {
                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{d.specialty}</p>
                     <h3 className="text-xl font-bold text-gray-900 leading-snug mt-1 truncate">{displayName}</h3>
                     <p className="text-xs text-gray-400 mt-1.5">
-                      {d.price.toLocaleString()} MMK · {d.experience}+ {mm ? 'နှစ်အတွေ့အကြုံ' : 'yrs exp'}
+                      {d.experience}+ {mm ? 'နှစ်အတွေ့အကြုံ' : 'yrs exp'}
                     </p>
                   </div>
 

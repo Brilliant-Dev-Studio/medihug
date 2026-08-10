@@ -1,10 +1,10 @@
 'use client';
 
-import { use, useState, useEffect, useCallback } from 'react';
+import { use, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Calendar, Clock, CreditCard, Phone,
-  User, FileText, Stethoscope, AlertTriangle, Video, Loader2,
+  User, FileText, Stethoscope, AlertTriangle, Video, Loader2, Sparkles, Send,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
@@ -65,6 +65,138 @@ function AppointmentDetailSkeleton() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+interface ChatMsg { role: 'user' | 'assistant'; content: string }
+
+/** AI Q&A scoped to one patient's intake form — seeded with the cached one-shot summary, then a normal chat for follow-ups. */
+function AISummaryCard({ appt, mm, onSummary }: { appt: Appointment; mm: boolean; onSummary: (s: string) => void }) {
+  const [messages, setMessages] = useState<ChatMsg[]>(appt.aiSummary ? [{ role: 'assistant', content: appt.aiSummary }] : []);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const listRef = useRef<HTMLDivElement>(null);
+  const accRef = useRef('');
+
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages]);
+
+  async function generateInitialSummary() {
+    setSending(true);
+    setError('');
+    const res = await fetch(`/api/doctor/appointments/${appt.id}/summary`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lang: mm ? 'mm' : 'en' }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) {
+      setError(data?.error || (mm ? 'Summary ထုတ်ယူ၍ မရပါ။' : 'Failed to generate summary.'));
+    } else {
+      setMessages([{ role: 'assistant', content: data.summary }]);
+      onSummary(data.summary);
+    }
+    setSending(false);
+  }
+
+  async function send() {
+    const body = draft.trim().slice(0, 500);
+    if (!body || sending) return;
+    setDraft('');
+    setError('');
+    const next: ChatMsg[] = [...messages, { role: 'user', content: body }];
+    setMessages([...next, { role: 'assistant', content: '' }]);
+    setSending(true);
+
+    try {
+      const res = await fetch(`/api/doctor/appointments/${appt.id}/chat`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: next, lang: mm ? 'mm' : 'en' }),
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => '');
+        setMessages(m => { const c = [...m]; c[c.length - 1] = { role: 'assistant', content: text || (mm ? 'တစ်ခုခု မှားနေပါတယ်။' : 'Something went wrong.') }; return c; });
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      accRef.current = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accRef.current += decoder.decode(value, { stream: true });
+        setMessages(m => { const c = [...m]; c[c.length - 1] = { role: 'assistant', content: accRef.current }; return c; });
+      }
+    } catch {
+      setMessages(m => { const c = [...m]; c[c.length - 1] = { role: 'assistant', content: mm ? 'တစ်ခုခု မှားနေပါတယ်။' : 'Something went wrong.' }; return c; });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'rgba(139,92,246,0.25)', background: 'linear-gradient(135deg, rgba(6,182,212,0.05) 0%, rgba(139,92,246,0.05) 100%)' }}>
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b" style={{ borderColor: 'rgba(139,92,246,0.15)' }}>
+        <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)' }}>
+          <Sparkles className="w-3.5 h-3.5 text-white" />
+        </span>
+        <div>
+          <p className="text-sm font-bold" style={{ color: '#7c3aed' }}>{t(mm, { mm: 'AI လက်ထောက်', en: 'AI Assistant' })}</p>
+          <p className="text-[10px] text-gray-400 leading-tight">{t(mm, { mm: 'ဒီလူနာအကြောင်းသာ မေးနိုင်ပါသည်', en: 'Ask about this patient only' })}</p>
+        </div>
+      </div>
+
+      {messages.length === 0 ? (
+        <div className="px-4 py-3.5 flex flex-col gap-2.5">
+          <p className="text-xs text-gray-400">
+            {t(mm, { mm: 'လူနာ၏ ကြိုတင်မေးခွန်းစာရွက်ကို AI ဖြင့် အနှစ်ချုပ်ပြီး ပြီးနောက် မေးခွန်းများ မေးနိုင်ပါသည်။', en: 'Get an AI summary of this patient’s intake form, then ask follow-up questions.' })}
+          </p>
+          <button onClick={generateInitialSummary} disabled={sending}
+            className="self-start flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl text-white disabled:opacity-60 transition-opacity"
+            style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)' }}>
+            {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {t(mm, { mm: 'AI Summary ထုတ်မည်', en: 'Generate Summary' })}
+          </button>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+        </div>
+      ) : (
+        <>
+          <div ref={listRef} className="px-4 py-3.5 flex flex-col gap-2.5 max-h-96 overflow-y-auto">
+            {messages.map((m, i) => (
+              <div key={i}
+                className={`text-sm leading-relaxed whitespace-pre-wrap rounded-xl px-3.5 py-2.5 ${m.role === 'user' ? 'self-end text-white max-w-[85%]' : 'self-start bg-white border border-gray-100 text-gray-700 max-w-full'}`}
+                style={m.role === 'user' ? { background: 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)' } : undefined}>
+                {m.content || (sending && i === messages.length - 1 ? (
+                  <span className="flex gap-1 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                ) : '')}
+              </div>
+            ))}
+            {error && <p className="text-xs text-red-500">{error}</p>}
+          </div>
+          <div className="px-3 py-2.5 border-t flex items-center gap-2" style={{ borderColor: 'rgba(139,92,246,0.15)' }}>
+            <input
+              value={draft}
+              onChange={e => setDraft(e.target.value.slice(0, 500))}
+              onKeyDown={e => e.key === 'Enter' && !sending && send()}
+              placeholder={t(mm, { mm: 'ဒီလူနာအကြောင်း မေးပါ...', en: 'Ask about this patient...' })}
+              maxLength={500}
+              disabled={sending}
+              className="flex-1 bg-white border border-gray-200 rounded-xl px-3.5 py-2 text-sm outline-none focus:border-violet-300 disabled:opacity-60"
+            />
+            <button onClick={send} disabled={sending || !draft.trim()}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0 disabled:opacity-40"
+              style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)' }}>
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -252,6 +384,8 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
 
         {/* Right / main column */}
         <div className="lg:col-span-2 flex flex-col gap-5">
+
+          {d && <AISummaryCard appt={appt} mm={mm} onSummary={s => setAppt(a => a ? { ...a, aiSummary: s } : a)} />}
 
           {(appt.reason || appt.note) && (
             <ViewSection icon={FileText} title={t(mm, { mm: 'အကြောင်းအရာ / မှတ်ချက်', en: 'Reason / Note' })} rows={[

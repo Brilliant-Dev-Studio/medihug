@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Check, X, Loader2, ShieldCheck, Trash2, Ban } from 'lucide-react';
+import { Plus, Check, X, Loader2, ShieldCheck, Trash2, Ban, Percent, Save } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
@@ -21,6 +21,11 @@ export default function AdminSettingsPage() {
   const [saving,     setSaving]     = useState(false);
   const [busyId,     setBusyId]     = useState<string | null>(null);
 
+  const [commissionPercent, setCommissionPercent] = useState('0');
+  const [commissionLoading, setCommissionLoading] = useState(true);
+  const [commissionSaving, setCommissionSaving] = useState(false);
+  const [commissionSaved, setCommissionSaved] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     const res  = await fetch('/api/admin/admins');
@@ -32,7 +37,24 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     load();
     fetch('/api/admin/me').then(r => r.json()).then(d => setMe(d.admin?.id ?? null));
+    fetch('/api/admin/settings')
+      .then(r => r.json())
+      .then(d => setCommissionPercent(String(d.settings?.defaultCommissionPercent ?? 0)))
+      .finally(() => setCommissionLoading(false));
   }, [load]);
+
+  const saveCommission = async () => {
+    const value = Number(commissionPercent);
+    if (Number.isNaN(value) || value < 0 || value > 100) return;
+    setCommissionSaving(true);
+    setCommissionSaved(false);
+    const res = await fetch('/api/admin/settings', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ defaultCommissionPercent: value }),
+    });
+    setCommissionSaving(false);
+    if (res.ok) { setCommissionSaved(true); setTimeout(() => setCommissionSaved(false), 2000); }
+  };
 
   const handleCreate = async () => {
     if (!name.trim() || !phone.trim() || !password.trim()) { setCreateError('Name, phone, password လိုအပ်သည်'); return; }
@@ -66,6 +88,38 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Commission */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}14` }}>
+            <Percent className="w-4 h-4" style={{ color: PRIMARY }} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-gray-800">Default Commission</p>
+            <p className="text-xs text-gray-400">Platform&apos;s cut, added on top of each doctor&apos;s set price. Doctors can be given a custom % that overrides this.</p>
+          </div>
+        </div>
+        {commissionLoading ? (
+          <div className="h-10 w-40 rounded-xl bg-gray-100 animate-pulse" />
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center w-32 rounded-xl border border-gray-200 bg-gray-50 focus-within:ring-2 focus-within:ring-[#2ab5ad]/40 focus-within:border-[#2ab5ad] transition-colors overflow-hidden">
+              <input type="number" min={0} max={100} value={commissionPercent}
+                onChange={e => setCommissionPercent(e.target.value)}
+                className="min-w-0 flex-1 bg-transparent px-3.5 py-2.5 text-sm text-gray-700 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+              <span className="pr-3.5 text-sm text-gray-400 shrink-0">%</span>
+            </div>
+            <button onClick={saveCommission} disabled={commissionSaving}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+              style={{ backgroundColor: PRIMARY }}>
+              {commissionSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save
+            </button>
+            {commissionSaved && <span className="text-xs font-semibold text-green-600">Saved</span>}
+          </div>
+        )}
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

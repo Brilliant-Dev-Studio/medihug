@@ -10,7 +10,7 @@ const SECONDARY = 'var(--color-primary-dark)';
 
 interface FavDoctor {
   id: string; name: string; nameEn: string | null;
-  specialty: string; rating: number; price: number; imageUrl: string | null;
+  specialty: string; rating: number; price: number; patientPrice: number; imageUrl: string | null;
 }
 interface FavProduct {
   id: string; name: string; nameEn: string | null;
@@ -121,7 +121,7 @@ export default function FavouritesPage() {
                               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                               <span className="text-[11px] font-semibold text-gray-600">{d.rating.toFixed(1)}</span>
                             </div>
-                            <span className="text-[11px] font-bold" style={{ color: PRIMARY }}>{d.price.toLocaleString()} MMK</span>
+                            <span className="text-[11px] font-bold" style={{ color: PRIMARY }}>{d.patientPrice.toLocaleString()} MMK</span>
                           </div>
                         </div>
                       </Link>

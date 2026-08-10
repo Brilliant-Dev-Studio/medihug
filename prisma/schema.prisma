@@ -93,6 +93,7 @@ model Doctor {
   rating         Float    @default(0)
   reviewCount    Int      @default(0)
   price          Int      @default(0)
+  commissionPercent Int?  // null = inherit PlatformSettings.defaultCommissionPercent
   isAvailable    Boolean  @default(true)
   isActive       Boolean  @default(true)
   isSuggested    Boolean  @default(false)
@@ -201,11 +202,27 @@ model Clinic {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  owner        User?           @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  owner        User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   doctors      ClinicDoctor[]
   appointments Appointment[]
   products     ClinicProduct[]
   gallery      ClinicGallery[]
+  loginLogs    ClinicLoginLog[]
+}
+
+// Shared login account audit trail — a clinic's partner_token login is often used by
+// several staff members, so IP/user-agent per login is the only way to distinguish "who".
+model ClinicLoginLog {
+  id        String   @id @default(cuid())
+  clinicId  String
+  userId    String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
 }
 
 model ClinicGallery {
@@ -258,9 +275,12 @@ model Appointment {
   reason        String?
   note          String?
   paymentMethod String?
-  fee           Int?
+  fee           Int?    // full patient-paid total (base × sessions, marked up by commission %)
+  platformFeeAmount  Int? // platform's cut, snapshotted at booking time
+  doctorPayoutAmount Int? // what the doctor receives, snapshotted at booking time
   receiptUrl    String?
   intake        Json?
+  aiSummary     String?
   status        AppointmentStatus @default(PENDING)
   doctorApproved Boolean          @default(false)
   callRinging   Boolean           @default(false)
@@ -554,4 +574,14 @@ model AiChatUsage {
   count      Int    @default(0)
 
   @@unique([identifier, date])
+}
+
+// ─────────────────────────────────────────────
+// Platform-wide settings (singleton row)
+// ─────────────────────────────────────────────
+
+model PlatformSettings {
+  id                       String   @id @default("singleton")
+  defaultCommissionPercent Int      @default(0)
+  updatedAt                DateTime @updatedAt
 }

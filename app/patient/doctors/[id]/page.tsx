@@ -30,7 +30,7 @@ interface DoctorGallery {
 }
 interface Doctor {
   id: string; name: string; nameEn: string | null;
-  specialty: string; experience: number; price: number;
+  specialty: string; experience: number; price: number; patientPrice: number;
   imageUrl: string | null; isAvailable: boolean;
   rating: number; reviewCount: number;
   bio: string | null; phone: string | null;
@@ -175,7 +175,7 @@ export default function DoctorDetailPage() {
   const _toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
   const sessionCount = selectionMode === 'range' && rangeStart && rangeEnd
     ? Math.round((Math.abs(_toMin(rangeEnd) - _toMin(rangeStart)) + 15) / 15) : 1;
-  const totalFee = doctor.price * sessionCount;
+  const totalFee = doctor.patientPrice * sessionCount;
 
   const startIdx = rangeStart  ? allSlots.indexOf(rangeStart)  : -1;
   const endIdx   = rangeEnd    ? allSlots.indexOf(rangeEnd)    : -1;
@@ -198,7 +198,7 @@ export default function DoctorDetailPage() {
       : [selectedSlot ?? '', ''];
     const sc = selectionMode === 'range' && rangeStart && rangeEnd
       ? Math.round((Math.abs(toMin(rangeEnd) - toMin(rangeStart)) + 15) / 15) : 1;
-    const tf = doctor.price * sc;
+    const tf = doctor.patientPrice * sc;
     const q = new URLSearchParams({
       doctorId: doctor.id,
       name:     doctor.nameEn ?? doctor.name,
@@ -208,7 +208,7 @@ export default function DoctorDetailPage() {
       img:      doctor.imageUrl ?? '',
       date:     dl, dateIso: d_s.toISOString(), start: sorted[0], end: sorted[1],
       duration: selectionMode === 'range' && rangeStart && rangeEnd ? fmtDuration(rangeStart, rangeEnd) : '',
-      fee:      tf.toLocaleString(), sessions: String(sc), basePrice: String(doctor.price),
+      fee:      tf.toLocaleString(), sessions: String(sc), basePrice: String(doctor.patientPrice),
     });
     router.push(`/patient/booking?${q.toString()}`);
   }
@@ -714,11 +714,16 @@ export default function DoctorDetailPage() {
             <div>
               <p className="text-xs text-gray-400 mb-1">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation Fee'}</p>
               {sessionCount > 1 && (
-                <p className="text-[11px] text-gray-400 mb-0.5">{doctor.price.toLocaleString()} × {sessionCount} sessions</p>
+                <p className="text-[11px] text-gray-400 mb-0.5">{doctor.patientPrice.toLocaleString()} × {sessionCount} sessions</p>
               )}
               <p className="text-2xl font-bold" style={{ color: PRIMARY }}>
                 {totalFee.toLocaleString()} <span className="text-sm font-semibold text-gray-400">MMK</span>
               </p>
+              {doctor.patientPrice > doctor.price && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {mm ? 'ဆရာဝန်ခ' : 'Doctor'} {(doctor.price * sessionCount).toLocaleString()} + {mm ? 'ပလက်ဖောင်းခ' : 'Platform fee'} {((doctor.patientPrice - doctor.price) * sessionCount).toLocaleString()} MMK
+                </p>
+              )}
             </div>
             <button onClick={goToBooking}
               className="block w-full text-center text-sm font-bold py-3.5 rounded-xl text-white transition-opacity hover:opacity-90"
@@ -779,14 +784,19 @@ export default function DoctorDetailPage() {
         {tabContent}
 
         <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-3 pb-4 z-30">
-          <div className="flex items-center justify-center gap-2 mb-3">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <span className="text-sm text-gray-500">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation Fee'}</span>
             <span className="text-sm text-gray-400">-</span>
             <div className="flex flex-col items-end">
-              {sessionCount > 1 && <span className="text-[10px] text-gray-400">{doctor.price.toLocaleString()} × {sessionCount}</span>}
+              {sessionCount > 1 && <span className="text-[10px] text-gray-400">{doctor.patientPrice.toLocaleString()} × {sessionCount}</span>}
               <span className="text-xl font-bold" style={{ color: PRIMARY }}>{totalFee.toLocaleString()} MMK</span>
             </div>
           </div>
+          {doctor.patientPrice > doctor.price && (
+            <p className="text-center text-[10px] text-gray-400 mb-2">
+              {mm ? 'ဆရာဝန်ခ' : 'Doctor'} {(doctor.price * sessionCount).toLocaleString()} + {mm ? 'ပလက်ဖောင်းခ' : 'Platform fee'} {((doctor.patientPrice - doctor.price) * sessionCount).toLocaleString()} MMK
+            </p>
+          )}
           <button onClick={goToBooking}
             className="block w-full text-center text-base font-bold py-4 rounded-2xl text-white active:scale-95 transition-transform"
             style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>

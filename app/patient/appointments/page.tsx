@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLang } from '../../lib/LanguageContext';
+import { combineDateAndTime } from '@/lib/timeSlots';
+
+const JOIN_WINDOW_MS = 5 * 60 * 1000;
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -26,6 +29,7 @@ type Appointment = {
   time_mm: string;
   status: Status;
   fee: string;
+  scheduledAt: Date | null;
 };
 
 type PastAppointment = {
@@ -97,6 +101,7 @@ function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; pa
         time_en: dt, time_mm: dt,
         status: a.status === 'PENDING' ? 'pending_payment' : (a.doctorApproved ? 'ready' : 'confirmed'),
         fee: fmtFee(a.fee),
+        scheduledAt: combineDateAndTime(a.date, a.time),
       });
     }
   }
@@ -188,8 +193,26 @@ function EmptyList({ mm }: { mm: boolean }) {
   );
 }
 
+/** Ticks every `intervalMs` so time-gated UI (e.g. the Join button window) re-evaluates without a page refresh. */
+function useNow(intervalMs: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
 function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
   const cfg = STATUS_CONFIG[appt.status];
+  const now = useNow(15000);
+  // Falls back to joinable-on-approval if the time couldn't be parsed, so a bad `time` string never hard-blocks the patient.
+  const joinable = appt.status === 'ready' && (!appt.scheduledAt || now >= appt.scheduledAt.getTime() - JOIN_WINDOW_MS);
+  const opensLabel = (() => {
+    if (appt.status !== 'ready' || joinable || !appt.scheduledAt) return null;
+    const minsLeft = Math.ceil((appt.scheduledAt.getTime() - JOIN_WINDOW_MS - now) / 60000);
+    return mm ? `${minsLeft} မိနစ်အကြာ ဖွင့်မည်` : `Opens in ${minsLeft}m`;
+  })();
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -223,11 +246,16 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
         {/* Action buttons row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            {appt.status === 'ready' && (
+            {appt.status === 'ready' && joinable && (
               <Link href={`/patient/appointments/${appt.id}/call`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
                 style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
                 <Video className="w-3.5 h-3.5" />{mm ? 'ဝင်ရောက်မည်' : 'Join Now'}
               </Link>
+            )}
+            {appt.status === 'ready' && !joinable && (
+              <button disabled className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-300 border border-gray-100 cursor-not-allowed">
+                <Video className="w-3.5 h-3.5" />{opensLabel}
+              </button>
             )}
             {appt.status === 'confirmed' && (
               <button disabled className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-300 border border-gray-100 cursor-not-allowed">
@@ -285,11 +313,16 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
           >
             <FileText className="w-4 h-4" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
           </Link>
-          {appt.status === 'ready' && (
+          {appt.status === 'ready' && joinable && (
             <Link href={`/patient/appointments/${appt.id}/call`} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
               <Video className="w-4 h-4" />{mm ? 'ဝင်ရောက်မည်' : 'Join Now'}
             </Link>
+          )}
+          {appt.status === 'ready' && !joinable && (
+            <button disabled className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 border border-gray-100 cursor-not-allowed">
+              <Video className="w-4 h-4" />{opensLabel}
+            </button>
           )}
           {appt.status === 'confirmed' && (
             <button disabled className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-gray-300 border border-gray-100 cursor-not-allowed">

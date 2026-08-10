@@ -20,7 +20,7 @@ interface ClinicDoctor {
   doctor: {
     id: string; name: string; nameEn: string | null;
     imageUrl: string | null; specialty: string;
-    rating: number; price: number; experience: number;
+    rating: number; price: number; patientPrice: number; experience: number;
     isAvailable: boolean;
   };
 }
@@ -425,7 +425,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                           <span className="font-semibold text-gray-600 text-xs">{doc.rating.toFixed(1)}</span>
                         </div>
                       </div>
-                      <p className="text-xs font-bold" style={{ color: PRIMARY }}>{doc.price.toLocaleString()} MMK</p>
+                      <p className="text-xs font-bold" style={{ color: PRIMARY }}>{doc.patientPrice.toLocaleString()} MMK</p>
                       <div className="flex gap-1.5">
                         <Link href={`/patient/doctors/${doc.id}`}
                           className="flex-1 text-center text-[10px] font-semibold py-1.5 rounded-full border"
@@ -483,7 +483,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                         </div>
                         <span className="text-xs text-gray-400">{doc.experience} {mm ? 'နှစ်' : 'yrs exp'}</span>
                       </div>
-                      <p className="text-sm font-bold" style={{ color: PRIMARY }}>{doc.price.toLocaleString()} MMK</p>
+                      <p className="text-sm font-bold" style={{ color: PRIMARY }}>{doc.patientPrice.toLocaleString()} MMK</p>
                       <div className="flex gap-2">
                         <Link href={`/patient/doctors/${doc.id}`}
                           className="flex-1 text-center text-xs font-semibold py-2 rounded-full border transition-all active:scale-95"

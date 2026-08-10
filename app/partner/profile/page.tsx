@@ -35,6 +35,45 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function Skel({ className }: { className: string }) {
+  return <div className={`bg-gray-100 rounded-xl animate-pulse ${className}`} />;
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="p-4 lg:p-6 max-w-3xl mx-auto flex flex-col gap-5">
+      <div className="flex items-center justify-between">
+        <Skel className="h-6 w-32" />
+        <Skel className="h-10 w-24" />
+      </div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
+        <Skel className="h-2.5 w-16" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Skel className="aspect-square" />
+          <Skel className="aspect-16/6 sm:aspect-square" />
+        </div>
+      </div>
+      {[
+        'grid-cols-1 sm:grid-cols-2',
+        'grid-cols-1 sm:grid-cols-3',
+        'grid-cols-1 sm:grid-cols-2',
+      ].map((gridCols, i) => (
+        <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
+          <Skel className="h-2.5 w-24" />
+          <div className={`grid ${gridCols} gap-4`}>
+            {Array.from({ length: parseInt(gridCols.slice(-1)) }).map((_, j) => <Skel key={j} className="h-10" />)}
+          </div>
+        </div>
+      ))}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
+        <Skel className="h-2.5 w-16" />
+        <Skel className="h-20" />
+        <Skel className="h-20" />
+      </div>
+    </div>
+  );
+}
+
 export default function PartnerProfilePage() {
   const [form, setForm] = useState<ClinicForm>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -78,11 +117,7 @@ export default function PartnerProfilePage() {
     }
   };
 
-  if (loading) return (
-    <div className="p-6 flex items-center justify-center">
-      <Loader2 className="w-6 h-6 animate-spin" style={{ color: PRIMARY }} />
-    </div>
-  );
+  if (loading) return <ProfileSkeleton />;
 
   return (
     <div className="p-4 lg:p-6 max-w-3xl mx-auto flex flex-col gap-5">

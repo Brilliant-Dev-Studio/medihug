@@ -150,7 +150,7 @@ function DashboardDoctorSearchBox({ doctors, mm }: { doctors: DoctorItem[]; mm: 
                   <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
                   <p className="text-xs text-gray-400 truncate">{d.specialty}</p>
                 </div>
-                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{d.price.toLocaleString()} MMK</span>
+                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{d.patientPrice.toLocaleString()} MMK</span>
               </Link>
             );
           })}
@@ -190,7 +190,7 @@ const specialtyCategories = [
 
 interface DoctorItem {
   id: string; name: string; nameEn: string | null;
-  specialty: string; rating: number; price: number; imageUrl: string | null;
+  specialty: string; rating: number; price: number; patientPrice: number; imageUrl: string | null;
 }
 
 interface UpcomingAppointment {
@@ -569,7 +569,7 @@ export default function PatientDashboard() {
                         <span className="text-xs font-bold text-amber-700 shrink-0">{d.rating.toFixed(1)}</span>
                       </div>
                       <p className="text-xs font-semibold mt-0.5" style={{ color: PRIMARY }}>
-                        {d.price.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
+                        {d.patientPrice.toLocaleString()} {mm ? 'ကျပ်' : 'MMK'}
                       </p>
                     </div>
                     <Link

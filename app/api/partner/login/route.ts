@@ -34,6 +34,11 @@ export async function POST(req: NextRequest) {
       id: user.id, name: user.name, phone: user.phone, role: user.role, clinicId: clinic.id,
     });
 
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+    await db.clinicLoginLog.create({
+      data: { clinicId: clinic.id, userId: user.id, ip, userAgent: req.headers.get('user-agent') },
+    });
+
     const res = NextResponse.json({ success: true, name: user.name, phone: user.phone });
     res.cookies.set('partner_token', token, {
       httpOnly: true,

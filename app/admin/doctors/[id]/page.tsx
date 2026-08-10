@@ -2,8 +2,9 @@
 
 import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
-  ArrowLeft, Stethoscope, Phone, Clock, Star, DollarSign,
+  ArrowLeft, Stethoscope, Phone, Clock, Star, DollarSign, Percent,
   CheckCircle2, XCircle, Pencil, Plus, X, Check, Loader2, Save,
   Images, Trash2, GripVertical, CalendarClock,
 } from 'lucide-react';
@@ -26,7 +27,7 @@ interface Doctor  {
   specialty: string; bio: string | null; phone: string | null;
   phoneSecondary: string | null; viber: string | null;
   imageUrl: string | null; experience: number; rating: number;
-  price: number; isAvailable: boolean; isActive: boolean; isSuggested: boolean;
+  price: number; commissionPercent: number | null; isAvailable: boolean; isActive: boolean; isSuggested: boolean;
   allowsCustomTimeRequests: boolean;
   qualifications: string | null; careerMm: string | null; careerEn: string | null;
   clinicNote: string | null; clinicNoteEn: string | null;
@@ -53,6 +54,11 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
   const [savingGallery,setSavingGallery]= useState(false);
   const [newImg,       setNewImg]       = useState({ imageUrl: '', captionMm: '', captionEn: '' });
   const [error,        setError]        = useState('');
+  const [defaultCommissionPercent, setDefaultCommissionPercent] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/admin/settings').then(r => r.json()).then(d => setDefaultCommissionPercent(d.settings?.defaultCommissionPercent ?? 0));
+  }, []);
 
   const fetchDoctor = useCallback(async () => {
     setLoading(true);
@@ -75,7 +81,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       specialty: doctor.specialty, bio: doctor.bio ?? '',
       phone: doctor.phone ?? '', phoneSecondary: doctor.phoneSecondary ?? '',
       viber: doctor.viber ?? '', experience: doctor.experience,
-      price: doctor.price, isAvailable: doctor.isAvailable, isActive: doctor.isActive,
+      price: doctor.price, commissionPercent: doctor.commissionPercent, isAvailable: doctor.isAvailable, isActive: doctor.isActive,
       isSuggested: doctor.isSuggested,
       allowsCustomTimeRequests: doctor.allowsCustomTimeRequests,
       qualifications: doctor.qualifications ?? '',
@@ -103,6 +109,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
       viber:          infoForm.viber,
       experience:    infoForm.experience,
       price:         infoForm.price,
+      commissionPercent: infoForm.commissionPercent === undefined || infoForm.commissionPercent === null ? null : infoForm.commissionPercent,
       isAvailable:   infoForm.isAvailable,
       isActive:      infoForm.isActive,
       isSuggested:   infoForm.isSuggested,
@@ -294,6 +301,21 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
                 onChange={e => setInfoForm(f => ({ ...f, price: e.target.value === '' ? 0 : parseInt(e.target.value) || 0 }))} /></div>
           </div>
 
+          <div>
+            <label className={lbl}>Commission % (optional override)</label>
+            <input type="number" min={0} max={100} className={inp}
+              placeholder={`Default (${defaultCommissionPercent}%)`}
+              value={infoForm.commissionPercent === null || infoForm.commissionPercent === undefined ? '' : infoForm.commissionPercent}
+              onChange={e => setInfoForm(f => ({ ...f, commissionPercent: e.target.value === '' ? null : (parseInt(e.target.value) || 0) }))} />
+            <p className="text-[11px] text-gray-400 mt-1">
+              {infoForm.commissionPercent === null || infoForm.commissionPercent === undefined
+                ? `Effective: ${defaultCommissionPercent}% (global default)`
+                : `Effective: ${infoForm.commissionPercent}% (override)`}
+              {' · '}
+              <Link href="/admin/settings" className="font-semibold hover:underline" style={{ color: PRIMARY }}>Edit global default</Link>
+            </p>
+          </div>
+
           <div><label className={lbl}>Location</label>
             <input className={inp} value={infoForm.location ?? ''} onChange={e => setInfoForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Yangon" /></div>
 
@@ -400,6 +422,7 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
         {[
           { icon: Clock,      label: 'Experience', value: `${doctor.experience} years` },
           { icon: DollarSign, label: 'Price',      value: `${doctor.price.toLocaleString()} MMK` },
+          { icon: Percent,    label: 'Commission', value: doctor.commissionPercent === null ? `${defaultCommissionPercent}% (default)` : `${doctor.commissionPercent}% (override)` },
           { icon: Star,       label: 'Rating',     value: `${doctor.rating.toFixed(1)} / 5` },
           { icon: Phone, label: 'Main Phone',      value: doctor.phone          ?? '—' },
           { icon: Phone, label: 'Secondary Phone', value: doctor.phoneSecondary ?? '—' },

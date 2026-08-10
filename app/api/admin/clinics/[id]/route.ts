@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { effectiveCommissionPercent, computePatientPrice, getPlatformSettings } from '@/lib/commission';
 
 const INCLUDE = {
   doctors: {
@@ -7,7 +8,7 @@ const INCLUDE = {
       doctor: {
         select: {
           id: true, name: true, nameEn: true, imageUrl: true,
-          specialty: true, rating: true, price: true,
+          specialty: true, rating: true, price: true, commissionPercent: true,
           experience: true, isAvailable: true,
         },
       },
@@ -24,13 +25,28 @@ const INCLUDE = {
   owner: { select: { id: true, phone: true, isActive: true } },
 };
 
+/** Adds a computed `patientPrice` to each linked doctor without touching the admin-facing raw `price`. */
+async function withPatientPrices<T extends { doctors: { doctor: { price: number; commissionPercent: number | null } }[] }>(clinic: T) {
+  const settings = await getPlatformSettings();
+  return {
+    ...clinic,
+    doctors: clinic.doctors.map(cd => ({
+      ...cd,
+      doctor: {
+        ...cd.doctor,
+        patientPrice: computePatientPrice(cd.doctor.price, effectiveCommissionPercent(cd.doctor.commissionPercent, settings.defaultCommissionPercent)),
+      },
+    })),
+  };
+}
+
 /* ── GET /api/admin/clinics/[id] ── */
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const clinic = await db.clinic.findUnique({ where: { id }, include: INCLUDE });
     if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json({ clinic });
+    return NextResponse.json({ clinic: await withPatientPrices(clinic) });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -68,7 +84,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const clinic = await db.clinic.findUnique({ where: { id }, include: INCLUDE });
-    return NextResponse.json({ clinic });
+    if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json({ clinic: await withPatientPrices(clinic) });
   } catch (e) {
     console.error('PATCH /api/admin/clinics/[id]', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
