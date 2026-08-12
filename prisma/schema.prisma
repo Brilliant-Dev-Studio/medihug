@@ -112,6 +112,7 @@ model Doctor {
 
   user               User?               @relation(fields: [userId], references: [id])
   appointments       Appointment[]
+  referredAppointments Appointment[]     @relation("AppointmentReferralDoctor")
   clinicDoctors      ClinicDoctor[]
   slots              DoctorSlot[]
   gallery            DoctorGallery[]
@@ -205,6 +206,7 @@ model Clinic {
   owner        User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
   doctors      ClinicDoctor[]
   appointments Appointment[]
+  referredAppointments Appointment[] @relation("AppointmentReferralClinic")
   products     ClinicProduct[]
   gallery      ClinicGallery[]
   loginLogs    ClinicLoginLog[]
@@ -281,6 +283,9 @@ model Appointment {
   receiptUrl    String?
   intake        Json?
   aiSummary     String?
+  doctorNote    String? // doctor-written clinical note for this consultation, Markdown source
+  referredDoctorId String? // referral to another doctor on the platform
+  referredClinicId String? // referral to a partner clinic on the platform
   status        AppointmentStatus @default(PENDING)
   doctorApproved Boolean          @default(false)
   callRinging   Boolean           @default(false)
@@ -292,9 +297,14 @@ model Appointment {
   doctor Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
 
+  referredDoctor Doctor? @relation("AppointmentReferralDoctor", fields: [referredDoctorId], references: [id], onDelete: SetNull)
+  referredClinic Clinic? @relation("AppointmentReferralClinic", fields: [referredClinicId], references: [id], onDelete: SetNull)
+
   @@index([userId])
   @@index([doctorId])
   @@index([clinicId])
+  @@index([referredDoctorId])
+  @@index([referredClinicId])
 }
 
 // ─────────────────────────────────────────────

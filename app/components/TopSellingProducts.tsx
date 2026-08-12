@@ -61,7 +61,7 @@ export default function TopSellingProducts() {
           <p className="text-xs sm:text-sm text-gray-400 mt-1">{tr.topProductsSubtitle}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/patient/records" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
+          <Link href="/products" className="text-xs font-semibold px-4 py-2 rounded-full border-2 transition-colors hidden sm:block" style={{ color: PRIMARY, borderColor: PRIMARY }}>
             {tr.viewAll}
           </Link>
           <div className="flex gap-2">
@@ -97,7 +97,7 @@ export default function TopSellingProducts() {
 
             return (
               <Link
-                href={`/patient/records/${p.id}`}
+                href={`/products/${p.id}`}
                 key={p.id}
                 className="group shrink-0 w-40 sm:w-64 rounded-xl bg-white border border-gray-100 overflow-hidden flex flex-col"
               >

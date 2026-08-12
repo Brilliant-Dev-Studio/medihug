@@ -62,7 +62,7 @@ export default function Home() {
             delay={80}
             animateBy="words"
             direction="top"
-            className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 leading-[1.08] mb-3 sm:mb-6 justify-start"
+            className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-3 sm:mb-6 justify-start"
           />
 
           <motion.p

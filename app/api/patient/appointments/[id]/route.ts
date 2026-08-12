@@ -11,6 +11,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       include: {
         user:   { select: { name: true, phone: true } },
         doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
+        referredDoctor: { select: { id: true, name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
+        referredClinic: { select: { id: true, name: true, nameEn: true, type: true, imageUrl: true } },
       },
     });
 

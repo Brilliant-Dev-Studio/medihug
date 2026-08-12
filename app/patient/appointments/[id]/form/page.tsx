@@ -5,8 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Pencil, CheckCircle2, User, FileText,
   Stethoscope, AlertTriangle, Image as ImageIcon, CalendarX2, ChevronDown,
-  Calendar, Sparkles, Video,
+  Calendar, Sparkles, Video, NotebookPen, Share2, Building2,
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import IntakeForm, { type IntakeData } from '../../../booking/IntakeForm';
 import { useLang } from '../../../../lib/LanguageContext';
 
@@ -23,6 +25,9 @@ interface RawAppointment {
   reason: string | null;
   note: string | null;
   intake: IntakeData | null;
+  doctorNote: string | null;
+  referredDoctor: { id: string; name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null } | null;
+  referredClinic: { id: string; name: string; nameEn: string | null; type: string; imageUrl: string | null } | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null };
@@ -362,6 +367,50 @@ export default function FormViewPage() {
                 {t(mm, { mm: 'မအသင့်သေးပါ', en: 'Not ready' })}
               </span>
             )}
+          </div>
+        )}
+
+        {(appt.doctorNote || appt.referredDoctor || appt.referredClinic) && (
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-50">
+              <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${P}14` }}>
+                <NotebookPen className="w-3.5 h-3.5" style={{ color: P }} />
+              </span>
+              <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'ဆရာဝန်၏ မှတ်ချက်', en: "Doctor's Note" })}</p>
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              {appt.doctorNote && (
+                <div className="prose prose-sm max-w-none prose-headings:font-bold">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{appt.doctorNote}</ReactMarkdown>
+                </div>
+              )}
+              {(appt.referredDoctor || appt.referredClinic) && (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {appt.referredDoctor && (
+                    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50">
+                      <Share2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t(mm, { mm: 'ညွှန်းပို့ထားသော ဆရာဝန်', en: 'Referred to Doctor' })}</p>
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {mm ? appt.referredDoctor.name : (appt.referredDoctor.nameEn ?? appt.referredDoctor.name)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {appt.referredClinic && (
+                    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50">
+                      <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t(mm, { mm: 'ညွှန်းပို့ထားသော ဆေးခန်း', en: 'Referred to Clinic' })}</p>
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {mm ? appt.referredClinic.name : (appt.referredClinic.nameEn ?? appt.referredClinic.name)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

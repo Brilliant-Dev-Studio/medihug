@@ -12,7 +12,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    setLang('en');
+    setLang('mm');
   }, [setLang]);
 
   return (

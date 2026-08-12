@@ -69,7 +69,7 @@ export default function HealthCategories() {
               return (
                 <Link
                   key={cat.id}
-                  href={`/patient/records?category=${encodeURIComponent(cat.name)}`}
+                  href={`/products?category=${encodeURIComponent(cat.name)}`}
                   className="group relative flex flex-col items-center gap-2 sm:gap-4 rounded-2xl sm:rounded-3xl p-3 sm:p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   style={{ backgroundColor: style.bg, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                 >

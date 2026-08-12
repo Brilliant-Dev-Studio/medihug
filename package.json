@@ -23,6 +23,7 @@
     "@tiptap/react": "^3.27.3",
     "@tiptap/starter-kit": "^3.27.3",
     "@types/pg": "^8.20.0",
+    "@types/turndown": "^5.0.6",
     "agora-rtc-sdk-ng": "^4.24.6",
     "agora-token": "^2.0.5",
     "ai": "^7.0.55",
@@ -32,6 +33,7 @@
     "jose": "^6.2.3",
     "lottie-react": "^2.4.1",
     "lucide-react": "^1.21.0",
+    "marked": "^18.0.9",
     "motion": "^12.40.0",
     "next": "16.2.9",
     "pg": "^8.22.0",
@@ -44,10 +46,12 @@
     "react-icons": "^5.7.0",
     "react-markdown": "^10.1.0",
     "react-mobile-picker": "^1.2.0",
+    "react-quill-new": "^3.8.3",
     "recharts": "^3.9.0",
     "remark-gfm": "^4.0.1",
     "swiper": "^12.2.0",
     "tiptap-markdown": "^0.9.0",
+    "turndown": "^7.2.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {

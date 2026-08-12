@@ -20,6 +20,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     include: {
       user:   { select: { name: true, phone: true } },
       doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
+      referredDoctor: { select: { id: true, name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
+      referredClinic: { select: { id: true, name: true, nameEn: true, type: true, imageUrl: true } },
     },
   });
   // Doctors only ever see appointments the admin has already approved.
@@ -35,14 +37,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!doctorId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const { status, doctorApproved, callRinging, callDeclined } = await req.json();
+  const { status, doctorApproved, callRinging, callDeclined, doctorNote, referredDoctorId, referredClinicId } = await req.json();
 
   const existing = await db.appointment.findUnique({ where: { id }, select: { doctorId: true, status: true } });
   if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const data: { status?: 'CONFIRMED' | 'COMPLETED'; doctorApproved?: boolean; callRinging?: boolean; callDeclined?: boolean } = {};
+  const data: {
+    status?: 'CONFIRMED' | 'COMPLETED'; doctorApproved?: boolean; callRinging?: boolean; callDeclined?: boolean;
+    doctorNote?: string | null; referredDoctorId?: string | null; referredClinicId?: string | null;
+  } = {};
 
   if (status !== undefined) {
     // Doctors can only mark an admin-approved appointment as completed (or back to confirmed) —
@@ -69,6 +74,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'Invalid callDeclined' }, { status: 400 });
     }
     data.callDeclined = false;
+  }
+  if (doctorNote !== undefined) {
+    if (doctorNote !== null && typeof doctorNote !== 'string') {
+      return NextResponse.json({ error: 'Invalid doctorNote' }, { status: 400 });
+    }
+    data.doctorNote = doctorNote;
+  }
+  if (referredDoctorId !== undefined) {
+    if (referredDoctorId !== null) {
+      if (referredDoctorId === doctorId) {
+        return NextResponse.json({ error: 'Cannot refer to yourself' }, { status: 400 });
+      }
+      const target = await db.doctor.findUnique({ where: { id: referredDoctorId }, select: { id: true } });
+      if (!target) return NextResponse.json({ error: 'Referred doctor not found' }, { status: 400 });
+    }
+    data.referredDoctorId = referredDoctorId;
+  }
+  if (referredClinicId !== undefined) {
+    if (referredClinicId !== null) {
+      const target = await db.clinic.findUnique({ where: { id: referredClinicId }, select: { id: true } });
+      if (!target) return NextResponse.json({ error: 'Referred clinic not found' }, { status: 400 });
+    }
+    data.referredClinicId = referredClinicId;
   }
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });

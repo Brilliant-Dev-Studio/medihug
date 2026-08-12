@@ -25,6 +25,11 @@ export interface Appointment {
   receiptUrl: string | null;
   intake: IntakeData | null;
   aiSummary?: string | null;
+  doctorNote?: string | null;
+  referredDoctorId?: string | null;
+  referredClinicId?: string | null;
+  referredDoctor?: { id: string; name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null } | null;
+  referredClinic?: { id: string; name: string; nameEn: string | null; type: string; imageUrl: string | null } | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
   createdAt: string;
