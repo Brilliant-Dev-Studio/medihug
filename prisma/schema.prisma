@@ -70,6 +70,7 @@ model User {
   favoriteProducts    FavoriteProduct[]
   customTimeRequests  CustomTimeRequest[]
   orders              Order[]
+  clinicReferrals     ClinicReferral[]
 }
 
 // ─────────────────────────────────────────────
@@ -113,6 +114,7 @@ model Doctor {
   user               User?               @relation(fields: [userId], references: [id])
   appointments       Appointment[]
   referredAppointments Appointment[]     @relation("AppointmentReferralDoctor")
+  issuedReferrals    ClinicReferral[]
   clinicDoctors      ClinicDoctor[]
   slots              DoctorSlot[]
   gallery            DoctorGallery[]
@@ -207,6 +209,7 @@ model Clinic {
   doctors      ClinicDoctor[]
   appointments Appointment[]
   referredAppointments Appointment[] @relation("AppointmentReferralClinic")
+  referrals    ClinicReferral[]
   products     ClinicProduct[]
   gallery      ClinicGallery[]
   loginLogs    ClinicLoginLog[]
@@ -299,6 +302,7 @@ model Appointment {
 
   referredDoctor Doctor? @relation("AppointmentReferralDoctor", fields: [referredDoctorId], references: [id], onDelete: SetNull)
   referredClinic Clinic? @relation("AppointmentReferralClinic", fields: [referredClinicId], references: [id], onDelete: SetNull)
+  clinicReferral ClinicReferral?
 
   @@index([userId])
   @@index([doctorId])
@@ -594,4 +598,30 @@ model PlatformSettings {
   id                       String   @id @default("singleton")
   defaultCommissionPercent Int      @default(0)
   updatedAt                DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Clinic referral QR — issued when a doctor refers a patient to a
+// partner clinic; the clinic scans/enters the code to verify the
+// patient's referral is legit before treating them.
+// ─────────────────────────────────────────────
+
+model ClinicReferral {
+  id            String    @id @default(cuid())
+  appointmentId String    @unique
+  clinicId      String
+  userId        String
+  doctorId      String
+  code          String    @unique
+  verifiedAt    DateTime?
+  verifiedBy    String? // partner user id who scanned/entered the code
+  createdAt     DateTime  @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  clinic      Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor      Doctor      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
+  @@index([userId])
 }

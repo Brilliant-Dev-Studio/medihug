@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
   ShieldCheck, Menu, X, ChevronRight, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
-  Bell, CalendarClock, Headset, HeartPulse,
+  Bell, CalendarClock, Headset, HeartPulse, Store,
 } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -21,6 +21,7 @@ const navGroups = [
     items: [
       { href: '/admin/dashboard', icon: LayoutDashboard, mm: 'Dashboard',       en: 'Dashboard' },
       { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports' },
+      { href: '/admin/pos',      icon: Store,           mm: 'POS',              en: 'POS' },
       { href: '/admin/notifications', icon: Bell,        mm: 'အသိပေးချက်များ',   en: 'Notifications' },
       { href: '/admin/support',   icon: Headset,         mm: 'Customer Support',  en: 'Customer Support' },
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients' },

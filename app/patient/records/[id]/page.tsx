@@ -1,13 +1,14 @@
 'use client';
 import { theme } from '../../../lib/theme'; void theme;
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
-  ChevronLeft, Star, Heart, Package, Shield, Truck,
-  CheckCircle2, ZoomIn, X, Loader2, Minus, Plus, ShoppingCart,
+  ChevronLeft, ChevronRight, Star, Heart, Package, Shield, Truck,
+  CheckCircle2, ZoomIn, X, Loader2, Minus, Plus, ShoppingCart, Sparkles,
 } from 'lucide-react';
 import { useLang } from '../../../lib/LanguageContext';
 import { useFavorites } from '../../../lib/useFavorites';
@@ -50,6 +51,11 @@ export default function ProductDetailPage() {
   const [zoom,      setZoom]      = useState(false);
   const [qty, setQty] = useState(1);
   const { add: addToCart } = useCart();
+  const [recommended, setRecommended] = useState<Product[]>([]);
+  const recScrollRef = useRef<HTMLDivElement>(null);
+  const scrollRec = (dir: 'left' | 'right') => {
+    recScrollRef.current?.scrollBy({ left: dir === 'left' ? -370 : 370, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     fetch(`/api/admin/products/${id}`)
@@ -57,6 +63,33 @@ export default function ProductDetailPage() {
       .then(d => { setProduct(d.product); setLoading(false); })
       .catch(() => { setNotFound(true); setLoading(false); });
   }, [id]);
+
+  useEffect(() => {
+    if (!product) return;
+    const excludeSelf = (list: Product[]) => list.filter(p => p.id !== product.id);
+
+    async function loadRecommended() {
+      let list: Product[] = [];
+      if (product!.category) {
+        const params = new URLSearchParams({ isActive: 'true', pageSize: '9', category: product!.category! });
+        const res = await fetch(`/api/admin/products?${params}`);
+        const d = await res.json();
+        list = excludeSelf(d.products ?? []);
+      }
+      // Category alone didn't produce enough — top up with general active products.
+      if (list.length < 4) {
+        const res = await fetch('/api/admin/products?isActive=true&pageSize=12');
+        const d = await res.json();
+        const seen = new Set(list.map(p => p.id));
+        for (const p of excludeSelf(d.products ?? [])) {
+          if (!seen.has(p.id)) { list.push(p); seen.add(p.id); }
+          if (list.length >= 8) break;
+        }
+      }
+      setRecommended(list.slice(0, 8));
+    }
+    loadRecommended().catch(() => {});
+  }, [product]);
 
   if (loading) {
     return (
@@ -259,6 +292,49 @@ export default function ProductDetailPage() {
     </button>
   );
 
+  const recommendedSection = recommended.length > 0 && (
+    <div className="pt-2">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4" style={{ color: PRIMARY }} />
+          <p className="text-sm font-bold text-gray-800">{mm ? 'ဆက်စပ် အကြံပြုချက်များ' : 'Recommended Products'}</p>
+        </div>
+        <div className="hidden sm:flex items-center gap-1.5">
+          <button onClick={() => scrollRec('left')} className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+            <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
+          </button>
+          <button onClick={() => scrollRec('right')} className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+            <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
+          </button>
+        </div>
+      </div>
+      <div ref={recScrollRef} className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+        {recommended.map(p => (
+          <Link key={p.id} href={`/patient/records/${p.id}`}
+            className="group shrink-0 w-56 rounded-xl border border-gray-100 bg-white overflow-hidden flex flex-col">
+            <div className="relative aspect-square bg-gray-50">
+              {p.imageUrl ? (
+                <Image src={p.imageUrl} alt={p.name} fill sizes="224px" className="object-cover transition-transform duration-300 group-hover:scale-105" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="w-6 h-6 text-gray-200" />
+                </div>
+              )}
+            </div>
+            <div className="p-2.5 flex flex-col gap-1">
+              <p className="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 min-h-[2.2em]">{mm ? p.name : (p.nameEn ?? p.name)}</p>
+              <div className="flex items-center gap-1">
+                <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                <span className="text-[10px] text-gray-500">{p.rating.toFixed(1)}</span>
+              </div>
+              <p className="text-xs font-extrabold" style={{ color: PRIMARY }}>{p.price.toLocaleString()} Ks</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <>
       {lightbox}
@@ -274,10 +350,11 @@ export default function ProductDetailPage() {
               </button>
               <span className="text-sm font-semibold" style={{ color: PRIMARY }}>{mm ? 'ကုန်ပစ္စည်း အချက်အလက်' : 'Product Detail'}</span>
             </div>
-            <div className="flex gap-8 p-6 flex-1">
+            <div className="flex gap-8 p-6">
               <div className="w-80 shrink-0">{imageBlock}</div>
               <div className="flex-1 min-w-0">{productInfo}</div>
             </div>
+            {recommendedSection && <div className="px-6 pb-6">{recommendedSection}</div>}
           </div>
 
           {/* Right: order card */}
@@ -345,7 +422,10 @@ export default function ProductDetailPage() {
 
           {imageBlock}
 
-          <div className="px-4 py-5 pb-36 flex flex-col gap-5">{productInfo}</div>
+          <div className="px-4 py-5 pb-36 flex flex-col gap-5">
+            {productInfo}
+            {recommendedSection}
+          </div>
 
           <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-100 px-4 py-3 flex items-center gap-2.5">
             <button onClick={() => toggleFav(product.id)}

@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Loader2, AlertTriangle, Share2, FileText } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Loader2, AlertTriangle, Share2, FileText, NotebookPen } from 'lucide-react';
 import type { IAgoraRTCClient, IMicrophoneAudioTrack, ICameraVideoTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import type { Appointment } from '@/app/admin/appointments/shared';
 import PatientRecordPanel from '@/components/PatientRecordPanel';
+import NoteEditorPanel from '@/components/NoteEditorPanel';
 
 const PRIMARY = 'var(--color-primary, #2ab5ad)';
 const CALL_DURATION_SECONDS = 30 * 60;
@@ -39,6 +40,7 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
   const [peerJoined, setPeerJoined] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(CALL_DURATION_SECONDS);
   const [recordOpen, setRecordOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const localVideoRef  = useRef<HTMLDivElement>(null);
   const remoteVideoRef = useRef<HTMLDivElement>(null);
@@ -267,10 +269,20 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
             <FileText className="w-5 h-5 text-white" />
           </button>
         )}
+        {role === 'doctor' && patientRecord && (
+          <button onClick={() => setNoteOpen(true)}
+            className="w-14 h-14 rounded-full flex items-center justify-center transition-colors"
+            style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+            <NotebookPen className="w-5 h-5 text-white" />
+          </button>
+        )}
       </div>
 
       {role === 'doctor' && patientRecord && (
         <PatientRecordPanel appointment={patientRecord} open={recordOpen} onClose={() => setRecordOpen(false)} />
+      )}
+      {role === 'doctor' && patientRecord && (
+        <NoteEditorPanel appointment={patientRecord} open={noteOpen} onClose={() => setNoteOpen(false)} />
       )}
     </div>
   );

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck, QrCode } from 'lucide-react';
 
 const PRIMARY = '#3b5bdb';
 
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/partner/doctors',      icon: Stethoscope,     label: 'Doctors' },
   { href: '/partner/products',     icon: ShoppingBag,     label: 'Products' },
   { href: '/partner/orders',       icon: Receipt,         label: 'Orders' },
+  { href: '/partner/referrals',    icon: QrCode,          label: 'Verify Referral' },
   { href: '/partner/login-history', icon: ShieldCheck,    label: 'Login History' },
   { href: '/partner/profile',      icon: Building2,       label: 'Clinic Profile' },
 ];

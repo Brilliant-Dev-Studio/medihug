@@ -5,8 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import {
   ArrowLeft, Pencil, CheckCircle2, User, FileText,
   Stethoscope, AlertTriangle, Image as ImageIcon, CalendarX2, ChevronDown,
-  Calendar, Sparkles, Video, NotebookPen, Share2, Building2,
+  Calendar, Sparkles, Video, NotebookPen, Share2, Building2, QrCode,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IntakeForm, { type IntakeData } from '../../../booking/IntakeForm';
@@ -28,6 +29,7 @@ interface RawAppointment {
   doctorNote: string | null;
   referredDoctor: { id: string; name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null } | null;
   referredClinic: { id: string; name: string; nameEn: string | null; type: string; imageUrl: string | null } | null;
+  clinicReferral: { code: string; verifiedAt: string | null } | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null };
@@ -408,6 +410,30 @@ export default function FormViewPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+              {appt.referredClinic && appt.clinicReferral && (
+                <div className="rounded-xl border p-4 flex flex-col sm:flex-row items-center gap-4" style={{ borderColor: `${P}30`, backgroundColor: `${P}08` }}>
+                  <div className="bg-white p-2.5 rounded-lg border border-gray-100 shrink-0">
+                    <QRCodeSVG value={appt.clinicReferral.code} size={128} />
+                  </div>
+                  <div className="min-w-0 flex-1 text-center sm:text-left">
+                    <p className="text-xs font-bold uppercase tracking-widest flex items-center justify-center sm:justify-start gap-1.5" style={{ color: P }}>
+                      <QrCode className="w-3.5 h-3.5" /> {t(mm, { mm: 'ညွှန်းပို့မှု QR', en: 'Referral QR' })}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t(mm, { mm: 'ဆေးခန်းရောက်လျှင် ဒီ QR ကို ပြပါ — ၎င်းက scan ပြုလုပ်ပြီး သင့်ညွှန်းပို့မှုကို စစ်ဆေးပါလိမ့်မည်', en: 'Show this QR at the clinic — they will scan it to verify your referral.' })}
+                    </p>
+                    {appt.clinicReferral.verifiedAt ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 mt-1.5">
+                        <CheckCircle2 className="w-3 h-3" /> {t(mm, { mm: 'ဆေးခန်းက စစ်ဆေးအတည်ပြုပြီး', en: 'Verified by clinic' })}
+                      </span>
+                    ) : (
+                      <span className="inline-block text-[11px] font-semibold text-amber-600 mt-1.5">
+                        {t(mm, { mm: 'မစစ်ဆေးရသေးပါ', en: 'Not yet verified' })}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

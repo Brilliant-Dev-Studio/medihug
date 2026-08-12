@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Knock } from '@knocklabs/node';
 import { verifyDoctorToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
+import { generateReferralCode } from '@/lib/referral';
+
+const knock = new Knock({ apiKey: process.env.KNOCK_API_KEY! });
 
 async function requireDoctorId(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get('doctor_token')?.value;
@@ -22,6 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
       referredDoctor: { select: { id: true, name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
       referredClinic: { select: { id: true, name: true, nameEn: true, type: true, imageUrl: true } },
+      clinicReferral: { select: { code: true, verifiedAt: true } },
     },
   });
   // Doctors only ever see appointments the admin has already approved.
@@ -39,7 +44,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const { status, doctorApproved, callRinging, callDeclined, doctorNote, referredDoctorId, referredClinicId } = await req.json();
 
-  const existing = await db.appointment.findUnique({ where: { id }, select: { doctorId: true, status: true } });
+  const existing = await db.appointment.findUnique({
+    where: { id },
+    select: { doctorId: true, status: true, userId: true, referredDoctorId: true, referredClinicId: true },
+  });
   if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
@@ -81,20 +89,24 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     data.doctorNote = doctorNote;
   }
+  let referredDoctorName: string | null = null;
+  let referredClinicName: string | null = null;
   if (referredDoctorId !== undefined) {
     if (referredDoctorId !== null) {
       if (referredDoctorId === doctorId) {
         return NextResponse.json({ error: 'Cannot refer to yourself' }, { status: 400 });
       }
-      const target = await db.doctor.findUnique({ where: { id: referredDoctorId }, select: { id: true } });
+      const target = await db.doctor.findUnique({ where: { id: referredDoctorId }, select: { id: true, name: true, nameEn: true } });
       if (!target) return NextResponse.json({ error: 'Referred doctor not found' }, { status: 400 });
+      referredDoctorName = target.nameEn ?? target.name;
     }
     data.referredDoctorId = referredDoctorId;
   }
   if (referredClinicId !== undefined) {
     if (referredClinicId !== null) {
-      const target = await db.clinic.findUnique({ where: { id: referredClinicId }, select: { id: true } });
+      const target = await db.clinic.findUnique({ where: { id: referredClinicId }, select: { id: true, name: true, nameEn: true } });
       if (!target) return NextResponse.json({ error: 'Referred clinic not found' }, { status: 400 });
+      referredClinicName = target.nameEn ?? target.name;
     }
     data.referredClinicId = referredClinicId;
   }
@@ -103,5 +115,65 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const appointment = await db.appointment.update({ where: { id }, data });
-  return NextResponse.json({ appointment });
+
+  // Keep the referral QR/verification code in sync with the referred clinic — a new/changed
+  // clinic gets a fresh code (invalidating any previously issued QR), an unchanged clinic
+  // keeps its existing code and verification status, and clearing the referral removes it.
+  let referralCode: string | null = null;
+  if (referredClinicId !== undefined) {
+    if (referredClinicId === null) {
+      await db.clinicReferral.deleteMany({ where: { appointmentId: id } });
+    } else {
+      const existingReferral = await db.clinicReferral.findUnique({ where: { appointmentId: id } });
+      if (!existingReferral) {
+        const referral = await db.clinicReferral.create({
+          data: { appointmentId: id, clinicId: referredClinicId, userId: existing.userId, doctorId, code: generateReferralCode() },
+        });
+        referralCode = referral.code;
+      } else if (existingReferral.clinicId !== referredClinicId) {
+        const referral = await db.clinicReferral.update({
+          where: { appointmentId: id },
+          data: { clinicId: referredClinicId, code: generateReferralCode(), verifiedAt: null, verifiedBy: null },
+        });
+        referralCode = referral.code;
+      } else {
+        referralCode = existingReferral.code;
+      }
+    }
+  }
+
+  // Notify the patient the moment a referral is newly set (or changed) — not on every note-only
+  // save — so they don't have to stumble back into the appointment to discover it themselves.
+  const newDoctorReferral = referredDoctorId !== undefined && referredDoctorId && referredDoctorId !== existing.referredDoctorId;
+  const newClinicReferral = referredClinicId !== undefined && referredClinicId && referredClinicId !== existing.referredClinicId;
+  if (newDoctorReferral || newClinicReferral) {
+    try {
+      const [patient, referringDoctor] = await Promise.all([
+        db.user.findUnique({ where: { id: existing.userId }, select: { id: true, name: true } }),
+        db.doctor.findUnique({ where: { id: doctorId }, select: { userId: true, name: true, nameEn: true } }),
+      ]);
+      if (patient) {
+        const doctorDisplayName = referringDoctor ? (referringDoctor.nameEn ?? referringDoctor.name) : 'your doctor';
+        const target = newClinicReferral ? referredClinicName : referredDoctorName;
+        await knock.workflows.trigger('appointment-referral', {
+          recipients: [{ id: patient.id, name: patient.name }],
+          actor: referringDoctor?.userId ? { id: referringDoctor.userId, name: doctorDisplayName } : undefined,
+          data: {
+            patientName: patient.name,
+            doctorName: doctorDisplayName,
+            referredTo: target,
+            referredType: newClinicReferral ? 'clinic' : 'doctor',
+            appointmentId: id,
+            message: `Dr. ${doctorDisplayName} referred you to ${target}.`,
+            actionUrl: `/patient/appointments/${id}/form`,
+          },
+        });
+      }
+    } catch (notifyErr) {
+      // Referral itself already saved — don't fail the request over a notification hiccup.
+      console.error('Knock trigger (appointment-referral) failed:', notifyErr);
+    }
+  }
+
+  return NextResponse.json({ appointment, referralCode });
 }

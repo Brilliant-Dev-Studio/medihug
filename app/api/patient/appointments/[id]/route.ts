@@ -13,6 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
         referredDoctor: { select: { id: true, name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
         referredClinic: { select: { id: true, name: true, nameEn: true, type: true, imageUrl: true } },
+        clinicReferral: { select: { code: true, verifiedAt: true } },
       },
     });
 
