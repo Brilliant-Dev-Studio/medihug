@@ -2,9 +2,10 @@
 
 import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   ArrowLeft, Loader2, Calendar, Clock, CreditCard, Phone,
-  User, FileText, Stethoscope, AlertTriangle, ZoomIn,
+  User, FileText, Stethoscope, AlertTriangle, ZoomIn, Receipt,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
@@ -12,6 +13,7 @@ import {
 } from '../shared';
 import { useLang } from '../../../lib/LanguageContext';
 import ImageLightbox from '@/components/admin/ImageLightbox';
+import RefundPanel from '@/components/admin/RefundPanel';
 
 export default function AdminAppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -32,12 +34,13 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
 
   useEffect(() => { fetchAppt(); }, [fetchAppt]);
 
-  async function updateStatus(next: Appointment['status']) {
+  async function updateStatus(next: Appointment['status'], reason?: string) {
     setAppt(a => a ? { ...a, status: next } : a);
     await fetch(`/api/admin/appointments/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
+      body: JSON.stringify({ status: next, reason }),
     });
+    fetchAppt();
   }
 
   if (loading) return (
@@ -146,6 +149,15 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
                 </div>
               )}
             </div>
+            {appt.cancelReason && (
+              <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">
+                {t(mm, { mm: 'ပယ်ဖျက်ရသည့် အကြောင်းရင်း', en: 'Cancel reason' })}: {appt.cancelReason}
+              </p>
+            )}
+            <Link href={`/admin/appointments/${id}/invoice`} target="_blank"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+              <Receipt className="w-4 h-4" /> {t(mm, { mm: 'ငွေတောင်းခံလွှာ ကြည့်ရန်', en: 'View Invoice' })}
+            </Link>
             <div className="h-px bg-gray-50" />
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{t(mm, { mm: 'ငွေလွှဲပြေစာ', en: 'Payment Receipt' })}</p>
@@ -170,6 +182,8 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{t(mm, { mm: 'ချိန်းဆိုမှု အခြေအနေ', en: 'Booking Status' })}</p>
             <StatusChanger status={appt.status} onChanged={updateStatus} />
           </div>
+
+          <RefundPanel targetType="APPOINTMENT" targetId={id} />
         </div>
 
         {/* ── Right / main column ── */}

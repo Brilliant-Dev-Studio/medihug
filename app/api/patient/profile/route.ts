@@ -26,16 +26,29 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { phone, profileImage } = body;
+    const { phone, profileImage, name, gender, birthday, state, township } = body;
 
     if (!phone) {
       return NextResponse.json({ error: 'phone is required.' }, { status: 400 });
     }
 
+    const data: Record<string, unknown> = {};
+    if (profileImage !== undefined) data.profileImage = profileImage || null;
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        return NextResponse.json({ error: 'name cannot be empty.' }, { status: 400 });
+      }
+      data.name = name.trim();
+    }
+    if (gender !== undefined) data.gender = gender === 'MALE' || gender === 'FEMALE' ? gender : null;
+    if (birthday !== undefined) data.birthday = birthday ? new Date(birthday) : null;
+    if (state !== undefined) data.state = state || null;
+    if (township !== undefined) data.township = township || null;
+
     const user = await db.user.update({
       where: { phone },
-      data:  { profileImage: profileImage ?? null },
-      select: { id: true, name: true, phone: true, profileImage: true },
+      data,
+      select: { id: true, name: true, phone: true, gender: true, birthday: true, state: true, township: true, profileImage: true },
     });
 
     return NextResponse.json({ user });

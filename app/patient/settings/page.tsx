@@ -25,20 +25,27 @@ const STATES = [
 const MONTHS_MM = ['ဇန်နဝါရီ','ဖေဖော်ဝါရီ','မတ်','ဧပြီ','မေ','ဇွန်','ဇူလိုင်','သြဂုတ်','စက်တင်ဘာ','အောက်တိုဘာ','နိုဝင်ဘာ','ဒီဇင်ဘာ'];
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+function monthIndexOf(value: string): number {
+  const i = MONTHS_EN.indexOf(value);
+  return i !== -1 ? i : MONTHS_MM.indexOf(value);
+}
+
 export default function ProfilePage() {
   const { lang } = useLang();
   const mm = lang === 'mm';
   const { themeId, setTheme } = useTheme();
 
   const [avatar, setAvatar]     = useState('/avatar-placeholder.png');
-  const [name, setName]         = useState('thura');
-  const [day, setDay]           = useState('28');
-  const [month, setMonth]       = useState('February');
-  const [year, setYear]         = useState('2003');
+  const [name, setName]         = useState('');
+  const [day, setDay]           = useState('');
+  const [month, setMonth]       = useState('');
+  const [year, setYear]         = useState('');
   const [gender, setGender]     = useState<'male' | 'female'>('male');
-  const [state, setState]       = useState('ချင်းပြည်နယ်');
-  const [township, setTownship] = useState('jdjdjd');
+  const [state, setState]       = useState(STATES[0]);
+  const [township, setTownship] = useState('');
   const [saved, setSaved]       = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [favDoctors, setFavDoctors]   = useState<FavDoctor[]>([]);
   const [favProducts, setFavProducts] = useState<FavProduct[]>([]);
   const [phone, setPhone]             = useState('');
@@ -61,7 +68,18 @@ export default function ProfilePage() {
     ]).then(([d, pr, prof]) => {
       setFavDoctors(d.doctors ?? []);
       setFavProducts(pr.products ?? []);
-      if (prof.user?.profileImage) setAvatar(prof.user.profileImage);
+      const u = prof.user;
+      if (u?.profileImage) setAvatar(u.profileImage);
+      if (u?.name) setName(u.name);
+      if (u?.gender) setGender(u.gender === 'FEMALE' ? 'female' : 'male');
+      if (u?.state) setState(u.state);
+      if (u?.township) setTownship(u.township);
+      if (u?.birthday) {
+        const d2 = new Date(u.birthday);
+        setDay(String(d2.getUTCDate()));
+        setMonth(String(d2.getUTCMonth()));
+        setYear(String(d2.getUTCFullYear()));
+      }
     }).catch(() => {}).finally(() => setProfileLoading(false));
   }, []);
 
@@ -94,9 +112,38 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSave = async () => {
+    if (!phone || !name.trim()) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const birthday = day && month && year
+        ? new Date(Date.UTC(Number(year), Number(month), Number(day))).toISOString()
+        : null;
+      const res = await fetch('/api/patient/profile', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone, name: name.trim(), gender: gender === 'female' ? 'FEMALE' : 'MALE',
+          birthday, state, township,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Save failed');
+
+      const raw = localStorage.getItem('medihug_patient');
+      if (raw) {
+        const stored = JSON.parse(raw);
+        localStorage.setItem('medihug_patient', JSON.stringify({ ...stored, name: name.trim() }));
+      }
+      window.dispatchEvent(new CustomEvent('medihug-name-updated', { detail: name.trim() }));
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : (mm ? 'သိမ်းဆည်းရာတွင် အမှားရှိသည်' : 'Failed to save'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const days   = Array.from({ length: 31 }, (_, i) => String(i + 1));
@@ -173,7 +220,7 @@ export default function ProfilePage() {
                 </select>
               </SelectWrap>
               <SelectWrap>
-                <select className={selectCls} value={month} onChange={e => setMonth(e.target.value)}>
+                <select className={selectCls} value={months[Number(month)] ?? ''} onChange={e => setMonth(String(monthIndexOf(e.target.value)))}>
                   {months.map(m => <option key={m}>{m}</option>)}
                 </select>
               </SelectWrap>
@@ -327,13 +374,18 @@ export default function ProfilePage() {
 
   /* ── save button (rendered once per layout — desktop inline, mobile fixed bottom) ── */
   const saveButton = (
-    <button onClick={handleSave}
-      className="w-full py-3.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90"
-      style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
-      {saved
-        ? <><Check className="w-4 h-4" /> {mm ? 'သိမ်းဆည်းပြီး' : 'Saved!'}</>
-        : (mm ? 'အကောင့် အချက်အလက် သိမ်းရန်' : 'Update Account')}
-    </button>
+    <div className="flex flex-col gap-2">
+      {saveError && <p className="text-xs text-red-500 text-center">{saveError}</p>}
+      <button onClick={handleSave} disabled={saving}
+        className="w-full py-3.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60"
+        style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+        {saving
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> {mm ? 'သိမ်းဆည်းနေသည်...' : 'Saving...'}</>
+          : saved
+          ? <><Check className="w-4 h-4" /> {mm ? 'သိမ်းဆည်းပြီး' : 'Saved!'}</>
+          : (mm ? 'အကောင့် အချက်အလက် သိမ်းရန်' : 'Update Account')}
+      </button>
+    </div>
   );
 
   /* ── avatar card (reused on desktop left panel) ── */

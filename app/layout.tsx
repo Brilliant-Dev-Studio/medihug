@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
-import "./knock-theme.css";
 import { LanguageProvider } from "./lib/LanguageContext";
 
 const yati = localFont({

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Knock } from '@knocklabs/node';
 import { verifyDoctorToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
 import { generateReferralCode } from '@/lib/referral';
-
-const knock = new Knock({ apiKey: process.env.KNOCK_API_KEY! });
+import { notify } from '@/lib/notify';
 
 async function requireDoctorId(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get('doctor_token')?.value;
@@ -147,31 +145,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const newDoctorReferral = referredDoctorId !== undefined && referredDoctorId && referredDoctorId !== existing.referredDoctorId;
   const newClinicReferral = referredClinicId !== undefined && referredClinicId && referredClinicId !== existing.referredClinicId;
   if (newDoctorReferral || newClinicReferral) {
-    try {
-      const [patient, referringDoctor] = await Promise.all([
-        db.user.findUnique({ where: { id: existing.userId }, select: { id: true, name: true } }),
-        db.doctor.findUnique({ where: { id: doctorId }, select: { userId: true, name: true, nameEn: true } }),
-      ]);
-      if (patient) {
-        const doctorDisplayName = referringDoctor ? (referringDoctor.nameEn ?? referringDoctor.name) : 'your doctor';
-        const target = newClinicReferral ? referredClinicName : referredDoctorName;
-        await knock.workflows.trigger('appointment-referral', {
-          recipients: [{ id: patient.id, name: patient.name }],
-          actor: referringDoctor?.userId ? { id: referringDoctor.userId, name: doctorDisplayName } : undefined,
-          data: {
-            patientName: patient.name,
-            doctorName: doctorDisplayName,
-            referredTo: target,
-            referredType: newClinicReferral ? 'clinic' : 'doctor',
-            appointmentId: id,
-            message: `Dr. ${doctorDisplayName} referred you to ${target}.`,
-            actionUrl: `/patient/appointments/${id}/form`,
-          },
-        });
-      }
-    } catch (notifyErr) {
-      // Referral itself already saved — don't fail the request over a notification hiccup.
-      console.error('Knock trigger (appointment-referral) failed:', notifyErr);
+    const [patient, referringDoctor] = await Promise.all([
+      db.user.findUnique({ where: { id: existing.userId }, select: { id: true, name: true } }),
+      db.doctor.findUnique({ where: { id: doctorId }, select: { userId: true, name: true, nameEn: true, imageUrl: true } }),
+    ]);
+    if (patient) {
+      const doctorDisplayName = referringDoctor ? (referringDoctor.nameEn ?? referringDoctor.name) : 'your doctor';
+      const target = newClinicReferral ? referredClinicName : referredDoctorName;
+      notify({
+        userId: patient.id,
+        type: 'appointment-referral',
+        title: `Dr. ${doctorDisplayName}`,
+        body: `referred you to ${target}.`,
+        actionUrl: `/patient/appointments/${id}/form`,
+        actorName: doctorDisplayName,
+        actorAvatar: referringDoctor?.imageUrl,
+      });
     }
   }
 

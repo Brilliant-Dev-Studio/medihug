@@ -614,7 +614,7 @@ export default function DoctorDetailPage() {
   };
 
   const doctorImg = doctor.imageUrl ? (
-    <Image src={doctor.imageUrl} alt={displayName} fill className="object-cover" />
+    <Image src={doctor.imageUrl} alt={displayName} fill className="object-cover object-top" />
   ) : (
     <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white" style={{ backgroundColor: AVATAR_COLORS[0] }}>
       {doctor.name.charAt(0)}
@@ -661,7 +661,7 @@ export default function DoctorDetailPage() {
         {/* Right sidebar */}
         <div className="shrink-0 w-72 flex flex-col gap-4">
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div className="relative w-full" style={{ height: 200 }}>
+            <div className="relative w-full" style={{ height: 260 }}>
               {doctorImg}
               <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,43,110,0.7) 0%, transparent 60%)' }} />
               <div className="absolute bottom-3 left-4 right-4">

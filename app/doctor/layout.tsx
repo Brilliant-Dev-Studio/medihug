@@ -6,7 +6,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { LayoutDashboard, Calendar, LogOut, Menu, X, Stethoscope, User, FileText, Bell, Wallet } from 'lucide-react';
-import { NotificationBellProvider, NotificationBellButton } from '@/components/NotificationBell';
+import { RealtimeProvider } from '@/components/RealtimeProvider';
+import { NotificationBellButton } from '@/components/NotificationBell';
 
 const PRIMARY = '#2ab5ad';
 
@@ -197,8 +198,9 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
     </div>
   );
 
-  // Single shared feed connection + sound listener for both bell buttons above.
-  return doctor?.userId
-    ? <NotificationBellProvider userId={doctor.userId}>{body}</NotificationBellProvider>
-    : body;
+  // Single shared WS connection + sound listener for both bell buttons above.
+  // Wrapped unconditionally (identity comes from the doctor_token cookie server-side,
+  // no client-known doctor.userId required) — a page below could render before `doctor`
+  // finishes loading, and useRealtime() would throw without a provider present yet.
+  return <RealtimeProvider role="doctor">{body}</RealtimeProvider>;
 }

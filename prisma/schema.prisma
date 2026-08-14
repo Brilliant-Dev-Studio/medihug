@@ -71,6 +71,7 @@ model User {
   customTimeRequests  CustomTimeRequest[]
   orders              Order[]
   clinicReferrals     ClinicReferral[]
+  notifications       Notification[]
 }
 
 // ─────────────────────────────────────────────
@@ -121,6 +122,7 @@ model Doctor {
   favoritedBy        FavoriteDoctor[]
   blogs              Blog[]
   customTimeRequests CustomTimeRequest[]
+  commissionRules    CommissionRule[]
 }
 
 // ─────────────────────────────────────────────
@@ -213,6 +215,8 @@ model Clinic {
   products     ClinicProduct[]
   gallery      ClinicGallery[]
   loginLogs    ClinicLoginLog[]
+  commissionRules CommissionRule[]
+  revenueEntries  RevenueEntry[]
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -293,6 +297,11 @@ model Appointment {
   doctorApproved Boolean          @default(false)
   callRinging   Boolean           @default(false)
   callDeclined  Boolean           @default(false)
+  unreadDoctorChat  Boolean   @default(false) // new patient message doctor hasn't seen
+  unreadPatientChat Boolean   @default(false) // new doctor message patient hasn't seen
+  lastChatMessageAt DateTime?
+  cancelReason  String?
+  cancelledAt   DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -303,6 +312,8 @@ model Appointment {
   referredDoctor Doctor? @relation("AppointmentReferralDoctor", fields: [referredDoctorId], references: [id], onDelete: SetNull)
   referredClinic Clinic? @relation("AppointmentReferralClinic", fields: [referredClinicId], references: [id], onDelete: SetNull)
   clinicReferral ClinicReferral?
+  messages       AppointmentMessage[]
+  refunds        Refund[]
 
   @@index([userId])
   @@index([doctorId])
@@ -376,11 +387,14 @@ model Order {
   receiptUrl    String?
   totalAmount   Int
   note          String?
+  cancelReason  String?
+  cancelledAt   DateTime?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items OrderItem[]
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items   OrderItem[]
+  refunds Refund[]
 
   @@index([userId])
 }
@@ -624,4 +638,219 @@ model ClinicReferral {
 
   @@index([clinicId])
   @@index([userId])
+}
+
+// ─────────────────────────────────────────────
+// Doctor ↔ patient chat, unlocked once the appointment is CONFIRMED
+// ─────────────────────────────────────────────
+
+enum AppointmentMessageSender {
+  DOCTOR
+  PATIENT
+}
+
+model AppointmentMessage {
+  id             String                   @id @default(cuid())
+  appointmentId  String
+  sender         AppointmentMessageSender
+  body           String
+  attachmentUrl  String?
+  attachmentName String?
+  attachmentType String?
+  createdAt      DateTime                 @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+}
+
+// ─────────────────────────────────────────────
+// Notification feed (self-hosted, replaces Knock) — the WebSocket layer
+// pushes these live; this table is the source of truth for the bell.
+// ─────────────────────────────────────────────
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  body        String
+  actionUrl   String?
+  actorName   String?
+  actorAvatar String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Finance v2 — commission rule engine, payment method fees,
+// expense tracking (P&L phase 1)
+// ─────────────────────────────────────────────
+
+enum ServiceType {
+  CONSULTATION
+  PRODUCT
+  PROGRAM
+  ADS
+}
+
+enum ExpenseCategoryType {
+  FIXED
+  VARIABLE
+  ONE_TIME
+}
+
+model CommissionRule {
+  id            String      @id @default(cuid())
+  serviceType   ServiceType
+  doctorId      String? // null = applies to all doctors (CONSULTATION only)
+  clinicId      String? // null = applies to all clinics
+  paymentMethod String? // null = applies to any payment method
+  percent       Int         @default(0)
+  fixedFee      Int         @default(0) // flat fee on top of percent, e.g. gateway fixed fee
+  active        Boolean     @default(true)
+  effectiveFrom DateTime    @default(now())
+  effectiveTo   DateTime?
+  note          String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  doctor Doctor? @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([serviceType, doctorId, clinicId, paymentMethod])
+}
+
+model PaymentMethodConfig {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  label      String
+  feePercent Int      @default(0)
+  feeFixed   Int      @default(0)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ExpenseCategory {
+  id        String              @id @default(cuid())
+  name      String
+  type      ExpenseCategoryType
+  createdAt DateTime            @default(now())
+
+  expenses Expense[]
+  budgets  Budget[]
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  categoryId  String
+  amount      Int
+  description String?
+  date        DateTime @default(now())
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([date])
+}
+
+// ─────────────────────────────────────────────
+// Refund / Cancellation / Adjustment (Finance v2 phase 2)
+// ─────────────────────────────────────────────
+
+enum RefundTargetType {
+  APPOINTMENT
+  ORDER
+}
+
+model Refund {
+  id            String           @id @default(cuid())
+  targetType    RefundTargetType
+  appointmentId String?
+  orderId       String?
+  amount        Int
+  reason        String?
+  createdBy     String?
+  createdAt     DateTime         @default(now())
+
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  order       Order?       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([orderId])
+}
+
+// ─────────────────────────────────────────────
+// Reconciliation / Budget (Finance v2 phase 3)
+// ─────────────────────────────────────────────
+
+model ReconciliationEntry {
+  id            String   @id @default(cuid())
+  date          DateTime
+  paymentMethod String
+  systemAmount  Int
+  bankAmount    Int
+  note          String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([date, paymentMethod])
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  categoryId String
+  month      String // "YYYY-MM"
+  amount     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, month])
+}
+
+// ─────────────────────────────────────────────
+// Program/Ads revenue + audit log (Finance v2 phase 4)
+// ─────────────────────────────────────────────
+
+model RevenueEntry {
+  id             String      @id @default(cuid())
+  serviceType    ServiceType // PROGRAM | ADS
+  amount         Int
+  description    String?
+  clinicId       String?
+  platformAmount Int?
+  partnerAmount  Int?
+  date           DateTime    @default(now())
+  createdBy      String?
+  createdAt      DateTime    @default(now())
+
+  clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([serviceType])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String?
+  adminName  String?
+  action     String // 'CREATE' | 'UPDATE' | 'DELETE'
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

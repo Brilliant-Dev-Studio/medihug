@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Knock } from '@knocklabs/node';
 import { db } from '@/lib/db';
-
-const knock = new Knock({ apiKey: process.env.KNOCK_API_KEY! });
+import { requireAdmin } from '@/lib/adminAuth';
+import { logAudit } from '@/lib/audit';
+import { notify } from '@/lib/notify';
 
 /* ── GET /api/admin/appointments/[id] ── */
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req);
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const appointment = await db.appointment.findUnique({
@@ -25,9 +28,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 /* ── PATCH /api/admin/appointments/[id] ── */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req);
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
-    const { status } = await req.json();
+    const { status, reason } = await req.json();
 
     if (!['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status.' }, { status: 400 });
@@ -37,31 +43,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const appointment = await db.appointment.update({
       where: { id },
-      data:  { status },
+      data:  {
+        status,
+        ...(status === 'CANCELLED' && before?.status !== 'CANCELLED' && {
+          cancelReason: reason || null,
+          cancelledAt: new Date(),
+        }),
+      },
       include: {
         user:   { select: { name: true, phone: true, profileImage: true } },
         doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true, userId: true } },
       },
     });
 
+    logAudit({
+      admin, action: 'UPDATE', entityType: 'Appointment', entityId: id,
+      before: { status: before?.status }, after: { status: appointment.status, cancelReason: appointment.cancelReason },
+    });
+
     // Notify the doctor only on the PENDING → CONFIRMED transition (admin approval).
     if (status === 'CONFIRMED' && before?.status !== 'CONFIRMED' && appointment.doctor.userId) {
-      try {
-        await knock.workflows.trigger('appointment-confirmed-doctor', {
-          recipients: [{ id: appointment.doctor.userId, name: appointment.doctor.nameEn ?? appointment.doctor.name }],
-          actor: { id: appointment.userId, name: appointment.user.name },
-          data: {
-            patientName:   appointment.user.name,
-            appointmentId: appointment.id,
-            date:          appointment.date.toISOString(),
-            message:       `Your appointment with ${appointment.user.name} has been approved.`,
-            actionUrl:     `/doctor/appointments`,
-          },
-        });
-      } catch (notifyErr) {
-        // Status update itself succeeded — don't fail the request over a notification hiccup.
-        console.error('Knock trigger (appointment-confirmed-doctor) failed:', notifyErr);
-      }
+      notify({
+        userId: appointment.doctor.userId,
+        type: 'appointment-confirmed-doctor',
+        title: appointment.user.name,
+        body: `Your appointment with ${appointment.user.name} has been approved.`,
+        actionUrl: `/doctor/appointments`,
+        actorName: appointment.user.name,
+        actorAvatar: appointment.user.profileImage,
+      });
     }
 
     return NextResponse.json({ appointment });

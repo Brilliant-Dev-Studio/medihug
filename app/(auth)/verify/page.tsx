@@ -57,7 +57,7 @@ export default function VerifyPage() {
     inputs.current[0]?.focus();
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const entered = otp.join('');
     if (entered.length < 6) return;
@@ -67,9 +67,26 @@ export default function VerifyPage() {
       inputs.current[0]?.focus();
       return;
     }
+
+    const role = sessionStorage.getItem('medihug_login_role');
+    if (role !== 'DOCTOR') {
+      const phone = sessionStorage.getItem('medihug_pending_phone');
+      if (phone) {
+        let name = phone;
+        try {
+          const res = await fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user?.name) name = data.user.name;
+          }
+        } catch {}
+        localStorage.setItem('medihug_patient', JSON.stringify({ name, phone }));
+        sessionStorage.removeItem('medihug_pending_phone');
+      }
+    }
+
     toast.success(lang === 'mm' ? 'အတည်ပြုပြီးပါပြီ!' : 'Verified successfully!');
     setVerified(true);
-    const role = sessionStorage.getItem('medihug_login_role');
     const destination = role === 'DOCTOR' ? '/doctor/dashboard' : '/patient/dashboard';
     setTimeout(() => router.push(destination), 1500);
   };

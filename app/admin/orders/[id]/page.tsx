@@ -2,7 +2,9 @@
 
 import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Package, Phone, User, Loader2, ChevronDown, Image as ImageIcon } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, Package, Phone, User, Loader2, ChevronDown, Image as ImageIcon, Receipt as ReceiptIcon } from 'lucide-react';
+import RefundPanel from '@/components/admin/RefundPanel';
 
 const PRIMARY = '#2ab5ad';
 
@@ -14,6 +16,7 @@ interface Order {
   id: string;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   totalAmount: number; paymentMethod: string | null; receiptUrl: string | null; note: string | null;
+  cancelReason: string | null;
   createdAt: string;
   user: { id: string; name: string; phone: string };
   items: OrderItem[];
@@ -46,10 +49,14 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
 
   async function updateStatus(next: Order['status']) {
     if (!order) return;
+    let reason: string | undefined;
+    if (next === 'CANCELLED') {
+      reason = window.prompt('Cancellation reason (optional):') || undefined;
+    }
     setUpdating(true);
     const res = await fetch(`/api/admin/orders/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
+      body: JSON.stringify({ status: next, reason }),
     });
     const data = await res.json();
     if (res.ok) setOrder(data.order);
@@ -151,8 +158,16 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               <p className="text-xs font-semibold text-gray-500">Placed</p>
               <p className="text-xs font-bold text-gray-700">{new Date(order.createdAt).toLocaleString()}</p>
             </div>
+            {order.cancelReason && (
+              <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2 mb-3">Cancel reason: {order.cancelReason}</p>
+            )}
 
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 mt-4">Receipt</p>
+            <Link href={`/admin/orders/${id}/invoice`} target="_blank"
+              className="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors mb-4">
+              <ReceiptIcon className="w-4 h-4" /> View Invoice
+            </Link>
+
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Receipt</p>
             {order.receiptUrl ? (
               <a href={order.receiptUrl} target="_blank" rel="noopener noreferrer" className="block relative rounded-xl overflow-hidden border border-gray-100" style={{ height: 200 }}>
                 <img src={order.receiptUrl} alt="receipt" className="w-full h-full object-contain bg-gray-50" />
@@ -164,6 +179,8 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               </div>
             )}
           </div>
+
+          <RefundPanel targetType="ORDER" targetId={id} />
         </div>
       </div>
     </div>

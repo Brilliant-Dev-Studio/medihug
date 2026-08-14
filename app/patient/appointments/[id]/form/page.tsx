@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   ArrowLeft, Pencil, CheckCircle2, User, FileText,
   Stethoscope, AlertTriangle, Image as ImageIcon, CalendarX2, ChevronDown,
-  Calendar, Sparkles, Video, NotebookPen, Share2, Building2, QrCode,
+  Calendar, Sparkles, Video, NotebookPen, Share2, Building2, QrCode, MessageCircle, Receipt,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import IntakeForm, { type IntakeData } from '../../../booking/IntakeForm';
 import { useLang } from '../../../../lib/LanguageContext';
+import AppointmentChatPanel from '@/components/AppointmentChatPanel';
 
 const P  = 'var(--color-primary)';
 const PD = 'var(--color-primary-dark)';
@@ -30,9 +32,10 @@ interface RawAppointment {
   referredDoctor: { id: string; name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null } | null;
   referredClinic: { id: string; name: string; nameEn: string | null; type: string; imageUrl: string | null } | null;
   clinicReferral: { code: string; verifiedAt: string | null } | null;
+  unreadPatientChat?: boolean;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
-  doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null };
+  doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
   user: { name: string; phone: string };
 }
 
@@ -166,6 +169,7 @@ export default function FormViewPage() {
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [loading, setLoading] = useState(true);
   const [appt, setAppt] = useState<RawAppointment | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/patient/appointments/${params.id}`)
@@ -372,6 +376,30 @@ export default function FormViewPage() {
           </div>
         )}
 
+        {['CONFIRMED', 'COMPLETED'].includes(appt.status) && (
+          <button onClick={() => setChatOpen(true)}
+            className="lg:col-span-2 relative bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 text-left hover:border-gray-200 transition-colors">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${P}12` }}>
+              <MessageCircle className="w-5 h-5" style={{ color: P }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'ဆရာဝန်နှင့် စကားပြောရန်', en: 'Chat with Doctor' })}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{doctorName}</p>
+            </div>
+            {appt.unreadPatientChat && <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />}
+          </button>
+        )}
+
+        <Link href={`/patient/appointments/${appt.id}/invoice`} target="_blank"
+          className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3 hover:border-gray-200 transition-colors">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${P}12` }}>
+            <Receipt className="w-5 h-5" style={{ color: P }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'ငွေတောင်းခံလွှာ ကြည့်ရန်', en: 'View Invoice' })}</p>
+          </div>
+        </Link>
+
         {(appt.doctorNote || appt.referredDoctor || appt.referredClinic) && (
           <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-50">
@@ -532,6 +560,12 @@ export default function FormViewPage() {
           {t(mm, { mm: 'ဆေးမှတ်တမ်း ပြင်ဆင်မည်', en: 'Edit Medical Form' })}
         </button>
       </div>
+
+      <AppointmentChatPanel
+        appointmentId={appt.id} role="patient" phone={appt.user.phone} peerName={doctorName} peerAvatar={appt.doctor.imageUrl}
+        open={chatOpen} onClose={() => setChatOpen(false)}
+        onStartVideoCall={appt.doctorApproved ? () => router.push(`/patient/appointments/${appt.id}/call`) : undefined}
+      />
     </div>
   );
 }

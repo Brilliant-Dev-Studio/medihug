@@ -217,6 +217,7 @@ export default function PatientDashboard() {
   const [favCount, setFavCount] = useState(0);
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
   const [apptsLoading, setApptsLoading] = useState(true);
+  const [patientName, setPatientName] = useState('');
 
   useEffect(() => {
     fetch('/api/doctors?limit=100')
@@ -228,7 +229,11 @@ export default function PatientDashboard() {
   useEffect(() => {
     const raw = localStorage.getItem('medihug_patient');
     if (!raw) { setApptsLoading(false); return; }
-    const { phone } = JSON.parse(raw) as { phone: string };
+    const { phone, name } = JSON.parse(raw) as { phone: string; name?: string };
+    if (name) setPatientName(name);
+
+    const onNameUpdate = (e: Event) => setPatientName((e as CustomEvent<string>).detail);
+    window.addEventListener('medihug-name-updated', onNameUpdate);
     Promise.all([
       fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
       fetch(`/api/patient/favorites/products?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
@@ -257,6 +262,8 @@ export default function PatientDashboard() {
       })
       .catch(() => {})
       .finally(() => setApptsLoading(false));
+
+    return () => window.removeEventListener('medihug-name-updated', onNameUpdate);
   }, []);
 
   return (
@@ -280,7 +287,7 @@ export default function PatientDashboard() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-sm text-white/60 lg:text-base">{mm ? 'မင်္ဂလာပါ 👋' : 'Hello 👋'}</p>
-              <h1 className="text-xl font-bold text-white lg:text-3xl lg:mt-1">Patient User</h1>
+              <h1 className="text-xl font-bold text-white lg:text-3xl lg:mt-1">{patientName || 'Patient User'}</h1>
             </div>
             <WeatherWidget />
           </div>

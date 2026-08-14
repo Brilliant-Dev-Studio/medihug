@@ -10,16 +10,13 @@ import {
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
-import { NotificationBellProvider, NotificationBellButton } from '@/components/NotificationBell';
-import { NotificationProvider } from '@/context/NotificationContext';
+import { RealtimeProvider } from '@/components/RealtimeProvider';
+import { NotificationBellButton } from '@/components/NotificationBell';
 import PatientAvatar from '@/components/PatientAvatar';
 import IncomingCallRing from '@/components/IncomingCallRing';
 import SupportChatWidget from '@/components/SupportChatWidget';
 import PatientAIChatWidget from '@/components/PatientAIChatWidget';
 import { useCart } from '../lib/useCart';
-
-// TODO: no patient auth/session exists yet in this codebase — replace with the real logged-in patient id once patient login is wired up.
-const DEMO_PATIENT_ID = 'demo-patient-001';
 
 const navItems = [
   { href: '/patient/dashboard',    icon: LayoutDashboard, mm: 'ပင်မ',              en: 'Dashboard' },
@@ -49,6 +46,8 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const [todayStr, setTodayStr]       = useState('');
   const [avatarUrl, setAvatarUrl]     = useState('');
   const [avatarLoading, setAvatarLoading] = useState(true);
+  const [patientName, setPatientName] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,16 +57,26 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   useEffect(() => {
     const raw = localStorage.getItem('medihug_patient');
     if (!raw) { setAvatarLoading(false); return; }
-    const { phone } = JSON.parse(raw) as { phone: string };
+    const { phone, name } = JSON.parse(raw) as { phone: string; name?: string };
+    setPatientPhone(phone);
+    if (name) setPatientName(name);
     fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
-      .then(d => { if (d.user?.profileImage) setAvatarUrl(d.user.profileImage); })
+      .then(d => {
+        if (d.user?.profileImage) setAvatarUrl(d.user.profileImage);
+        if (d.user?.name) setPatientName(d.user.name);
+      })
       .catch(() => {})
       .finally(() => setAvatarLoading(false));
 
     const onAvatarUpdate = (e: Event) => setAvatarUrl((e as CustomEvent<string>).detail);
+    const onNameUpdate = (e: Event) => setPatientName((e as CustomEvent<string>).detail);
     window.addEventListener('medihug-avatar-updated', onAvatarUpdate);
-    return () => window.removeEventListener('medihug-avatar-updated', onAvatarUpdate);
+    window.addEventListener('medihug-name-updated', onNameUpdate);
+    return () => {
+      window.removeEventListener('medihug-avatar-updated', onAvatarUpdate);
+      window.removeEventListener('medihug-name-updated', onNameUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -95,8 +104,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       : 'transparent';
 
   return (
-    <NotificationProvider userId={DEMO_PATIENT_ID}>
-    <NotificationBellProvider userId={DEMO_PATIENT_ID}>
+    <RealtimeProvider role="patient" phone={patientPhone || undefined}>
     <ThemeProvider>
     <IncomingCallRing />
     <SupportChatWidget />
@@ -105,7 +113,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
       {/* ── Sidebar (desktop lg+) ── */}
       <aside
-        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-50 transition-all duration-300 ${sidebarW}`}
+        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-50 transition-all duration-300 print:hidden ${sidebarW}`}
       >
         {/* Logo */}
         <div className="px-4 py-5 border-b border-gray-100 flex items-center justify-start min-h-18">
@@ -186,7 +194,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             <div className="flex items-center gap-3 px-3 py-2.5">
               <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
               <div className="min-w-0">
-                <p className="text-sm font-semibold truncate" style={{ color: PRIMARY }}>Patient User</p>
+                <p className="text-sm font-semibold truncate" style={{ color: PRIMARY }}>{patientName || 'Patient User'}</p>
                 <p className="text-xs text-gray-400">PATIENT</p>
               </div>
             </div>
@@ -217,7 +225,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         >
           {/* Sticky mobile header */}
           <div
-            className="sticky top-0 z-40 px-4 py-4 flex items-center justify-between transition-all duration-300"
+            className="sticky top-0 z-40 px-4 py-4 flex items-center justify-between transition-all duration-300 print:hidden"
             style={{
               background: headerBg,
               boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.08)' : 'none',
@@ -256,7 +264,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         </div>
 
         {/* Desktop top bar */}
-        <div className="hidden lg:flex items-center justify-between px-6 py-3 bg-white border-b border-gray-100 shrink-0">
+        <div className="hidden lg:flex items-center justify-between px-6 py-3 bg-white border-b border-gray-100 shrink-0 print:hidden">
           <p className="text-sm text-gray-400">
             {todayStr}
           </p>
@@ -323,7 +331,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             <div className="flex items-center gap-2 pl-3 border-l border-gray-100">
               <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-8 h-8 rounded-full text-white text-sm" />
               <div>
-                <p className="text-sm font-semibold leading-tight" style={{ color: PRIMARY }}>Patient User</p>
+                <p className="text-sm font-semibold leading-tight" style={{ color: PRIMARY }}>{patientName || 'Patient User'}</p>
                 <p className="text-[10px] text-gray-400 leading-tight">PATIENT</p>
               </div>
             </div>
@@ -335,7 +343,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       </div>
 
       {/* ── Bottom Nav (mobile only) ── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 print:hidden">
         <div className="grid grid-cols-5 h-16">
           {navItems.map(({ href, icon: Icon, mm: labelMm, en: labelEn }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
@@ -362,7 +370,6 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
     </div>
     </ThemeProvider>
-    </NotificationBellProvider>
-    </NotificationProvider>
+    </RealtimeProvider>
   );
 }

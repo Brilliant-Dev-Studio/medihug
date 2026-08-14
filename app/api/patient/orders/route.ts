@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { Knock } from '@knocklabs/node';
 import { db } from '@/lib/db';
-
-const knock = new Knock({ apiKey: process.env.KNOCK_API_KEY! });
+import { notify } from '@/lib/notify';
 
 /* ── POST /api/patient/orders ── */
 export async function POST(req: NextRequest) {
@@ -57,22 +55,16 @@ export async function POST(req: NextRequest) {
       select: { id: true, name: true },
     });
 
-    if (admins.length > 0) {
-      try {
-        await knock.workflows.trigger('new-order-placed', {
-          recipients: admins.map((a) => ({ id: a.id, name: a.name })),
-          actor: { id: order.userId, name: order.user.name },
-          data: {
-            patientName: order.user.name,
-            orderId:     order.id,
-            totalAmount: order.totalAmount,
-            message:     `${order.user.name} placed an order for ${order.totalAmount.toLocaleString()} MMK.`,
-            actionUrl:   `/admin/orders/${order.id}`,
-          },
-        });
-      } catch (notifyErr) {
-        console.error('Knock trigger (new-order-placed) failed:', notifyErr);
-      }
+    for (const admin of admins) {
+      notify({
+        userId: admin.id,
+        type: 'new-order-placed',
+        title: order.user.name,
+        body: `placed an order for ${order.totalAmount.toLocaleString()} MMK.`,
+        actionUrl: `/admin/orders/${order.id}`,
+        actorName: order.user.name,
+        actorAvatar: order.user.profileImage,
+      });
     }
 
     return NextResponse.json({ order }, { status: 201 });

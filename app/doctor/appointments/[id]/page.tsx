@@ -4,7 +4,7 @@ import { use, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Calendar, Clock, CreditCard, Phone,
-  User, FileText, Stethoscope, AlertTriangle, Video, Loader2, Sparkles, Send,
+  User, FileText, Stethoscope, AlertTriangle, Video, Loader2, Sparkles, Send, MessageCircle,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
@@ -12,6 +12,7 @@ import {
 } from '@/app/admin/appointments/shared';
 import { useLang } from '@/app/lib/LanguageContext';
 import NoteReferralCard from '@/components/doctor/NoteReferralCard';
+import AppointmentChatPanel from '@/components/AppointmentChatPanel';
 
 function Skel({ className, style }: { className: string; style?: React.CSSProperties }) {
   return <div className={`bg-gray-100 rounded-md animate-pulse ${className}`} style={style} />;
@@ -211,6 +212,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(false);
   const [callStarting, setCallStarting] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const fetchAppt = useCallback(async () => {
     setLoading(true);
@@ -381,6 +383,21 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
               )}
             </div>
           )}
+
+          {/* Chat */}
+          {['CONFIRMED', 'COMPLETED'].includes(appt.status) && (
+            <button onClick={() => setChatOpen(true)}
+              className="relative bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-3 text-left hover:border-gray-200 transition-colors">
+              <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}14` }}>
+                <MessageCircle className="w-4.5 h-4.5" style={{ color: PRIMARY }} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'လူနာနှင့် စကားပြောရန်', en: 'Chat with Patient' })}</p>
+                <p className="text-xs text-gray-400 truncate">{appt.user.name}</p>
+              </div>
+              {appt.unreadDoctorChat && <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />}
+            </button>
+          )}
         </div>
 
         {/* Right / main column */}
@@ -443,6 +460,8 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
           )}
         </div>
       </div>
+
+      <AppointmentChatPanel appointmentId={id} role="doctor" peerName={appt.user.name} peerAvatar={appt.user.profileImage} open={chatOpen} onClose={() => setChatOpen(false)} onStartVideoCall={startCall} />
     </div>
   );
 }

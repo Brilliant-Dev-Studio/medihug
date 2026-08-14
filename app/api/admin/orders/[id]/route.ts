@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Knock } from '@knocklabs/node';
 import { db } from '@/lib/db';
-
-const knock = new Knock({ apiKey: process.env.KNOCK_API_KEY! });
+import { requireAdmin } from '@/lib/adminAuth';
+import { logAudit } from '@/lib/audit';
+import { notify } from '@/lib/notify';
 
 const INCLUDE = {
   user:  { select: { id: true, name: true, phone: true } },
@@ -10,7 +10,10 @@ const INCLUDE = {
 };
 
 /* ── GET /api/admin/orders/[id] ── */
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req);
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const order = await db.order.findUnique({ where: { id }, include: INCLUDE });
@@ -24,9 +27,12 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 /* ── PATCH /api/admin/orders/[id] — update status ── */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req);
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
-    const { status } = await req.json();
+    const { status, reason } = await req.json();
 
     if (!['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status.' }, { status: 400 });
@@ -43,22 +49,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       );
     }
 
-    const order = await db.order.update({ where: { id }, data: { status }, include: INCLUDE });
+    const order = await db.order.update({
+      where: { id },
+      data: {
+        status,
+        ...(status === 'CANCELLED' && before.status !== 'CANCELLED' && {
+          cancelReason: reason || null,
+          cancelledAt: new Date(),
+        }),
+      },
+      include: INCLUDE,
+    });
+
+    logAudit({
+      admin, action: 'UPDATE', entityType: 'Order', entityId: id,
+      before: { status: before.status }, after: { status: order.status, cancelReason: order.cancelReason },
+    });
 
     if (status === 'CONFIRMED' && before.status !== 'CONFIRMED') {
-      try {
-        await knock.workflows.trigger('order-confirmed', {
-          recipients: [{ id: order.userId, name: order.user.name }],
-          data: {
-            orderId:     order.id,
-            totalAmount: order.totalAmount,
-            message:     `Your order for ${order.totalAmount.toLocaleString()} MMK has been confirmed.`,
-            actionUrl:   `/patient/records`,
-          },
-        });
-      } catch (notifyErr) {
-        console.error('Knock trigger (order-confirmed) failed:', notifyErr);
-      }
+      notify({
+        userId: order.userId,
+        type: 'order-confirmed',
+        title: 'Order confirmed',
+        body: `Your order for ${order.totalAmount.toLocaleString()} MMK has been confirmed.`,
+        actionUrl: `/patient/records`,
+      });
     }
 
     return NextResponse.json({ order });

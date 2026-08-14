@@ -66,6 +66,7 @@ export default function SignInPage() {
         sessionStorage.setItem('medihug_login_role', 'DOCTOR');
       } else {
         sessionStorage.setItem('medihug_login_role', 'PATIENT');
+        sessionStorage.setItem('medihug_pending_phone', form.phone.trim());
       }
 
       toast.success(mm ? 'OTP ကုဒ် ပေးပို့နေသည်...' : 'Sending OTP code...');

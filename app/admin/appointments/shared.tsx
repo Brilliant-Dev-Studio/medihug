@@ -22,6 +22,10 @@ export interface Appointment {
   note: string | null;
   paymentMethod: string | null;
   fee: number | null;
+  platformFeeAmount?: number | null;
+  doctorPayoutAmount?: number | null;
+  cancelReason?: string | null;
+  cancelledAt?: string | null;
   receiptUrl: string | null;
   intake: IntakeData | null;
   aiSummary?: string | null;
@@ -31,6 +35,8 @@ export interface Appointment {
   referredDoctor?: { id: string; name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null } | null;
   referredClinic?: { id: string; name: string; nameEn: string | null; type: string; imageUrl: string | null } | null;
   clinicReferral?: { code: string; verifiedAt: string | null } | null;
+  unreadDoctorChat?: boolean;
+  unreadPatientChat?: boolean;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
   createdAt: string;
@@ -182,9 +188,10 @@ export function LangDropdown() {
 }
 
 /* ── status confirm modal: click a status → confirm dialog → PATCH ── */
-export function ConfirmStatusModal({ current, target, onConfirm, onCancel, saving, mm }: {
+export function ConfirmStatusModal({ current, target, onConfirm, onCancel, saving, mm, reason, onReasonChange }: {
   current: Appointment['status']; target: Appointment['status'];
   onConfirm: () => void; onCancel: () => void; saving: boolean; mm: boolean;
+  reason?: string; onReasonChange?: (v: string) => void;
 }) {
   const from = STATUS_STYLE[current];
   const to   = STATUS_STYLE[target];
@@ -213,6 +220,19 @@ export function ConfirmStatusModal({ current, target, onConfirm, onCancel, savin
             </span>
           </div>
 
+          {target === 'CANCELLED' && onReasonChange && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                {t(mm, { mm: 'ပယ်ဖျက်ရသည့် အကြောင်းရင်း (ရွေးချယ်ပိုင်ခွင့်)', en: 'Cancellation reason (optional)' })}
+              </p>
+              <textarea
+                value={reason ?? ''} onChange={e => onReasonChange(e.target.value)}
+                rows={2} placeholder={t(mm, { mm: 'အကြောင်းရင်း ရေးပါ...', en: 'Enter a reason...' })}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors resize-none"
+              />
+            </div>
+          )}
+
           <div className="flex gap-2">
             <button onClick={onCancel} disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-50">
@@ -234,19 +254,21 @@ export function ConfirmStatusModal({ current, target, onConfirm, onCancel, savin
 
 /* ── segmented status buttons that open the confirm modal ── */
 export function StatusChanger({ status, onChanged, mm: mmOverride }: {
-  status: Appointment['status']; onChanged: (next: Appointment['status']) => Promise<void>; mm?: boolean;
+  status: Appointment['status']; onChanged: (next: Appointment['status'], reason?: string) => Promise<void>; mm?: boolean;
 }) {
   const { lang } = useLang();
   const mm = mmOverride ?? (lang === 'mm');
   const [pending, setPending] = useState<Appointment['status'] | null>(null);
+  const [reason, setReason] = useState('');
   const [saving,  setSaving]  = useState(false);
 
   async function confirm() {
     if (!pending) return;
     setSaving(true);
-    await onChanged(pending);
+    await onChanged(pending, reason || undefined);
     setSaving(false);
     setPending(null);
+    setReason('');
   }
 
   const current = STATUS_STYLE[status];
@@ -292,28 +314,31 @@ export function StatusChanger({ status, onChanged, mm: mmOverride }: {
         })}
       </div>
       {pending && (
-        <ConfirmStatusModal current={status} target={pending} saving={saving} mm={mm} onConfirm={confirm} onCancel={() => setPending(null)} />
+        <ConfirmStatusModal current={status} target={pending} saving={saving} mm={mm} onConfirm={confirm} onCancel={() => { setPending(null); setReason(''); }}
+          reason={reason} onReasonChange={setReason} />
       )}
     </>
   );
 }
 
 export function StatusBadgeClickable({ status, onChanged }: {
-  status: Appointment['status']; onChanged: (next: Appointment['status']) => Promise<void>;
+  status: Appointment['status']; onChanged: (next: Appointment['status'], reason?: string) => Promise<void>;
 }) {
   const { lang } = useLang();
   const mm = lang === 'mm';
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<Appointment['status'] | null>(null);
+  const [reason, setReason] = useState('');
   const [saving,  setSaving]  = useState(false);
   const s = STATUS_STYLE[status];
 
   async function confirm() {
     if (!pending) return;
     setSaving(true);
-    await onChanged(pending);
+    await onChanged(pending, reason || undefined);
     setSaving(false);
     setPending(null);
+    setReason('');
   }
 
   return (
@@ -346,7 +371,8 @@ export function StatusBadgeClickable({ status, onChanged }: {
         </>
       )}
       {pending && (
-        <ConfirmStatusModal current={status} target={pending} saving={saving} mm={mm} onConfirm={confirm} onCancel={() => setPending(null)} />
+        <ConfirmStatusModal current={status} target={pending} saving={saving} mm={mm} onConfirm={confirm} onCancel={() => { setPending(null); setReason(''); }}
+          reason={reason} onReasonChange={setReason} />
       )}
     </div>
   );

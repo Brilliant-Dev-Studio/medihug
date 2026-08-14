@@ -30,6 +30,7 @@ type Appointment = {
   status: Status;
   fee: string;
   scheduledAt: Date | null;
+  unreadChat: boolean;
 };
 
 type PastAppointment = {
@@ -57,6 +58,7 @@ interface RawAppointment {
   fee: number | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
+  unreadPatientChat: boolean;
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
 }
 
@@ -102,6 +104,7 @@ function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; pa
         status: a.status === 'PENDING' ? 'pending_payment' : (a.doctorApproved ? 'ready' : 'confirmed'),
         fee: fmtFee(a.fee),
         scheduledAt: combineDateAndTime(a.date, a.time),
+        unreadChat: a.unreadPatientChat,
       });
     }
   }
@@ -239,10 +242,18 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
         {/* Alert */}
         <p className="text-xs text-gray-400 leading-relaxed">{mm ? cfg.alertMm : cfg.alertEn}</p>
         {/* Status badge — own row */}
-        <span className="self-start px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
-          style={{ backgroundColor: cfg.pillBg, color: cfg.pillText }}>
-          {mm ? cfg.badgeMm : cfg.badgeEn}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="self-start px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
+            style={{ backgroundColor: cfg.pillBg, color: cfg.pillText }}>
+            {mm ? cfg.badgeMm : cfg.badgeEn}
+          </span>
+          {appt.unreadChat && (
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              {mm ? 'ဆရာဝန်က စာပို့ထားသည်' : 'New message'}
+            </span>
+          )}
+        </div>
         {/* Action buttons row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -276,9 +287,10 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
             >
               <FileText className="w-3.5 h-3.5" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
             </Link>
-            <button className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-300 active:bg-gray-50">
+            <Link href={`/patient/appointments/${appt.id}/form`} className="relative w-8 h-8 rounded-xl flex items-center justify-center text-gray-300 active:bg-gray-50">
               <ChevronRight className="w-4 h-4" />
-            </button>
+              {appt.unreadChat && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />}
+            </Link>
           </div>
         </div>
       </div>
@@ -300,6 +312,12 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
             <span className="text-sm font-bold" style={{ color: PRIMARY }}>{appt.fee}</span>
           </div>
           <p className="text-xs text-gray-400 mt-2 leading-relaxed">{mm ? cfg.alertMm : cfg.alertEn}</p>
+          {appt.unreadChat && (
+            <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              {mm ? 'ဆရာဝန်က စာပို့ထားသည်' : 'New message from doctor'}
+            </span>
+          )}
         </div>
         <div className="shrink-0 flex items-center gap-3">
           <span className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
@@ -308,10 +326,11 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
           </span>
           <Link
             href={`/patient/appointments/${appt.id}/form`}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+            className="relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
             style={{ color: PRIMARY, borderColor: `${PRIMARY}30`, backgroundColor: `${PRIMARY}08` }}
           >
             <FileText className="w-4 h-4" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
+            {appt.unreadChat && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white" />}
           </Link>
           {appt.status === 'ready' && joinable && (
             <Link href={`/patient/appointments/${appt.id}/call`} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
@@ -334,9 +353,9 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
               <X className="w-4 h-4" />{mm ? 'ပယ်ဖျက်မည်' : 'Cancel'}
             </button>
           )}
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
+          <Link href={`/patient/appointments/${appt.id}/form`} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
       </div>
     </div>
@@ -393,9 +412,9 @@ function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
                 <RotateCcw className="w-3 h-3" />{mm ? 'ထပ်ချိန်းမည်' : 'Book Again'}
               </button>
             )}
-            <button className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
+            <Link href={`/patient/appointments/${appt.id}/form`} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -437,9 +456,9 @@ function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
               <RotateCcw className="w-3.5 h-3.5" />{mm ? 'ထပ်မံချိန်းဆိုမည်' : 'Book Again'}
             </button>
           )}
-          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
+          <Link href={`/patient/appointments/${appt.id}/form`} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
       </div>
     </div>

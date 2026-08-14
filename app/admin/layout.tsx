@@ -7,10 +7,13 @@ import Image from 'next/image';
 import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
-  ShieldCheck, Menu, X, ChevronRight, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
+  ShieldCheck, Menu, X, ChevronRight, ChevronDown, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
   Bell, CalendarClock, Headset, HeartPulse, Store,
+  Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
+  ArrowLeftRight, History,
 } from 'lucide-react';
-import NotificationBell from '@/components/NotificationBell';
+import { RealtimeProvider } from '@/components/RealtimeProvider';
+import { NotificationBellButton } from '@/components/NotificationBell';
 
 const PRIMARY = '#2ab5ad';
 const DARK    = '#1a9990';
@@ -21,7 +24,21 @@ const navGroups = [
     items: [
       { href: '/admin/dashboard', icon: LayoutDashboard, mm: 'Dashboard',       en: 'Dashboard' },
       { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports' },
-      { href: '/admin/pos',      icon: Store,           mm: 'POS',              en: 'POS' },
+      { href: '/admin/pos',      icon: Store,           mm: 'POS',              en: 'POS',
+        children: [
+          { href: '/admin/finance/pnl',             icon: PieChart,   mm: 'အမြတ်/အရှုံး',        en: 'P&L' },
+          { href: '/admin/finance/rules',           icon: Percent,    mm: 'ကော်မရှင်စည်းမျဉ်း',   en: 'Commission Rules' },
+          { href: '/admin/finance/payment-methods', icon: CreditCard, mm: 'ငွေပေးချေမှုနည်းလမ်း', en: 'Payment Methods' },
+          { href: '/admin/finance/expenses',        icon: Receipt,    mm: 'အသုံးစရိတ်',          en: 'Expenses' },
+          { href: '/admin/finance/refunds',         icon: Undo2,      mm: 'ငွေပြန်အမ်း',          en: 'Refunds' },
+          { href: '/admin/finance/reconciliation',  icon: Scale,      mm: 'ငွေစာရင်းချိန်ညှိခြင်း', en: 'Reconciliation' },
+          { href: '/admin/finance/budget',          icon: Target,     mm: 'ဘတ်ဂျက်',              en: 'Budget vs Actual' },
+          { href: '/admin/finance/forecast',        icon: TrendingUp, mm: 'ခန့်မှန်းချက်',         en: 'Forecast' },
+          { href: '/admin/finance/revenue',         icon: Megaphone,  mm: 'Program/Ads ဝင်ငွေ',   en: 'Program/Ads Revenue' },
+          { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',  en: 'Cash Flow' },
+          { href: '/admin/finance/audit-log',       icon: History,    mm: 'မှတ်တမ်း Log',         en: 'Audit Log' },
+        ],
+      },
       { href: '/admin/notifications', icon: Bell,        mm: 'အသိပေးချက်များ',   en: 'Notifications' },
       { href: '/admin/support',   icon: Headset,         mm: 'Customer Support',  en: 'Customer Support' },
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients' },
@@ -59,17 +76,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router   = useRouter();
   const [open, setOpen]     = useState(false);
-  const [adminId, setAdminId] = useState<string | null>(null);
   const [supportUnread, setSupportUnread] = useState(false);
-
-  useEffect(() => {
-    if (pathname === '/admin/login') return;
-    let cancelled = false;
-    fetch('/api/admin/me').then(r => r.json()).then(d => {
-      if (!cancelled) setAdminId(d.admin?.id ?? null);
-    });
-    return () => { cancelled = true; };
-  }, [pathname]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (pathname === '/admin/login') return;
@@ -118,28 +126,83 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {navGroups.map(group => (
           <div key={group.label}>
             <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 mb-1.5">{group.label}</p>
-            {group.items.map(({ href, icon: Icon, en }) => {
+            {group.items.map(item => {
+              const { href, icon: Icon, en, children } = item;
               const active = pathname === href || pathname.startsWith(href + '/');
+              const childActive = !!children?.some(c => pathname === c.href || pathname.startsWith(c.href + '/'));
+              const isOpen = expanded.has(href) || childActive;
+
+              if (!children) {
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-0.5"
+                    style={{
+                      backgroundColor: active ? 'rgba(255,255,255,0.15)' : 'transparent',
+                      color: active ? '#fff' : 'rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    <span className="relative shrink-0">
+                      <Icon className="w-4 h-4" />
+                      {href === '/admin/support' && supportUnread && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
+                      )}
+                    </span>
+                    <span>{en}</span>
+                    {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-60" />}
+                  </Link>
+                );
+              }
+
               return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-0.5"
-                  style={{
-                    backgroundColor: active ? 'rgba(255,255,255,0.15)' : 'transparent',
-                    color: active ? '#fff' : 'rgba(255,255,255,0.5)',
-                  }}
-                >
-                  <span className="relative shrink-0">
-                    <Icon className="w-4 h-4" />
-                    {href === '/admin/support' && supportUnread && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
-                    )}
-                  </span>
-                  <span>{en}</span>
-                  {active && <ChevronRight className="w-3.5 h-3.5 ml-auto opacity-60" />}
-                </Link>
+                <div key={href} className="mb-0.5">
+                  <div
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
+                    style={{
+                      backgroundColor: active || childActive ? 'rgba(255,255,255,0.15)' : 'transparent',
+                      color: active || childActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                    }}
+                  >
+                    <Link href={href} onClick={() => setOpen(false)} className="flex items-center gap-3 flex-1 min-w-0">
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span>{en}</span>
+                    </Link>
+                    <button
+                      onClick={() => setExpanded(prev => {
+                        const next = new Set(prev);
+                        if (next.has(href)) next.delete(href); else next.add(href);
+                        return next;
+                      })}
+                      className="shrink-0 p-0.5"
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 opacity-60 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+                  {isOpen && (
+                    <div className="mt-0.5 ml-4 pl-3 border-l border-white/10 flex flex-col gap-0.5">
+                      {children.map(c => {
+                        const cActive = pathname === c.href || pathname.startsWith(c.href + '/');
+                        return (
+                          <Link
+                            key={c.href}
+                            href={c.href}
+                            onClick={() => setOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+                            style={{
+                              backgroundColor: cActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+                              color: cActive ? '#fff' : 'rgba(255,255,255,0.45)',
+                            }}
+                          >
+                            <c.icon className="w-3.5 h-3.5 shrink-0" />
+                            <span>{c.en}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -170,11 +233,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
+    <RealtimeProvider role="admin">
     <div className="min-h-screen bg-gray-100 flex">
 
       {/* ── Desktop sidebar ── */}
       <aside
-        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-60 z-50"
+        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-60 z-50 print:hidden"
         style={{ background: `linear-gradient(180deg, #1e2d3d 0%, #162030 100%)` }}
       >
         <SidebarContent />
@@ -182,7 +246,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ── Mobile sidebar overlay ── */}
       {open && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
+        <div className="lg:hidden fixed inset-0 z-50 flex print:hidden">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="relative w-64 h-full z-10 flex flex-col"
             style={{ background: `linear-gradient(180deg, #1e2d3d 0%, #162030 100%)` }}>
@@ -192,21 +256,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       {/* ── Main ── */}
-      <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-60 flex flex-col min-h-screen print:ml-0">
 
         {/* Top bar */}
-        <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 lg:px-6 py-3.5 flex items-center gap-4">
+        <header className="sticky top-0 z-40 bg-white border-b border-gray-200 px-4 lg:px-6 py-3.5 flex items-center gap-4 print:hidden">
           <button onClick={() => setOpen(true)} className="lg:hidden w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-500">
             <Menu className="w-4 h-4" />
           </button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-gray-800">
-              {navGroups.flatMap(g => g.items).find(i => pathname === i.href || pathname.startsWith(i.href + '/'))?.en ?? 'Admin Portal'}
+              {navGroups.flatMap(g => g.items).flatMap(i => [i, ...(i.children ?? [])]).find(i => pathname === i.href || pathname.startsWith(i.href + '/'))?.en ?? 'Admin Portal'}
             </p>
             <p className="text-[11px] text-gray-400 leading-none mt-0.5">MediHug Super Admin</p>
           </div>
           <div className="flex items-center gap-3">
-            {adminId && <NotificationBell userId={adminId} />}
+            <NotificationBellButton />
           </div>
         </header>
 
@@ -216,5 +280,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+    </RealtimeProvider>
   );
 }
