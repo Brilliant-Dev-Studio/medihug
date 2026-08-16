@@ -103,9 +103,12 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
     const audio = new Audio('/mixkit-happy-bells-notification-937.wav');
     audio.preload = 'auto';
     audioRef.current = audio;
+    // Prime the element so later programmatic play() (triggered by a WS message, not a user
+    // gesture) is allowed by the browser's autoplay policy. Play+immediately-pause instead of
+    // mute+unmute — muting here risked getting stuck on if the play() promise ever rejected
+    // (unloaded media, etc.), silencing every future notification with no visible error.
     const unlock = () => {
-      audio.muted = true;
-      audio.play().then(() => { audio.pause(); audio.currentTime = 0; audio.muted = false; }).catch(() => {});
+      audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(err => console.warn('Notification sound unlock failed:', err));
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
     };
@@ -137,7 +140,7 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
             setNotifications(list => [n, ...list]);
             setUnreadCount(c => c + 1);
             const a = audioRef.current;
-            if (a) { a.currentTime = 0; a.play().catch(() => {}); }
+            if (a) { a.currentTime = 0; a.play().catch(err => console.warn('Notification sound play failed:', err)); }
           } else if (msg.kind === 'chat-message') {
             const { appointmentId, message } = msg as ChatMessagePayload;
             chatListenersRef.current.get(appointmentId)?.forEach(cb => cb(message));
