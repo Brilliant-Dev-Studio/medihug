@@ -23,7 +23,8 @@ export function getSubscriber(): Redis {
 /** Fire-and-forget: never throws, so a Redis outage never breaks the caller's primary write. */
 export async function publish(channel: string, payload: unknown): Promise<void> {
   try {
-    await getPublisher().publish(channel, JSON.stringify(payload));
+    const receivers = await getPublisher().publish(channel, JSON.stringify(payload));
+    console.log(`[realtime] published to ${channel}, ${receivers} subscriber instance(s) got it`);
   } catch (err) {
     console.error(`Redis publish failed (channel=${channel}):`, err);
   }

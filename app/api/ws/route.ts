@@ -14,11 +14,13 @@ function ensureSubscriber() {
   const sub = getSubscriber();
   sub.on('message', (channel: string, message: string) => {
     const sockets = local.get(channel);
+    console.log(`[ws] redis message on ${channel}, ${sockets?.size ?? 0} local socket(s)`);
     if (!sockets) return;
     for (const ws of sockets) {
       if (ws.readyState === ws.OPEN) ws.send(message);
     }
   });
+  sub.on('error', err => console.error('[ws] redis subscriber error:', err));
 }
 
 function subscribeLocal(channel: string, ws: WebSocket) {
@@ -27,7 +29,14 @@ function subscribeLocal(channel: string, ws: WebSocket) {
   if (!sockets) {
     sockets = new Set();
     local.set(channel, sockets);
-    getSubscriber().subscribe(channel).catch(err => console.error(`Redis subscribe failed (${channel}):`, err));
+    getSubscriber().subscribe(channel)
+      .then(() => console.log(`[ws] subscribed to ${channel}`))
+      .catch(err => {
+        console.error(`[ws] redis subscribe FAILED (${channel}):`, err);
+        // Don't leave a phantom entry claiming we're subscribed when we're not —
+        // let the next connection attempt for this channel retry from scratch.
+        local.delete(channel);
+      });
   }
   sockets.add(ws);
 }
@@ -60,11 +69,14 @@ export async function GET(req: NextRequest) {
     userId = payload?.id ?? null;
   }
 
+  console.log(`[ws] upgrade request, userId=${userId ?? 'none (awaiting patient auth)'}`);
+
   return experimental_upgradeWebSocket((ws) => {
     let channel: string | null = null;
 
     if (userId) {
       channel = `user:${userId}`;
+      console.log(`[ws] connected + subscribing immediately: ${channel}`);
       subscribeLocal(channel, ws);
     }
 
@@ -90,15 +102,19 @@ export async function GET(req: NextRequest) {
           const user = await db.user.findUnique({ where: { phone: msg.phone }, select: { id: true } });
           if (user && ws.readyState === ws.OPEN) {
             channel = `user:${user.id}`;
+            console.log(`[ws] patient auth ok, subscribing: ${channel}`);
             subscribeLocal(channel, ws);
+          } else {
+            console.warn(`[ws] patient auth failed — no user for phone ${msg.phone}`);
           }
         }
-      } catch {
-        // ignore malformed frames
+      } catch (err) {
+        console.warn('[ws] malformed client message:', err);
       }
     });
 
     ws.on('close', () => {
+      console.log(`[ws] closed, channel=${channel ?? 'none'}`);
       clearInterval(pingInterval);
       if (channel) unsubscribeLocal(channel, ws);
     });
