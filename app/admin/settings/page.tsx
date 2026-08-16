@@ -6,7 +6,26 @@ import { Plus, Check, X, Loader2, ShieldCheck, Trash2, Ban, Percent, Save } from
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
-interface Admin { id: string; name: string; phone: string; isActive: boolean; createdAt: string; }
+const ADMIN_ROLES = ['SUPER_ADMIN', 'CO_ADMIN', 'PARTNER_MANAGER', 'POS_ADMIN', 'SUPPORT_ADMIN', 'MODERATOR'] as const;
+type AdminRole = typeof ADMIN_ROLES[number];
+const ROLE_LABELS: Record<AdminRole, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  CO_ADMIN: 'Co-Admin (Deputy)',
+  PARTNER_MANAGER: 'Partner Manager',
+  POS_ADMIN: 'POS Admin',
+  SUPPORT_ADMIN: 'Support Admin',
+  MODERATOR: 'Moderator',
+};
+const ROLE_COLORS: Record<AdminRole, string> = {
+  SUPER_ADMIN: '#7c3aed',
+  CO_ADMIN: '#2563eb',
+  PARTNER_MANAGER: '#0d9488',
+  POS_ADMIN: '#d97706',
+  SUPPORT_ADMIN: '#db2777',
+  MODERATOR: '#64748b',
+};
+
+interface Admin { id: string; name: string; phone: string; role: AdminRole; isActive: boolean; createdAt: string; }
 
 export default function AdminSettingsPage() {
   const [admins,  setAdmins]  = useState<Admin[]>([]);
@@ -17,6 +36,7 @@ export default function AdminSettingsPage() {
   const [name,       setName]       = useState('');
   const [phone,      setPhone]      = useState('');
   const [password,   setPassword]   = useState('');
+  const [role,       setRole]       = useState<AdminRole>('SUPPORT_ADMIN');
   const [createError, setCreateError] = useState('');
   const [saving,     setSaving]     = useState(false);
   const [busyId,     setBusyId]     = useState<string | null>(null);
@@ -61,11 +81,21 @@ export default function AdminSettingsPage() {
     setSaving(true); setCreateError('');
     const res  = await fetch('/api/admin/admins', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), phone: phone.trim(), password }),
+      body: JSON.stringify({ name: name.trim(), phone: phone.trim(), password, role }),
     });
     const data = await res.json();
     if (!res.ok) { setCreateError(data.error); setSaving(false); return; }
-    setName(''); setPhone(''); setPassword(''); setCreating(false); setSaving(false);
+    setName(''); setPhone(''); setPassword(''); setRole('SUPPORT_ADMIN'); setCreating(false); setSaving(false);
+    load();
+  };
+
+  const changeRole = async (a: Admin, newRole: AdminRole) => {
+    setBusyId(a.id);
+    await fetch(`/api/admin/admins/${a.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: newRole }),
+    });
+    setBusyId(null);
     load();
   };
 
@@ -124,7 +154,7 @@ export default function AdminSettingsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-800">Settings</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Super Admin accounts</p>
+          <p className="text-sm text-gray-400 mt-0.5">Admin accounts & roles</p>
         </div>
         {!creating && (
           <button
@@ -149,9 +179,14 @@ export default function AdminSettingsPage() {
               onKeyDown={e => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setCreating(false); }}
               placeholder="Phone *" className={inp} />
           </div>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setCreating(false); }}
-            placeholder="Password (min 6 chars) *" className={inp} />
+          <div className="flex gap-2">
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setCreating(false); }}
+              placeholder="Password (min 6 chars) *" className={inp} />
+            <select value={role} onChange={e => setRole(e.target.value as AdminRole)} className={`${inp} flex-none w-56`}>
+              {ADMIN_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+            </select>
+          </div>
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={saving}
               className="px-4 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 flex items-center gap-1.5"
@@ -177,6 +212,7 @@ export default function AdminSettingsPage() {
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest w-8">#</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Name</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phone</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Role</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Created</th>
                 <th className="px-5 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Action</th>
@@ -184,11 +220,11 @@ export default function AdminSettingsPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={6} className="py-16 text-center">
+                <tr><td colSpan={7} className="py-16 text-center">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" />
                 </td></tr>
               ) : admins.length === 0 ? (
-                <tr><td colSpan={6} className="py-16 text-center">
+                <tr><td colSpan={7} className="py-16 text-center">
                   <ShieldCheck className="w-8 h-8 mx-auto text-gray-200 mb-2" />
                   <p className="text-sm text-gray-400">No admins yet.</p>
                 </td></tr>
@@ -200,6 +236,20 @@ export default function AdminSettingsPage() {
                     {a.id === me && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${PRIMARY}1a`, color: PRIMARY }}>You</span>}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{a.phone}</td>
+                  <td className="px-5 py-3.5">
+                    {a.id === me ? (
+                      <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: `${ROLE_COLORS[a.role]}1a`, color: ROLE_COLORS[a.role] }}>
+                        {ROLE_LABELS[a.role]}
+                      </span>
+                    ) : (
+                      <select value={a.role} disabled={busyId === a.id}
+                        onChange={e => changeRole(a, e.target.value as AdminRole)}
+                        className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 outline-none focus:border-teal-400 disabled:opacity-50">
+                        {ADMIN_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                      </select>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${a.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-400'}`}>
                       {a.isActive ? 'Active' : 'Disabled'}

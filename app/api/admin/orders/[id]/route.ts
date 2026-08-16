@@ -11,7 +11,7 @@ const INCLUDE = {
 
 /* ── GET /api/admin/orders/[id] ── */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 /* ── PATCH /api/admin/orders/[id] — update status ── */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

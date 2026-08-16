@@ -5,7 +5,7 @@ import { logAudit } from '@/lib/audit';
 
 /* ── PATCH /api/admin/finance/payment-methods/[id] ── */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 /* ── DELETE /api/admin/finance/payment-methods/[id] ── */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.delete');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;

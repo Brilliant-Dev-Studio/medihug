@@ -12,7 +12,7 @@ const DEFAULT_METHODS = [
 
 /* ── GET /api/admin/finance/payment-methods ── */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const count = await db.paymentMethodConfig.count();
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/admin/finance/payment-methods ── */
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

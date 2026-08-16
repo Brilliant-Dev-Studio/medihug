@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, X, Search, Stethoscope } from 'lucide-react';
 import TimePicker from '@/components/admin/TimePicker';
 import ImageDropzone from '@/components/admin/ImageDropzone';
 import GalleryEditor, { type GalleryItem } from '@/components/admin/GalleryEditor';
+import BranchEditor, { type BranchItem } from '@/components/admin/BranchEditor';
 
 const PRIMARY = '#2ab5ad';
 
@@ -56,6 +57,7 @@ export default function NewClinicPage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
   const [gallery, setGallery]   = useState<GalleryItem[]>([]);
+  const [branches, setBranches] = useState<BranchItem[]>([]);
   const [allDoctors, setAllDoctors]         = useState<DoctorOption[]>([]);
   const [selectedDoctors, setSelectedDoctors] = useState<DoctorOption[]>([]);
   const [doctorSearch, setDoctorSearch]     = useState('');
@@ -148,6 +150,7 @@ export default function NewClinicPage() {
           isPartner: form.isPartner,
           doctorIds: selectedDoctors.map(d => d.id),
           gallery,
+          branches,
         }),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); return; }
@@ -279,6 +282,11 @@ export default function NewClinicPage() {
                 <input className={inp} value={form.township} onChange={e => set('township', e.target.value)} />
               </div>
             </div>
+          </Section>
+
+          <Section title="Branches">
+            <p className="text-xs text-gray-400 -mt-2">Add as many branch locations as this partner has (optional — leave empty if single-location).</p>
+            <BranchEditor items={branches} onChange={setBranches} />
           </Section>
 
           <Section title="About">

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── GET /api/admin/doctors ── */
 export async function GET(req: NextRequest) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { searchParams } = req.nextUrl;
     const search      = searchParams.get('search')      ?? '';
@@ -46,6 +50,9 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/admin/doctors ── */
 export async function POST(req: NextRequest) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const body = await req.json();
     const {

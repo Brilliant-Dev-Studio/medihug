@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { parseCsv } from '@/lib/csv';
+import { requireAdmin } from '@/lib/adminAuth';
 
 function toBool(s: string, fallback: boolean): boolean {
   if (s === '' || s === undefined) return fallback;
@@ -23,6 +24,9 @@ function splitList(s: string): string[] {
  * Login password defaults to the phone number (same convention used for patient
  * self-registration elsewhere in this app) since a CSV can't safely carry real passwords. */
 export async function POST(req: NextRequest) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const formData = await req.formData();
     const file = formData.get('file');

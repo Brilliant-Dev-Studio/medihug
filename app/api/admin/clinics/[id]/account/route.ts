@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── POST /api/admin/clinics/[id]/account — create or update the partner login for a clinic ── */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const { phone, password, isActive } = await req.json();

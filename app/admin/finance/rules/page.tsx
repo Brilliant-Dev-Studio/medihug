@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Check, X, Loader2, Percent, Trash2, Ban, Search } from 'lucide-react';
+import { useAdminRole, requestDeletion } from '@/lib/useAdminRole';
+import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
@@ -22,9 +24,10 @@ interface Rule {
   clinic: { id: string; name: string } | null;
 }
 
-interface Hit { id: string; name: string }
+interface Hit { id: string; name: string; specialty: string; imageUrl: string | null }
 
 export default function CommissionRulesPage() {
+  const { role } = useAdminRole();
   const [rules, setRules] = useState<Rule[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -38,6 +41,21 @@ export default function CommissionRulesPage() {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [doctorName, setDoctorName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [doctorFocused, setDoctorFocused] = useState(false);
+  const [doctorPage, setDoctorPage] = useState(0);
+  const [doctorHasMore, setDoctorHasMore] = useState(true);
+  const [doctorLoadingMore, setDoctorLoadingMore] = useState(false);
+  const DOCTOR_PAGE_SIZE = 10;
+  const doctorBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!doctorFocused) return;
+    const onOutside = (e: MouseEvent) => {
+      if (doctorBoxRef.current && !doctorBoxRef.current.contains(e.target as Node)) setDoctorFocused(false);
+    };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [doctorFocused]);
   const [percent, setPercent] = useState('0');
   const [fixedFee, setFixedFee] = useState('0');
   const [note, setNote] = useState('');
@@ -53,17 +71,39 @@ export default function CommissionRulesPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
-    if (!doctorQuery.trim() || serviceType !== 'CONSULTATION') { setDoctorHits([]); return; }
+    if (serviceType !== 'CONSULTATION') { setDoctorHits([]); return; }
     const timer = setTimeout(() => {
-      fetch(`/api/doctors?search=${encodeURIComponent(doctorQuery)}`)
+      const skip = doctorPage * DOCTOR_PAGE_SIZE;
+      fetch(`/api/doctors?search=${encodeURIComponent(doctorQuery)}&skip=${skip}&limit=${DOCTOR_PAGE_SIZE}`)
         .then(r => r.json())
-        .then(d => setDoctorHits((d.doctors ?? []).slice(0, 6)));
-    }, 300);
+        .then(d => {
+          const batch: Hit[] = d.doctors ?? [];
+          setDoctorHits(prev => doctorPage === 0 ? batch : [...prev, ...batch]);
+          setDoctorHasMore(batch.length === DOCTOR_PAGE_SIZE);
+          setDoctorLoadingMore(false);
+        });
+    }, doctorPage === 0 && doctorQuery.trim() ? 300 : 0);
     return () => clearTimeout(timer);
-  }, [doctorQuery, serviceType]);
+  }, [doctorQuery, serviceType, doctorPage]);
+
+  const handleDoctorSearch = (v: string) => {
+    setDoctorQuery(v);
+    setDoctorPage(0);
+    setDoctorHasMore(true);
+  };
+
+  const handleDoctorScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (doctorLoadingMore || !doctorHasMore) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
+      setDoctorLoadingMore(true);
+      setDoctorPage(p => p + 1);
+    }
+  };
 
   const resetForm = () => {
-    setServiceType('CONSULTATION'); setDoctorQuery(''); setDoctorHits([]); setDoctorId(null); setDoctorName('');
+    setServiceType('CONSULTATION'); setDoctorQuery(''); setDoctorId(null); setDoctorName('');
+    if (doctorPage !== 0) { setDoctorPage(0); setDoctorHasMore(true); }
     setPaymentMethod(''); setPercent('0'); setFixedFee('0'); setNote(''); setError('');
   };
 
@@ -99,6 +139,13 @@ export default function CommissionRulesPage() {
 
   const handleDelete = async (rule: Rule) => {
     setBusyId(rule.id);
+    if (role === 'POS_ADMIN') {
+      const label = `${rule.serviceType === 'CONSULTATION' ? 'Consultation' : 'Product'} — ${rule.doctor?.name ?? rule.clinic?.name ?? 'All'} (${rule.percent}%)`;
+      const ok = await requestDeletion('CommissionRule', rule.id, label);
+      setBusyId(null);
+      alert(ok ? 'Deletion request submitted — waiting for Super Admin approval.' : 'Failed to submit deletion request.');
+      return;
+    }
     await fetch(`/api/admin/finance/rules/${rule.id}`, { method: 'DELETE' });
     setBusyId(null); load();
   };
@@ -127,8 +174,10 @@ export default function CommissionRulesPage() {
               <option value="CONSULTATION">Consultation</option>
               <option value="PRODUCT">Product</option>
             </select>
-            <input value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}
-              placeholder="Payment method key (blank = any)" className={inp} />
+            <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className={inp}>
+              <option value="">Any payment method</option>
+              {PAYMENT_METHOD_KEYS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </select>
           </div>
 
           {serviceType === 'CONSULTATION' && (
@@ -138,19 +187,34 @@ export default function CommissionRulesPage() {
                 <button onClick={() => { setDoctorId(null); setDoctorName(''); }} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative" ref={doctorBoxRef}>
                 <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50">
                   <Search className="w-3.5 h-3.5 text-gray-300 shrink-0" />
-                  <input value={doctorQuery} onChange={e => setDoctorQuery(e.target.value)}
+                  <input value={doctorQuery} onChange={e => handleDoctorSearch(e.target.value)}
+                    onFocus={() => setDoctorFocused(true)}
                     placeholder="Search doctor (blank = applies to all doctors)"
                     className="flex-1 min-w-0 bg-transparent text-sm text-gray-700 outline-none" />
                 </div>
-                {doctorHits.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 z-20 bg-white rounded-xl border border-gray-100 shadow-lg overflow-y-auto max-h-56 py-1">
+                {doctorFocused && doctorHits.length > 0 && (
+                  <div onScroll={handleDoctorScroll}
+                    className="absolute left-0 right-0 top-full mt-1.5 z-20 bg-white rounded-xl border border-gray-100 shadow-lg overflow-y-auto max-h-64 py-1">
                     {doctorHits.map(h => (
-                      <button key={h.id} onMouseDown={() => { setDoctorId(h.id); setDoctorName(h.name); setDoctorQuery(''); setDoctorHits([]); }}
-                        className="w-full text-left px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">{h.name}</button>
+                      <button key={h.id} onMouseDown={() => { setDoctorId(h.id); setDoctorName(h.name); setDoctorQuery(''); setDoctorHits([]); setDoctorPage(0); setDoctorHasMore(true); }}
+                        className="w-full flex items-center gap-2.5 text-left px-3.5 py-2 hover:bg-gray-50">
+                        {h.imageUrl
+                          ? <img src={h.imageUrl} alt={h.name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                          : <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-400 shrink-0">{h.name[0]}</div>}
+                        <div className="min-w-0">
+                          <p className="text-sm text-gray-700 truncate">{h.name}</p>
+                          <p className="text-[11px] text-gray-400 truncate">{h.specialty}</p>
+                        </div>
+                      </button>
                     ))}
+                    {doctorLoadingMore && (
+                      <div className="flex items-center justify-center py-2">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-300" />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -207,7 +271,7 @@ export default function CommissionRulesPage() {
                 <tr key={r.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-5 py-3.5 text-sm text-gray-700">{r.serviceType === 'CONSULTATION' ? 'Consultation' : 'Product'}</td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{r.doctor?.name ?? r.clinic?.name ?? 'All'}</td>
-                  <td className="px-5 py-3.5 text-sm text-gray-500">{r.paymentMethod ?? 'Any'}</td>
+                  <td className="px-5 py-3.5 text-sm text-gray-500">{PAYMENT_METHOD_KEYS.find(m => m.id === r.paymentMethod)?.label ?? 'Any'}</td>
                   <td className="px-5 py-3.5 text-sm font-semibold text-gray-700">{r.percent}%</td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{r.fixedFee.toLocaleString()} MMK</td>
                   <td className="px-5 py-3.5">

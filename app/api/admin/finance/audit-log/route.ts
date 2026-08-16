@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── GET /api/admin/finance/audit-log?entityType=&from=&to= ── */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);

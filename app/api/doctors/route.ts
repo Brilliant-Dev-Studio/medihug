@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     const search    = searchParams.get('search')    ?? '';
     const suggested = searchParams.get('suggested') ?? '';
     const limit     = parseInt(searchParams.get('limit') ?? '20');
+    const skip      = parseInt(searchParams.get('skip')  ?? '0');
 
     const where: Record<string, unknown> = { isActive: true, isAvailable: true };
 
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
         where,
         include: { slots: { orderBy: { dayOfWeek: 'asc' } } },
         orderBy: { createdAt: 'asc' },
+        skip,
         take: limit,
       }),
       getPlatformSettings(),

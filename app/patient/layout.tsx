@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
-  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper, ShoppingCart,
+  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper, ShoppingCart, ChevronUp,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
@@ -41,6 +41,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const mm = lang === 'mm';
   const { count: cartCount } = useCart();
   const [scrolled, setScrolled]       = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [collapsed, setCollapsed]     = useState(false);
   const [langOpen, setLangOpen]       = useState(false);
   const [todayStr, setTodayStr]       = useState('');
@@ -81,12 +82,18 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     setScrolled(false);
+    setShowScrollTop(false);
     const el = scrollRef.current;
     if (!el) return;
-    const onScroll = () => setScrolled(el.scrollTop > 50);
+    const onScroll = () => {
+      setScrolled(el.scrollTop > 50);
+      setShowScrollTop(el.scrollTop > 400);
+    };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, [pathname]);
+
+  const scrollToTop = () => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Video call room renders full-screen — skip the portal chrome entirely.
   if (pathname.endsWith('/call')) return <><IncomingCallRing />{children}</>;
@@ -262,6 +269,15 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
           <main className="flex-1">{children}</main>
         </div>
+
+        {/* Scroll-to-top */}
+        {showScrollTop && (
+          <button onClick={scrollToTop} aria-label="Scroll to top"
+            className="lg:hidden fixed bottom-20 left-4 z-40 w-10 h-10 rounded-full shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform"
+            style={{ backgroundColor: PRIMARY }}>
+            <ChevronUp className="w-4.5 h-4.5" />
+          </button>
+        )}
 
         {/* Desktop top bar */}
         <div className="hidden lg:flex items-center justify-between px-6 py-3 bg-white border-b border-gray-100 shrink-0 print:hidden">

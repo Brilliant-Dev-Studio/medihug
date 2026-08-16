@@ -27,7 +27,7 @@ const DEFAULT_CATEGORIES: { name: string; type: 'FIXED' | 'VARIABLE' | 'ONE_TIME
 
 /* ── GET /api/admin/finance/expense-categories ── */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const count = await db.expenseCategory.count();
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/admin/finance/expense-categories ── */
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

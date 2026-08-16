@@ -5,7 +5,7 @@ import { logAudit } from '@/lib/audit';
 
 /* ── DELETE /api/admin/finance/expenses/[id] ── */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.delete');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;

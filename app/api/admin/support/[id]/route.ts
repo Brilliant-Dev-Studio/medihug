@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── GET /api/admin/support/[id] — full thread, marks admin-unread as read ── */
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'support.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const convo = await db.supportConversation.findUnique({
@@ -27,6 +31,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 /* ── POST /api/admin/support/[id] — admin reply ── */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'support.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const { body } = await req.json();

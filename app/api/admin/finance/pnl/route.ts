@@ -19,7 +19,7 @@ function rangeStart(range: Range): Date {
    Revenue - payout - gateway fees - expenses = net profit, plus service/partner
    profitability breakdowns. Only COMPLETED appointments/orders count as realized revenue. */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

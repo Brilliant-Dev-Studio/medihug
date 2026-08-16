@@ -12,16 +12,17 @@ import {
 import { useLang } from '../../lib/LanguageContext';
 import { useCart } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
+import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 
-const PAYMENT_METHODS = [
-  { id: 'kpay',    img: '/payment/Kpay.jpg',      label: 'KPay',     number: '09 xxx xxx xxx' },
-  { id: 'wavepay', img: '/payment/waveMoney.png', label: 'Wave Pay', number: '09 xxx xxx xxx' },
-  { id: 'aya',     img: '/payment/ayaPay.png',    label: 'AYA Pay',  number: '09 xxx xxx xxx' },
-  { id: 'cb',      img: '/payment/cbPay.jpg',     label: 'CB Pay',   number: '09 xxx xxx xxx' },
-];
+const PAYMENT_METHOD_IMG: Record<string, string> = {
+  kpay: '/payment/Kpay.jpg', wavepay: '/payment/waveMoney.png', aya: '/payment/ayaPay.png', cb: '/payment/cbPay.jpg',
+};
+const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
+  id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: '09 xxx xxx xxx',
+}));
 
 interface Product { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; packSize: string | null; }
 

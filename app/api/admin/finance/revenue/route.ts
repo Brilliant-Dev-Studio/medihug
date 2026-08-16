@@ -6,7 +6,7 @@ import { logAudit } from '@/lib/audit';
 
 /* ── GET /api/admin/finance/revenue?serviceType=&from=&to= ── */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/admin/finance/revenue ── */
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

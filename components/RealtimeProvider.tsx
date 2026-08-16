@@ -94,6 +94,11 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
 
   useEffect(() => {
     if (role === 'patient' && !phone) return;
+    // experimental_upgradeWebSocket only works on an actual Vercel deployment (Fluid Compute
+    // runtime) — the local dev server has no shim for it, so the connection can never succeed.
+    // Skip it entirely on localhost instead of spamming reconnect attempts + console errors.
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return;
 
     const audio = new Audio('/mixkit-happy-bells-notification-937.wav');
     audio.preload = 'auto';

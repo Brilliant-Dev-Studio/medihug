@@ -13,7 +13,7 @@ function monthBounds(month: string) {
 /* ── GET /api/admin/finance/budgets?month=YYYY-MM ──
    Every expense category joined with that month's budget (0 if unset) and actual spend. */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const month = req.nextUrl.searchParams.get('month') ?? new Date().toISOString().slice(0, 7);
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/admin/finance/budgets ── */
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

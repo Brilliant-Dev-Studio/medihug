@@ -45,6 +45,7 @@ interface Clinic {
   type: string;
   doctors: ClinicDoctor[];
   products: ClinicProduct[];
+  branches: { id: string; title: string; titleEn: string | null; address: string; addressEn: string | null; mapUrl: string | null }[];
 }
 
 /* ─── skeleton ─── */
@@ -122,7 +123,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
   const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/admin/clinics/${id}`)
+    fetch(`/api/clinics/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(d => { setClinic(d.clinic); setLoading(false); })
       .catch(() => { setClinic(null); setLoading(false); });
@@ -335,6 +336,39 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                 {mm ? 'Google Maps တွင် ဖွင့်ရန်' : 'Open in Google Maps'}
               </span>
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* ── branches ── */}
+      {clinic.branches.length > 0 && (
+        <div className="px-4 mt-4 lg:max-w-5xl lg:mx-auto lg:px-6">
+          <SectionHeader
+            icon={<MapPin className="w-4 h-4" style={{ color: PRIMARY }} />}
+            label={mm ? 'ဆိုင်ခွဲများ' : 'Branches'}
+            count={clinic.branches.length}
+            unit={mm ? 'ခု' : 'branches'}
+          />
+          <div className="flex flex-col gap-2.5">
+            {clinic.branches.map(b => {
+              const bTitle = mm ? b.title : (b.titleEn ?? b.title);
+              const bAddress = mm ? b.address : (b.addressEn ?? b.address);
+              return (
+                <a key={b.id}
+                  href={b.mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(bAddress)}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 bg-white rounded-2xl border border-gray-100 px-4 py-3 hover:border-gray-200 transition-colors">
+                  <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                    <MapPin className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-800 truncate">{bTitle}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{bAddress}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                </a>
+              );
+            })}
           </div>
         </div>
       )}

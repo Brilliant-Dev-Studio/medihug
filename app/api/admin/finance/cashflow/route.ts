@@ -19,7 +19,7 @@ function rangeStart(range: Range): Date {
    (doctor payouts + expenses + refunds), with a running cumulative balance
    across the selected range — distinct from P&L's accrual profit view. */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

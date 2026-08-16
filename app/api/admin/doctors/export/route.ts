@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { toCsv } from '@/lib/csv';
+import { requireAdmin } from '@/lib/adminAuth';
 
 const COLUMNS = [
   'name', 'nameEn', 'specialty', 'specialtyEn', 'phone', 'phoneSecondary', 'viber',
@@ -10,7 +11,10 @@ const COLUMNS = [
 ];
 
 /* ── GET /api/admin/doctors/export — full doctor list as a CSV download ── */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const doctors = await db.doctor.findMany({ orderBy: { createdAt: 'desc' } });
 

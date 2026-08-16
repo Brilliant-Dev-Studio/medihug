@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { effectiveCommissionPercent, computePatientPrice, getPlatformSettings } from '@/lib/commission';
+import { requireAdmin } from '@/lib/adminAuth';
 
 const INCLUDE = {
   doctors: {
@@ -23,6 +24,7 @@ const INCLUDE = {
   },
   _count: { select: { doctors: true } },
   owner: { select: { id: true, phone: true, isActive: true } },
+  branches: { orderBy: { order: 'asc' as const } },
 };
 
 /** Adds a computed `patientPrice` to each linked doctor without touching the admin-facing raw `price`. */
@@ -41,7 +43,10 @@ async function withPatientPrices<T extends { doctors: { doctor: { price: number;
 }
 
 /* ── GET /api/admin/clinics/[id] ── */
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const clinic = await db.clinic.findUnique({ where: { id }, include: INCLUDE });
@@ -55,13 +60,33 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
 /* ── PATCH /api/admin/clinics/[id] ── */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id }  = await params;
     const body    = await req.json();
-    const { id: _id, createdAt, updatedAt, doctors, products, _count, ...clinicData } = body;
+    const { id: _id, createdAt, updatedAt, doctors, products, branches, _count, ...clinicData } = body;
     void _id; void createdAt; void updatedAt; void _count;
 
     await db.clinic.update({ where: { id }, data: clinicData });
+
+    if (branches !== undefined) {
+      await db.clinicBranch.deleteMany({ where: { clinicId: id } });
+      if (branches.length > 0) {
+        await db.clinicBranch.createMany({
+          data: branches.map((b: { title: string; titleEn?: string; address: string; addressEn?: string; mapUrl?: string }, i: number) => ({
+            clinicId:  id,
+            title:     b.title,
+            titleEn:   b.titleEn || null,
+            address:   b.address,
+            addressEn: b.addressEn || null,
+            mapUrl:    b.mapUrl || null,
+            order:     i,
+          })),
+        });
+      }
+    }
 
     if (doctors !== undefined) {
       await db.clinicDoctor.deleteMany({ where: { clinicId: id } });
@@ -93,7 +118,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 /* ── DELETE /api/admin/clinics/[id] ── */
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     await db.clinic.update({ where: { id }, data: { isActive: false } });

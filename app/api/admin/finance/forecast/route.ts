@@ -8,7 +8,7 @@ const MONTHS_BACK = 3;
    Naive 3-month moving-average projection for next month, plus break-even revenue
    based on current average margin. */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const now = new Date();

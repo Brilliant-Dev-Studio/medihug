@@ -13,7 +13,7 @@ function dayBounds(dateStr: string) {
 /* ── GET /api/admin/finance/reconciliation?date=YYYY-MM-DD ──
    System sales per payment method for the day, joined with any saved bank-received amount. */
 export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const dateStr = req.nextUrl.searchParams.get('date') ?? new Date().toISOString().slice(0, 10);
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/admin/finance/reconciliation ── */
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

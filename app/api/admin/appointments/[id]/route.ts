@@ -6,7 +6,7 @@ import { notify } from '@/lib/notify';
 
 /* ── GET /api/admin/appointments/[id] ── */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'dashboard.view');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 /* ── PATCH /api/admin/appointments/[id] ── */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin(req, 'dashboard.view');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

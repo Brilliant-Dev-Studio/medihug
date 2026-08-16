@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signAdminToken } from '@/lib/jwt';
+import { isAdminRole } from '@/lib/permissions';
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,8 +18,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်သည် မှတ်ပုံတင်မထားပါ။' }, { status: 401 });
     }
 
-    if (user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Super Admin အခွင့်အရေး မရှိပါ။' }, { status: 403 });
+    if (!isAdminRole(user.role)) {
+      return NextResponse.json({ error: 'Admin အခွင့်အရေး မရှိပါ။' }, { status: 403 });
     }
 
     if (!user.isActive) {

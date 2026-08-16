@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
+import { ADMIN_ROLES, isAdminRole } from '@/lib/permissions';
 
-/* ── GET /api/admin/admins ── */
-export async function GET() {
+/* ── GET /api/admin/admins — list all admin-tier accounts (any role) ── */
+export async function GET(req: NextRequest) {
+  const admin = await requireAdmin(req, 'admins.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const admins = await db.user.findMany({
-      where:   { role: 'SUPER_ADMIN' },
-      select:  { id: true, name: true, phone: true, isActive: true, createdAt: true },
+      where:   { role: { in: [...ADMIN_ROLES] } },
+      select:  { id: true, name: true, phone: true, role: true, isActive: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
     });
     return NextResponse.json({ admins });
@@ -17,13 +22,19 @@ export async function GET() {
   }
 }
 
-/* ── POST /api/admin/admins ── */
+/* ── POST /api/admin/admins { name, phone, password, role } ── */
 export async function POST(req: NextRequest) {
-  try {
-    const { name, phone, password } = await req.json();
+  const admin = await requireAdmin(req, 'admins.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!name || !phone || !password) {
-      return NextResponse.json({ error: 'Name, phone, password လိုအပ်သည်။' }, { status: 400 });
+  try {
+    const { name, phone, password, role } = await req.json();
+
+    if (!name || !phone || !password || !role) {
+      return NextResponse.json({ error: 'Name, phone, password, role လိုအပ်သည်။' }, { status: 400 });
+    }
+    if (!isAdminRole(role)) {
+      return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
     }
     if (password.length < 6) {
       return NextResponse.json({ error: 'Password အနည်းဆုံး ၆ လုံး ဖြစ်ရမည်။' }, { status: 400 });
@@ -35,12 +46,12 @@ export async function POST(req: NextRequest) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const admin = await db.user.create({
-      data: { name, phone, password: hashedPassword, role: 'SUPER_ADMIN', isActive: true },
-      select: { id: true, name: true, phone: true, isActive: true, createdAt: true },
+    const created = await db.user.create({
+      data: { name, phone, password: hashedPassword, role, isActive: true },
+      select: { id: true, name: true, phone: true, role: true, isActive: true, createdAt: true },
     });
 
-    return NextResponse.json({ admin }, { status: 201 });
+    return NextResponse.json({ admin: created }, { status: 201 });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

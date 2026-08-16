@@ -9,6 +9,7 @@ import {
   Stethoscope, Package, Building2, Link2, Music2, Map, KeyRound, Search,
 } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
+import BranchEditor, { type BranchItem } from '@/components/admin/BranchEditor';
 import toast from 'react-hot-toast';
 
 const PRIMARY = '#2ab5ad';
@@ -34,6 +35,7 @@ interface Clinic {
   doctors?:  { doctor: Doctor }[];
   products?: { product: Product }[];
   owner?: { id: string; phone: string; isActive: boolean } | null;
+  branches?: { id: string; title: string; titleEn: string | null; address: string; addressEn: string | null; mapUrl: string | null }[];
 }
 
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -68,6 +70,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
 
   const [doctorSearch, setDoctorSearch]   = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [branches, setBranches] = useState<BranchItem[]>([]);
 
   const [accPhone, setAccPhone]       = useState('');
   const [accPassword, setAccPassword] = useState('');
@@ -113,6 +116,9 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       setAllDoctors(dd.doctors ?? []);
       setAllProducts(pd.products ?? []);
       setAccPhone(c.owner?.phone ?? '');
+      setBranches((c.branches ?? []).map(b => ({
+        title: b.title, titleEn: b.titleEn ?? '', address: b.address, addressEn: b.addressEn ?? '', mapUrl: b.mapUrl ?? '',
+      })));
       setLoading(false);
     });
   }, [id]);
@@ -152,6 +158,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
           tagsMm: form.tagsMm, tagsEn: form.tagsEn,
           imageUrl: form.imageUrl || null, coverUrl: form.coverUrl || null,
           verified: form.verified, isPartner: form.isPartner, isActive: form.isActive,
+          branches,
         }),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); return; }
@@ -334,6 +341,11 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
               <div><label className={lbl}>တိုင်း/ပြည်နယ်</label><input className={inp} value={form.state} onChange={e => set('state', e.target.value)} /></div>
               <div><label className={lbl}>မြို့နယ်</label><input className={inp} value={form.township} onChange={e => set('township', e.target.value)} /></div>
             </div>
+          </Section>
+
+          <Section title="Branches" icon={<MapPin size={14} />}>
+            <p className="text-xs text-gray-400 -mt-2">ဒီ partner ရဲ့ ဆိုင်ခွဲတွေ ကြိုက်သလောက်ထည့်ပါ (optional)</p>
+            <BranchEditor items={branches} onChange={setBranches} />
           </Section>
 
           <Section title="အကြောင်းအရာ">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X, Loader2, Receipt, Trash2, Tag } from 'lucide-react';
+import { useAdminRole, requestDeletion } from '@/lib/useAdminRole';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
@@ -15,6 +16,7 @@ interface Expense {
 const TYPE_LABEL: Record<Category['type'], string> = { FIXED: 'Fixed', VARIABLE: 'Variable', ONE_TIME: 'One-time' };
 
 export default function ExpensesPage() {
+  const { role } = useAdminRole();
   const [categories, setCategories] = useState<Category[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,13 @@ export default function ExpensesPage() {
 
   const handleDelete = async (e: Expense) => {
     setBusyId(e.id);
+    if (role === 'POS_ADMIN') {
+      const label = `${e.amount.toLocaleString()} MMK - ${e.description ?? e.category.name}`;
+      const ok = await requestDeletion('Expense', e.id, label);
+      setBusyId(null);
+      alert(ok ? 'Deletion request submitted — waiting for Super Admin approval.' : 'Failed to submit deletion request.');
+      return;
+    }
     await fetch(`/api/admin/finance/expenses/${e.id}`, { method: 'DELETE' });
     setBusyId(null); load(filterCategory || undefined);
   };

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── GET /api/admin/pos/overview?range=daily|monthly ──
    Platform commission profit, product sales revenue, best-selling products,
    and top doctors by booking count. Only COMPLETED appointments/orders count as realized. */
 export async function GET(req: NextRequest) {
+  const admin = await requireAdmin(req, 'pos.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const range = req.nextUrl.searchParams.get('range') === 'monthly' ? 'monthly' : 'daily';
 

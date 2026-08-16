@@ -17,7 +17,7 @@ const DECLINE_POLL_MS = 3000;
 
 interface Props {
   appointmentId: string;
-  role: 'doctor' | 'patient' | 'guest';
+  role: 'doctor' | 'patient' | 'guest' | 'moderator';
   phone?: string; // required when role === 'patient'
   displayName: string;
   peerName: string;

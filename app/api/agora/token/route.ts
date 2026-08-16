@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RtcTokenBuilder, RtcRole } from 'agora-token';
-import { verifyDoctorToken } from '@/lib/jwt';
+import { verifyDoctorToken, verifyAdminToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
+import { hasPermission } from '@/lib/permissions';
 
 const TOKEN_TTL_SECONDS = 60 * 60; // 1 hour
 
-/* ── GET /api/agora/token?appointmentId=&role=doctor|patient|guest&phone= ── */
+/* ── GET /api/agora/token?appointmentId=&role=doctor|patient|guest|moderator&phone= ── */
 export async function GET(req: NextRequest) {
   try {
     const appId = process.env.AGORA_APP_ID;
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const appointmentId = searchParams.get('appointmentId');
     const role = searchParams.get('role');
-    if (!appointmentId || (role !== 'doctor' && role !== 'patient' && role !== 'guest')) {
+    if (!appointmentId || (role !== 'doctor' && role !== 'patient' && role !== 'guest' && role !== 'moderator')) {
       return NextResponse.json({ error: 'appointmentId and role are required.' }, { status: 400 });
     }
 
@@ -41,13 +42,19 @@ export async function GET(req: NextRequest) {
       if (!phone || phone !== appointment.user.phone) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+    } else if (role === 'moderator') {
+      const token = req.cookies.get('admin_token')?.value;
+      const payload = token ? await verifyAdminToken(token) : null;
+      if (!payload || !hasPermission(payload.role, 'video.moderate')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
     // role === 'guest': anyone with the share link may join once the call is approved —
     // no identity check, matching how the link is meant to be used (family member invited
     // by the patient or doctor).
 
-    // Stable per-role uid for doctor/patient so reconnects land on the same id; guests get
-    // a random uid each time since any number of them may join via the shared link.
+    // Stable per-role uid for doctor/patient so reconnects land on the same id; moderators
+    // and guests get a random uid each time since more than one may join.
     const uid = role === 'doctor' ? 1 : role === 'patient' ? 2 : 1000 + Math.floor(Math.random() * 1_000_000);
     const channelName = appointmentId;
 

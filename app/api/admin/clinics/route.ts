@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── GET /api/admin/clinics ── */
 export async function GET(req: NextRequest) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { searchParams } = req.nextUrl;
     const search   = searchParams.get('search')   ?? '';
@@ -43,6 +47,9 @@ export async function GET(req: NextRequest) {
 
 /* ── POST /api/admin/clinics ── */
 export async function POST(req: NextRequest) {
+  const admin = await requireAdmin(req, 'partners.manage');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const body = await req.json();
     const {
@@ -90,6 +97,21 @@ export async function POST(req: NextRequest) {
       await db.clinicDoctor.createMany({
         data: doctorIds.map((doctorId: string) => ({ clinicId: clinic.id, doctorId })),
         skipDuplicates: true,
+      });
+    }
+
+    const { branches } = body;
+    if (Array.isArray(branches) && branches.length > 0) {
+      await db.clinicBranch.createMany({
+        data: branches.map((b: { title: string; titleEn?: string; address: string; addressEn?: string; mapUrl?: string }, i: number) => ({
+          clinicId:  clinic.id,
+          title:     b.title,
+          titleEn:   b.titleEn || null,
+          address:   b.address,
+          addressEn: b.addressEn || null,
+          mapUrl:    b.mapUrl || null,
+          order:     i,
+        })),
       });
     }
 

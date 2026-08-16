@@ -10,10 +10,11 @@ import {
   ShieldCheck, Menu, X, ChevronRight, ChevronDown, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
   Bell, CalendarClock, Headset, HeartPulse, Store,
   Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
-  ArrowLeftRight, History,
+  ArrowLeftRight, History, Trash2,
 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
+import { hasPermission, type Permission } from '@/lib/permissions';
 
 const PRIMARY = '#2ab5ad';
 const DARK    = '#1a9990';
@@ -22,9 +23,9 @@ const navGroups = [
   {
     label: 'Main',
     items: [
-      { href: '/admin/dashboard', icon: LayoutDashboard, mm: 'Dashboard',       en: 'Dashboard' },
-      { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports' },
-      { href: '/admin/pos',      icon: Store,           mm: 'POS',              en: 'POS',
+      { href: '/admin/dashboard', icon: LayoutDashboard, mm: 'Dashboard',       en: 'Dashboard', perm: 'dashboard.view' as Permission },
+      { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports', perm: 'dashboard.view' as Permission },
+      { href: '/admin/pos',      icon: Store,           mm: 'POS',              en: 'POS', perm: 'pos.manage' as Permission,
         children: [
           { href: '/admin/finance/pnl',             icon: PieChart,   mm: 'အမြတ်/အရှုံး',        en: 'P&L' },
           { href: '/admin/finance/rules',           icon: Percent,    mm: 'ကော်မရှင်စည်းမျဉ်း',   en: 'Commission Rules' },
@@ -37,37 +38,38 @@ const navGroups = [
           { href: '/admin/finance/revenue',         icon: Megaphone,  mm: 'Program/Ads ဝင်ငွေ',   en: 'Program/Ads Revenue' },
           { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',  en: 'Cash Flow' },
           { href: '/admin/finance/audit-log',       icon: History,    mm: 'မှတ်တမ်း Log',         en: 'Audit Log' },
+          { href: '/admin/deletion-requests',       icon: Trash2,     mm: 'ဖျက်ရန် တောင်းဆိုမှုများ', en: 'Deletion Requests', perm: 'pos.delete' as Permission },
         ],
       },
       { href: '/admin/notifications', icon: Bell,        mm: 'အသိပေးချက်များ',   en: 'Notifications' },
-      { href: '/admin/support',   icon: Headset,         mm: 'Customer Support',  en: 'Customer Support' },
-      { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients' },
-      { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors' },
-      { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments' },
-      { href: '/admin/orders',       icon: ShoppingBag,  mm: 'အော်ဒါများ',       en: 'Orders' },
-      { href: '/admin/custom-time-requests', icon: CalendarClock, mm: 'အထူးအချိန်တောင်းဆိုမှုများ', en: 'Custom Time Requests' },
-      { href: '/admin/clinics',       icon: Building2,    mm: 'မိတ်ဖက်များ', en: 'Partners' },
-      { href: '/admin/partner-types', icon: Tags,         mm: 'မိတ်ဖက် အမျိုးအစားများ',    en: 'Partner Types' },
-      { href: '/admin/specialties',   icon: Tags,         mm: 'အထူးကုဌာနများ',              en: 'Specialties' },
+      { href: '/admin/support',   icon: Headset,         mm: 'Customer Support',  en: 'Customer Support', perm: 'support.manage' as Permission },
+      { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients', perm: 'dashboard.view' as Permission },
+      { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors', perm: 'partners.manage' as Permission },
+      { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments', perm: 'dashboard.view' as Permission },
+      { href: '/admin/orders',       icon: ShoppingBag,  mm: 'အော်ဒါများ',       en: 'Orders', perm: 'pos.manage' as Permission },
+      { href: '/admin/custom-time-requests', icon: CalendarClock, mm: 'အထူးအချိန်တောင်းဆိုမှုများ', en: 'Custom Time Requests', perm: 'dashboard.view' as Permission },
+      { href: '/admin/clinics',       icon: Building2,    mm: 'မိတ်ဖက်များ', en: 'Partners', perm: 'partners.manage' as Permission },
+      { href: '/admin/partner-types', icon: Tags,         mm: 'မိတ်ဖက် အမျိုးအစားများ',    en: 'Partner Types', perm: 'partners.manage' as Permission },
+      { href: '/admin/specialties',   icon: Tags,         mm: 'အထူးကုဌာနများ',              en: 'Specialties', perm: 'partners.manage' as Permission },
     ],
   },
   {
     label: 'Content',
     items: [
-      { href: '/admin/products',            icon: ShoppingBag, mm: 'ကုန်ပစ္စည်းများ',  en: 'Products' },
-      { href: '/admin/product-categories', icon: Layers,      mm: 'Category',           en: 'Categories' },
-      { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs' },
-      { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories' },
-      { href: '/admin/healthcare-programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်များ', en: 'Healthcare Programs' },
-      { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers' },
-      { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads' },
-      { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records' },
+      { href: '/admin/products',            icon: ShoppingBag, mm: 'ကုန်ပစ္စည်းများ',  en: 'Products', perm: 'dashboard.view' as Permission },
+      { href: '/admin/product-categories', icon: Layers,      mm: 'Category',           en: 'Categories', perm: 'dashboard.view' as Permission },
+      { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs', perm: 'dashboard.view' as Permission },
+      { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories', perm: 'dashboard.view' as Permission },
+      { href: '/admin/healthcare-programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်များ', en: 'Healthcare Programs', perm: 'dashboard.view' as Permission },
+      { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers', perm: 'dashboard.view' as Permission },
+      { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads', perm: 'dashboard.view' as Permission },
+      { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records', perm: 'dashboard.view' as Permission },
     ],
   },
   {
     label: 'System',
     items: [
-      { href: '/admin/settings',  icon: Settings,        mm: 'ဆက်တင်',           en: 'Settings' },
+      { href: '/admin/settings',  icon: Settings,        mm: 'ဆက်တင်',           en: 'Settings', perm: 'admins.manage' as Permission },
     ],
   },
 ];
@@ -78,9 +80,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [open, setOpen]     = useState(false);
   const [supportUnread, setSupportUnread] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [role, setRole]     = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
     if (pathname === '/admin/login') return;
+    fetch('/api/admin/me').then(r => r.json()).then(d => {
+      setRole(d.admin?.role ?? null);
+      setRoleLoading(false);
+    }).catch(() => setRoleLoading(false));
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname === '/admin/login') return;
+    if (!role || !hasPermission(role, 'support.manage')) return;
     let cancelled = false;
     async function poll() {
       if (document.hidden) return;
@@ -94,7 +107,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const interval = setInterval(poll, 10000);
     document.addEventListener('visibilitychange', poll);
     return () => { cancelled = true; clearInterval(interval); document.removeEventListener('visibilitychange', poll); };
-  }, [pathname]);
+  }, [pathname, role]);
+
+  useEffect(() => {
+    if (pathname === '/admin/login' || roleLoading) return;
+    if (role === 'MODERATOR' && !pathname.startsWith('/admin/moderate')) {
+      router.replace('/admin/moderate');
+    }
+  }, [pathname, role, roleLoading, router]);
+
+  const visibleNavGroups = navGroups
+    .map(g => ({
+      ...g,
+      items: g.items
+        .filter(item => !item.perm || !role || hasPermission(role, item.perm))
+        .map(item => ('children' in item && item.children)
+          ? { ...item, children: item.children.filter(c => !('perm' in c) || !role || hasPermission(role, (c as { perm: Permission }).perm)) }
+          : item),
+    }))
+    .filter(g => g.items.length > 0);
 
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -123,7 +154,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto flex flex-col gap-5">
-        {navGroups.map(group => (
+        {visibleNavGroups.map(group => (
           <div key={group.label}>
             <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest px-3 mb-1.5">{group.label}</p>
             {group.items.map(item => {

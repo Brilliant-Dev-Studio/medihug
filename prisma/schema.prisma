@@ -15,7 +15,18 @@ enum Role {
   PATIENT
   DOCTOR
   SUPER_ADMIN
+  CO_ADMIN
   PARTNER
+  PARTNER_MANAGER
+  POS_ADMIN
+  SUPPORT_ADMIN
+  MODERATOR
+}
+
+enum DeletionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum Gender {
@@ -72,6 +83,8 @@ model User {
   orders              Order[]
   clinicReferrals     ClinicReferral[]
   notifications       Notification[]
+  deletionRequestsMade     DeletionRequest[] @relation("DeletionRequester")
+  deletionRequestsReviewed DeletionRequest[] @relation("DeletionReviewer")
 }
 
 // ─────────────────────────────────────────────
@@ -214,6 +227,7 @@ model Clinic {
   referrals    ClinicReferral[]
   products     ClinicProduct[]
   gallery      ClinicGallery[]
+  branches     ClinicBranch[]
   loginLogs    ClinicLoginLog[]
   commissionRules CommissionRule[]
   revenueEntries  RevenueEntry[]
@@ -244,6 +258,24 @@ model ClinicGallery {
   createdAt DateTime @default(now())
 
   clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+}
+
+// A partner clinic can have any number of branches (dynamic — super admin adds/removes
+// as many as needed), each with its own title + address.
+model ClinicBranch {
+  id        String   @id @default(cuid())
+  clinicId  String
+  title     String
+  titleEn   String?
+  address   String
+  addressEn String?
+  mapUrl    String?
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId])
 }
 
 model ClinicDoctor {
@@ -685,6 +717,29 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Deletion requests — POS_ADMIN has no direct delete rights in POS/Finance;
+// a delete becomes a request here that SUPER_ADMIN/CO_ADMIN must approve.
+// ─────────────────────────────────────────────
+
+model DeletionRequest {
+  id          String                 @id @default(cuid())
+  entityType  String
+  entityId    String
+  entityLabel String?
+  requestedBy String
+  reason      String?
+  status      DeletionRequestStatus  @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime               @default(now())
+
+  requester User  @relation("DeletionRequester", fields: [requestedBy], references: [id])
+  reviewer  User? @relation("DeletionReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([status])
 }
 
 // ─────────────────────────────────────────────

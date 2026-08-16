@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── GET /api/admin/users/[id] ── */
-export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'dashboard.view');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const user = await db.user.findUnique({
@@ -29,7 +33,10 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 }
 
 /* ── DELETE /api/admin/users/[id] — hard delete patient account ── */
-export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin(req, 'dashboard.view');
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { id } = await params;
     const user = await db.user.findUnique({ where: { id, role: 'PATIENT' }, select: { id: true } });

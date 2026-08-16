@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X, Loader2, CreditCard, Trash2, Ban, Save } from 'lucide-react';
+import { useAdminRole, requestDeletion } from '@/lib/useAdminRole';
+import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
@@ -11,6 +13,7 @@ interface Method {
 }
 
 export default function PaymentMethodsPage() {
+  const { role } = useAdminRole();
   const [methods, setMethods] = useState<Method[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -21,6 +24,9 @@ export default function PaymentMethodsPage() {
   const [label, setLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const configuredKeys = new Set(methods.map(m => m.key));
+  const availableKeys = PAYMENT_METHOD_KEYS.filter(m => !configuredKeys.has(m.id));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,6 +75,12 @@ export default function PaymentMethodsPage() {
 
   const handleDelete = async (m: Method) => {
     setBusyId(m.id);
+    if (role === 'POS_ADMIN') {
+      const ok = await requestDeletion('PaymentMethodConfig', m.id, `${m.label} (${m.key})`);
+      setBusyId(null);
+      alert(ok ? 'Deletion request submitted — waiting for Super Admin approval.' : 'Failed to submit deletion request.');
+      return;
+    }
     await fetch(`/api/admin/finance/payment-methods/${m.id}`, { method: 'DELETE' });
     setBusyId(null); load();
   };
@@ -80,20 +92,29 @@ export default function PaymentMethodsPage() {
           <h1 className="text-xl font-bold text-gray-800">Payment Methods</h1>
           <p className="text-sm text-gray-400 mt-0.5">Gateway fee % / fixed fee per payment method, used for P&amp;L cost calculation.</p>
         </div>
-        {!creating && (
-          <button onClick={() => { setCreating(true); setError(''); }}
+        {!creating && availableKeys.length > 0 && (
+          <button onClick={() => { setCreating(true); setError(''); setKey(availableKeys[0].id); setLabel(availableKeys[0].label); }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white" style={{ backgroundColor: PRIMARY }}>
             <Plus className="w-4 h-4" /> New Method
           </button>
+        )}
+        {!creating && availableKeys.length === 0 && (
+          <span className="text-xs text-gray-400">Payment method အားလုံး ဖွင့်ထားပြီးပါပြီ</span>
         )}
       </div>
 
       {creating && (
         <div className="bg-white rounded-2xl border-2 p-4 flex flex-col gap-3" style={{ borderColor: PRIMARY }}>
           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PRIMARY }}>New Payment Method</p>
+          <p className="text-xs text-gray-400 -mt-1">Patient booking form ထဲက payment method တွေနဲ့ တူညီအောင် dropdown ကနေသာ ရွေးပါ — key/label ကို လွတ်လပ်စွာ ရိုက်လို့ မရပါ။</p>
           <div className="flex gap-2">
-            <input value={key} onChange={e => setKey(e.target.value)} placeholder="key (e.g. mmqr, bank, cash)" className={inp} />
-            <input value={label} onChange={e => setLabel(e.target.value)} placeholder="Label (e.g. MMQR)" className={inp} />
+            <select value={key} onChange={e => {
+              const opt = PAYMENT_METHOD_KEYS.find(m => m.id === e.target.value);
+              setKey(e.target.value);
+              if (opt) setLabel(opt.label);
+            }} className={inp}>
+              {availableKeys.map(m => <option key={m.id} value={m.id}>{m.label} ({m.id})</option>)}
+            </select>
           </div>
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={saving}
