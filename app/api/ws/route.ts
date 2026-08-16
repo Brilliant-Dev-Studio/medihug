@@ -68,6 +68,20 @@ export async function GET(req: NextRequest) {
       subscribeLocal(channel, ws);
     }
 
+    // Idle WebSocket connections get silently dropped by some intermediary proxies/networks
+    // (no close frame ever reaches the client, so the client-side reconnect logic never fires
+    // — the socket just goes dead while still "looking" connected). A periodic ping keeps
+    // traffic flowing so those proxies don't consider the connection idle, and if the socket
+    // is genuinely dead (no pong back for two intervals), we terminate it ourselves so the
+    // channel subscription doesn't leak and the client is forced to reconnect.
+    let lastPong = Date.now();
+    ws.on('pong', () => { lastPong = Date.now(); });
+    const pingInterval = setInterval(() => {
+      if (ws.readyState !== ws.OPEN) return;
+      if (Date.now() - lastPong > 45000) { ws.terminate(); return; }
+      ws.ping();
+    }, 20000);
+
     ws.on('message', async (data: WebSocketData) => {
       if (channel) return; // already authenticated
       try {
@@ -85,6 +99,7 @@ export async function GET(req: NextRequest) {
     });
 
     ws.on('close', () => {
+      clearInterval(pingInterval);
       if (channel) unsubscribeLocal(channel, ws);
     });
   });
