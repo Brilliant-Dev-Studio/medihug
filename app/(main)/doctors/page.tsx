@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -98,11 +98,12 @@ function SpecialtyPicker({ onPick }: { onPick: (name: string) => void }) {
 }
 
 /* ── Step 2: doctors under the chosen specialty ── */
-function DoctorsBySpecialty({ spec, onBack }: { spec: string; onBack: () => void }) {
+function DoctorsBySpecialty({ spec, highlight, onBack }: { spec: string; highlight: string; onBack: () => void }) {
   const { lang } = useLang();
   const mm = lang === 'mm';
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
+  const highlightRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -111,6 +112,11 @@ function DoctorsBySpecialty({ spec, onBack }: { spec: string; onBack: () => void
       .then(d => { setDoctors(d.doctors ?? []); setLoading(false); })
       .catch(() => setLoading(false));
   }, [spec]);
+
+  useEffect(() => {
+    if (!highlight || loading || !highlightRef.current) return;
+    highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [highlight, loading]);
 
   return (
     <div className="w-full bg-gray-50 min-h-screen">
@@ -137,9 +143,14 @@ function DoctorsBySpecialty({ spec, onBack }: { spec: string; onBack: () => void
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {doctors.map(d => {
                 const name = mm ? d.name : (d.nameEn ?? d.name);
+                const isHighlighted = d.id === highlight;
                 return (
                   <Link key={d.id} href={`/patient/doctors/${d.id}`}
-                    className="rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                    ref={isHighlighted ? highlightRef : undefined}
+                    className={`rounded-2xl border bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow ${
+                      isHighlighted ? 'border-2 ring-4' : 'border-gray-100'
+                    }`}
+                    style={isHighlighted ? { borderColor: PRIMARY, ['--tw-ring-color' as string]: `${PRIMARY}33` } : undefined}>
                     <div className="relative w-full h-48 bg-gray-50">
                       {d.imageUrl ? (
                         <Image src={d.imageUrl} alt={name} fill className="object-cover object-top" />
@@ -185,11 +196,13 @@ function DoctorsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const spec = searchParams.get('spec') ?? '';
+  const highlight = searchParams.get('highlight') ?? '';
 
   if (spec) {
     return (
       <DoctorsBySpecialty
         spec={spec}
+        highlight={highlight}
         onBack={() => router.push('/doctors')}
       />
     );

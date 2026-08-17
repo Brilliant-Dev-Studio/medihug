@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, BadgeCheck, Bookmark, ArrowRight } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { useFavorites } from '../lib/useFavorites';
@@ -31,6 +32,7 @@ function SkeletonCard() {
 
 export default function OurDoctors() {
   const scrollRef              = useRef<HTMLDivElement>(null);
+  const router                 = useRouter();
   const { tr, lang }           = useLang();
   const mm                     = lang === 'mm';
   const [doctors, setDoctors]  = useState<Doctor[]>([]);
@@ -96,7 +98,9 @@ export default function OurDoctors() {
             const favorited = favorites.has(d.id);
 
             return (
-              <div key={d.id} className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
+              <div key={d.id}
+                onClick={() => router.push(`/doctors?spec=${encodeURIComponent(d.specialty)}&highlight=${d.id}`)}
+                className="shrink-0 w-44 sm:w-72 rounded-2xl bg-white shadow-[0_2px_20px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col cursor-pointer transition-transform hover:-translate-y-0.5">
 
                 {/* Image */}
                 <div className="relative w-full aspect-4/5 overflow-hidden bg-gray-50">
@@ -125,13 +129,14 @@ export default function OurDoctors() {
 
                   <div className="flex items-center gap-2 mt-1">
                     <button
-                      onClick={() => toggleFav(d.id)}
+                      onClick={e => { e.stopPropagation(); toggleFav(d.id); }}
                       className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-full border border-gray-200 flex items-center justify-center transition-colors hover:bg-gray-50"
                     >
                       <Bookmark className="w-4 h-4" fill={favorited ? '#111827' : 'none'} stroke={favorited ? '#111827' : '#374151'} />
                     </button>
                     <Link
                       href={`/patient/doctors/${d.id}`}
+                      onClick={e => e.stopPropagation()}
                       className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-gray-900 text-white text-xs font-bold uppercase tracking-wide hover:opacity-90 transition-opacity"
                     >
                       {mm ? 'ချိန်းဆိုရန်' : 'Book Now'}
