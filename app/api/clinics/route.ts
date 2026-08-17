@@ -6,6 +6,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const limit  = parseInt(searchParams.get('limit') ?? '10');
+    const skip   = parseInt(searchParams.get('skip')  ?? '0');
     const type   = searchParams.get('type')   ?? '';
     const search = searchParams.get('search') ?? '';
 
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     const clinics = await db.clinic.findMany({
       where,
       orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
+      skip,
       take: limit,
     });
 

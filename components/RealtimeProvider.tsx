@@ -130,7 +130,13 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
         if (role === 'patient' && phone) {
           ws.send(JSON.stringify({ type: 'auth', role: 'patient', phone }));
         }
+        // Re-pull via REST on every (re)connect — catches up on anything that landed during
+        // a connection gap (Vercel recycles WS connections periodically; the client can't
+        // always tell whether it missed a push in the brief reconnect window).
+        fetchInitial();
       });
+
+      ws.addEventListener('error', (err) => console.warn('[realtime] WebSocket error:', err));
 
       ws.addEventListener('message', (e) => {
         try {
@@ -166,7 +172,7 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
     };
-  }, [role, phone]);
+  }, [role, phone, fetchInitial]);
 
   const value = useMemo(
     () => ({ notifications, unreadCount, loading, markAllRead, subscribeChatMessages }),

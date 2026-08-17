@@ -3,13 +3,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Search, Filter, ChevronLeft, ChevronRight, X,
-  Calendar, Loader2, Clock, Eye,
+  Calendar, Loader2, Clock, Eye, Video,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, STATUS_STYLE, STATUS_OPTIONS, t,
   StatusBadgeClickable, LangDropdown, type Appointment,
 } from './shared';
 import { useLang } from '../../lib/LanguageContext';
+import { useAdminRole } from '@/lib/useAdminRole';
+import { hasPermission } from '@/lib/permissions';
 
 export default function AdminAppointmentsPage() {
   const { lang } = useLang();
@@ -21,6 +23,8 @@ export default function AdminAppointmentsPage() {
   const [status,       setStatus]       = useState('');
   const [page,         setPage]         = useState(1);
   const [showFilter,   setShowFilter]   = useState(false);
+  const { role } = useAdminRole();
+  const canModerate = !!role && hasPermission(role, 'video.moderate');
   const PAGE_SIZE = 10;
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -37,6 +41,20 @@ export default function AdminAppointmentsPage() {
   }, [search, status, page]);
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+
+  // Quiet background refresh (no loading spinner) so the "Join" call button appears/disappears
+  // live as doctor/patient join or leave, without disrupting the table (search focus, etc).
+  useEffect(() => {
+    if (!canModerate) return;
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      const p = new URLSearchParams({ search, status, page: String(page), pageSize: String(PAGE_SIZE) });
+      fetch(`/api/admin/appointments?${p}`).then(r => r.json()).then(data => {
+        setAppointments(data.appointments ?? []);
+      }).catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [canModerate, search, status, page]);
 
   async function updateStatus(id: string, next: Appointment['status']) {
     setAppointments(a => a.map(x => x.id === id ? { ...x, status: next } : x));
@@ -185,11 +203,28 @@ export default function AdminAppointmentsPage() {
                     <StatusBadgeClickable status={a.status} onChanged={next => updateStatus(a.id, next)} />
                   </td>
                   <td className="px-4 py-3.5">
-                    <a href={`/admin/appointments/${a.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
-                      style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
-                      <Eye className="w-3.5 h-3.5" /> {t(mm, { mm: 'ကြည့်ရှုရန်', en: 'View' })}
-                    </a>
+                    <div className="flex items-center gap-1.5">
+                      <a href={`/admin/appointments/${a.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                        style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
+                        <Eye className="w-3.5 h-3.5" /> {t(mm, { mm: 'ကြည့်ရှုရန်', en: 'View' })}
+                      </a>
+                      {canModerate && (
+                        a.callActive ? (
+                          <a href={`/admin/moderate/${a.id}`} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-xl text-white animate-pulse"
+                            style={{ backgroundColor: '#dc2626' }}>
+                            <Video className="w-3.5 h-3.5" /> {t(mm, { mm: 'ဝင်ရောက်ရန်', en: 'Join' })}
+                          </a>
+                        ) : (
+                          <span title={t(mm, { mm: 'Call live မဖြစ်သေးပါ', en: 'No live call right now' })}
+                            className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-xl text-white opacity-30 cursor-not-allowed select-none"
+                            style={{ backgroundColor: '#dc2626' }}>
+                            <Video className="w-3.5 h-3.5" /> {t(mm, { mm: 'ဝင်ရောက်ရန်', en: 'Join' })}
+                          </span>
+                        )
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

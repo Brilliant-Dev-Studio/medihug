@@ -32,6 +32,15 @@ function fmtCountdown(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function setCallActive(appointmentId: string, role: Props['role'], phone: string | undefined, active: boolean) {
+  if (role !== 'doctor' && role !== 'patient') return;
+  fetch(`/api/appointments/${appointmentId}/call-status`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active, role, phone }),
+    keepalive: !active, // leaving fires from a cleanup/unmount — keepalive lets it survive page teardown
+  }).catch(() => {});
+}
+
 export default function VideoCallRoom({ appointmentId, role, phone, displayName, peerName, backHref, shareable, patientRecord }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
@@ -104,6 +113,7 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
         await client.publish([audioTrack, videoTrack]);
 
         setStatus('connected');
+        setCallActive(appointmentId, role, phone, true);
       } catch (err) {
         console.error('Video call join failed:', err);
         if (!cancelled) {
@@ -120,6 +130,7 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
       audioTrackRef.current?.close();
       videoTrackRef.current?.close();
       clientRef.current?.leave().catch(() => {});
+      setCallActive(appointmentId, role, phone, false);
     };
   }, [appointmentId, role, phone]);
 

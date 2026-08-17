@@ -39,6 +39,7 @@ export interface Appointment {
   unreadPatientChat?: boolean;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctorApproved: boolean;
+  callActive?: boolean;
   createdAt: string;
   user:   { name: string; phone: string; profileImage?: string | null };
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };

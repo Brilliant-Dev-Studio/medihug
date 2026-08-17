@@ -329,6 +329,7 @@ model Appointment {
   doctorApproved Boolean          @default(false)
   callRinging   Boolean           @default(false)
   callDeclined  Boolean           @default(false)
+  callActive    Boolean           @default(false) // true while doctor+patient are both actually in the video call — drives the admin "Join" button
   unreadDoctorChat  Boolean   @default(false) // new patient message doctor hasn't seen
   unreadPatientChat Boolean   @default(false) // new doctor message patient hasn't seen
   lastChatMessageAt DateTime?

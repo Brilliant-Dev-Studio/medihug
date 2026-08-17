@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Check, X, Loader2, Megaphone, Search } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
@@ -27,6 +27,21 @@ export default function RevenuePage() {
   const [clinicHits, setClinicHits] = useState<ClinicHit[]>([]);
   const [clinicId, setClinicId] = useState<string | null>(null);
   const [clinicName, setClinicName] = useState('');
+  const [clinicFocused, setClinicFocused] = useState(false);
+  const [clinicPage, setClinicPage] = useState(0);
+  const [clinicHasMore, setClinicHasMore] = useState(true);
+  const [clinicLoadingMore, setClinicLoadingMore] = useState(false);
+  const CLINIC_PAGE_SIZE = 10;
+  const clinicBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!clinicFocused) return;
+    const onOutside = (e: MouseEvent) => {
+      if (clinicBoxRef.current && !clinicBoxRef.current.contains(e.target as Node)) setClinicFocused(false);
+    };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [clinicFocused]);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -43,18 +58,39 @@ export default function RevenuePage() {
   useEffect(() => { load(filterType || undefined); }, [load, filterType]);
 
   useEffect(() => {
-    if (!clinicQuery.trim()) { setClinicHits([]); return; }
     const timer = setTimeout(() => {
-      fetch(`/api/clinics?search=${encodeURIComponent(clinicQuery)}`)
+      const skip = clinicPage * CLINIC_PAGE_SIZE;
+      fetch(`/api/clinics?search=${encodeURIComponent(clinicQuery)}&skip=${skip}&limit=${CLINIC_PAGE_SIZE}`)
         .then(r => r.json())
-        .then(d => setClinicHits((d.clinics ?? []).slice(0, 6)));
-    }, 300);
+        .then(d => {
+          const batch: ClinicHit[] = d.clinics ?? [];
+          setClinicHits(prev => clinicPage === 0 ? batch : [...prev, ...batch]);
+          setClinicHasMore(batch.length === CLINIC_PAGE_SIZE);
+          setClinicLoadingMore(false);
+        });
+    }, clinicPage === 0 && clinicQuery.trim() ? 300 : 0);
     return () => clearTimeout(timer);
-  }, [clinicQuery]);
+  }, [clinicQuery, clinicPage]);
+
+  const handleClinicSearch = (v: string) => {
+    setClinicQuery(v);
+    setClinicPage(0);
+    setClinicHasMore(true);
+  };
+
+  const handleClinicScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (clinicLoadingMore || !clinicHasMore) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
+      setClinicLoadingMore(true);
+      setClinicPage(p => p + 1);
+    }
+  };
 
   const resetForm = () => {
     setServiceType('PROGRAM'); setAmount(''); setDescription('');
-    setClinicQuery(''); setClinicHits([]); setClinicId(null); setClinicName('');
+    setClinicQuery(''); setClinicId(null); setClinicName('');
+    if (clinicPage !== 0) { setClinicPage(0); setClinicHasMore(true); }
     setDate(new Date().toISOString().slice(0, 10)); setError('');
   };
 
@@ -107,19 +143,27 @@ export default function RevenuePage() {
               <button onClick={() => { setClinicId(null); setClinicName(''); }} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
             </div>
           ) : (
-            <div className="relative">
+            <div className="relative" ref={clinicBoxRef}>
               <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50">
                 <Search className="w-3.5 h-3.5 text-gray-300 shrink-0" />
-                <input value={clinicQuery} onChange={e => setClinicQuery(e.target.value)}
+                <input value={clinicQuery} onChange={e => handleClinicSearch(e.target.value)}
+                  onFocus={() => setClinicFocused(true)}
                   placeholder="Search partner clinic (blank = 100% platform revenue)"
                   className="flex-1 min-w-0 bg-transparent text-sm text-gray-700 outline-none" />
               </div>
-              {clinicHits.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 z-20 bg-white rounded-xl border border-gray-100 shadow-lg overflow-y-auto max-h-56 py-1">
+              {clinicFocused && clinicHits.length > 0 && (
+                <div onScroll={handleClinicScroll}
+                  className="absolute left-0 right-0 top-full mt-1.5 z-20 bg-white rounded-xl border border-gray-100 shadow-lg overflow-y-auto max-h-64 py-1">
                   {clinicHits.map(h => (
-                    <button key={h.id} onMouseDown={() => { setClinicId(h.id); setClinicName(h.name); setClinicQuery(''); setClinicHits([]); }}
+                    <button key={h.id}
+                      onMouseDown={() => { setClinicId(h.id); setClinicName(h.name); setClinicQuery(''); setClinicHits([]); setClinicPage(0); setClinicHasMore(true); }}
                       className="w-full text-left px-3.5 py-2 text-sm text-gray-700 hover:bg-gray-50">{h.name}</button>
                   ))}
+                  {clinicLoadingMore && (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-300" />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
