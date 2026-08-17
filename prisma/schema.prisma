@@ -743,6 +743,17 @@ model DeletionRequest {
   @@index([status])
 }
 
+model PasswordResetOtp {
+  id        String   @id @default(cuid())
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
 // ─────────────────────────────────────────────
 // Finance v2 — commission rule engine, payment method fees,
 // expense tracking (P&L phase 1)

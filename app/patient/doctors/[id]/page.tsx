@@ -668,11 +668,6 @@ export default function DoctorDetailPage() {
                 <p className="text-white font-bold text-base leading-tight">{displayName}</p>
                 <p className="text-white/80 text-xs mt-0.5">{doctor.specialty}</p>
               </div>
-              {doctor.isAvailable && (
-                <span className="absolute top-3 right-3 text-[10px] font-bold text-white px-2 py-0.5 rounded-full" style={{ backgroundColor: '#22c55e' }}>
-                  {mm ? 'အွန်လိုင်း' : 'Online'}
-                </span>
-              )}
             </div>
             <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
               {[

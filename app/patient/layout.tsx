@@ -97,19 +97,17 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   const scrollToTop = () => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
-  // Personal-data pages require a real session; doctor/product browsing stays public.
-  const PERSONAL_PREFIXES = ['/patient/dashboard', '/patient/appointments', '/patient/settings', '/patient/cart', '/patient/checkout'];
+  // No session → whole portal blocked, no exceptions.
   useEffect(() => {
     if (!authChecked || patientPhone) return;
-    if (PERSONAL_PREFIXES.some(p => pathname === p || pathname.startsWith(p + '/'))) {
-      router.replace('/signin');
-    }
-  }, [authChecked, patientPhone, pathname, router]);
+    router.replace('/signin');
+  }, [authChecked, patientPhone, router]);
 
   // Video call room renders full-screen — skip the portal chrome entirely.
   if (pathname.endsWith('/call')) return <><IncomingCallRing />{children}</>;
 
-  const isAuthed = authChecked && !!patientPhone;
+  // No session → don't render portal at all (redirect handled above).
+  if (!authChecked || !patientPhone) return null;
 
   const sidebarW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
@@ -210,42 +208,28 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
         {/* User + Sign Out */}
         <div className="px-2 py-4 border-t border-gray-100 flex flex-col gap-1">
-          {isAuthed ? (
-            <>
-              {!collapsed && (
-                <div className="flex items-center gap-3 px-3 py-2.5">
-                  <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: PRIMARY }}>{patientName || 'Patient User'}</p>
-                    <p className="text-xs text-gray-400">PATIENT</p>
-                  </div>
-                </div>
-              )}
-              {collapsed && (
-                <div className="flex justify-center py-1">
-                  <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
-                </div>
-              )}
-              <button
-                onClick={() => { localStorage.removeItem('medihug_patient'); router.replace('/signin'); }}
-                title={collapsed ? (mm ? 'ထွက်ရန်' : 'Sign Out') : undefined}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all ${collapsed ? 'justify-center' : ''}`}
-              >
-                <LogOut style={{ width: 18, height: 18, flexShrink: 0 }} />
-                {!collapsed && <span>{mm ? 'ထွက်ရန်' : 'Sign Out'}</span>}
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/signin"
-              title={collapsed ? (mm ? 'အကောင့်ဝင်ရန်' : 'Sign In') : undefined}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-white transition-all ${collapsed ? 'justify-center' : ''}`}
-              style={{ backgroundColor: PRIMARY }}
-            >
-              <UserCircle style={{ width: 18, height: 18, flexShrink: 0 }} />
-              {!collapsed && <span>{mm ? 'အကောင့်ဝင်ရန်' : 'Sign In'}</span>}
-            </Link>
+          {!collapsed && (
+            <div className="flex items-center gap-3 px-3 py-2.5">
+              <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: PRIMARY }}>{patientName || 'Patient User'}</p>
+                <p className="text-xs text-gray-400">PATIENT</p>
+              </div>
+            </div>
           )}
+          {collapsed && (
+            <div className="flex justify-center py-1">
+              <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-9 h-9 rounded-full text-white text-sm" />
+            </div>
+          )}
+          <button
+            onClick={() => { localStorage.removeItem('medihug_patient'); router.replace('/signin'); }}
+            title={collapsed ? (mm ? 'ထွက်ရန်' : 'Sign Out') : undefined}
+            className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all ${collapsed ? 'justify-center' : ''}`}
+          >
+            <LogOut style={{ width: 18, height: 18, flexShrink: 0 }} />
+            {!collapsed && <span>{mm ? 'ထွက်ရန်' : 'Sign Out'}</span>}
+          </button>
         </div>
       </aside>
 
@@ -285,21 +269,12 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
                   </span>
                 )}
               </Link>
-              {isAuthed ? (
-                <>
-                  <NotificationBellButton />
-                  <PatientAvatar
-                    src={avatarUrl} loading={avatarLoading}
-                    bg={(scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)'}
-                    className="w-9 h-9 rounded-full text-white text-sm transition-all duration-300"
-                  />
-                </>
-              ) : (
-                <Link href="/signin" className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300"
-                  style={{ backgroundColor: (scrolled && !isDetailPage) ? '#f3f4f6' : 'rgba(255,255,255,0.2)', color: (scrolled && !isDetailPage) ? PRIMARY : '#fff' }}>
-                  <UserCircle className="w-4.5 h-4.5" />
-                </Link>
-              )}
+              <NotificationBellButton />
+              <PatientAvatar
+                src={avatarUrl} loading={avatarLoading}
+                bg={(scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)'}
+                className="w-9 h-9 rounded-full text-white text-sm transition-all duration-300"
+              />
             </div>
           </div>
 
@@ -379,23 +354,14 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
                 </span>
               )}
             </Link>
-            {isAuthed ? (
-              <>
-                <NotificationBellButton />
-                <div className="flex items-center gap-2 pl-3 border-l border-gray-100">
-                  <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-8 h-8 rounded-full text-white text-sm" />
-                  <div>
-                    <p className="text-sm font-semibold leading-tight" style={{ color: PRIMARY }}>{patientName || 'Patient User'}</p>
-                    <p className="text-[10px] text-gray-400 leading-tight">PATIENT</p>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <Link href="/signin" className="flex items-center gap-2 pl-3 border-l border-gray-100 text-sm font-semibold" style={{ color: PRIMARY }}>
-                <UserCircle className="w-4.5 h-4.5" />
-                {mm ? 'အကောင့်ဝင်ရန်' : 'Sign In'}
-              </Link>
-            )}
+            <NotificationBellButton />
+            <div className="flex items-center gap-2 pl-3 border-l border-gray-100">
+              <PatientAvatar src={avatarUrl} loading={avatarLoading} bg={PRIMARY} className="w-8 h-8 rounded-full text-white text-sm" />
+              <div>
+                <p className="text-sm font-semibold leading-tight" style={{ color: PRIMARY }}>{patientName || 'Patient User'}</p>
+                <p className="text-[10px] text-gray-400 leading-tight">PATIENT</p>
+              </div>
+            </div>
           </div>
         </div>
 

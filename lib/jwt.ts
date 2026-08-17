@@ -17,7 +17,7 @@ export async function signAdminToken(payload: AdminTokenPayload): Promise<string
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
+    .setExpirationTime('60d')
     .sign(SECRET);
 }
 
@@ -35,3 +35,28 @@ export const signDoctorToken   = signAdminToken;
 export const verifyDoctorToken = verifyAdminToken;
 export const signPartnerToken   = signAdminToken;
 export const verifyPartnerToken = verifyAdminToken;
+
+export interface ResetTokenPayload {
+  userId: string;
+  phone:  string;
+  purpose: 'password_reset';
+}
+
+// Short-lived token proving OTP was verified — presented to /reset to actually change the password.
+export async function signResetToken(payload: ResetTokenPayload): Promise<string> {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('10m')
+    .sign(SECRET);
+}
+
+export async function verifyResetToken(token: string): Promise<ResetTokenPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    if (payload.purpose !== 'password_reset') return null;
+    return payload as unknown as ResetTokenPayload;
+  } catch {
+    return null;
+  }
+}

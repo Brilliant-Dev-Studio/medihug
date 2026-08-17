@@ -183,9 +183,9 @@ export default function SignInPage() {
                 <label className="text-xs font-semibold" style={{ color: '#0d2b6e' }}>
                   {lang === 'mm' ? 'စကားဝှက်' : 'Password'}
                 </label>
-                <a href="#" className="text-xs font-semibold" style={{ color: '#4facfe' }}>
+                <Link href="/forgot-password" className="text-xs font-semibold" style={{ color: '#4facfe' }}>
                   {lang === 'mm' ? 'မေ့နေသလား?' : 'Forgot password?'}
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
