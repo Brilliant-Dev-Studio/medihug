@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { marked } from 'marked';
 import TurndownService from 'turndown';
 import {
-  NotebookPen, Share2, Search, X, Building2, Save, Loader2,
+  NotebookPen, Share2, Search, X, Building2, Save, Loader2, ChevronDown,
 } from 'lucide-react';
 import { PRIMARY, t, type Appointment } from '@/app/admin/appointments/shared';
 import ReferralQRCard from '@/components/doctor/ReferralQRCard';
@@ -124,6 +124,7 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
   const [saved, setSaved] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(appt.clinicReferral?.code ?? null);
   const [referralVerifiedAt, setReferralVerifiedAt] = useState<string | null>(appt.clinicReferral?.verifiedAt ?? null);
+  const [panelOpen, setPanelOpen] = useState(!!appt.doctorNote);
 
   useEffect(() => {
     fetch('/api/doctor/me').then(r => r.json()).then(d => setOwnDoctorId(d.doctor?.id ?? null)).catch(() => {});
@@ -170,14 +171,22 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100">
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-50 rounded-t-2xl">
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <button type="button" onClick={() => setPanelOpen(o => !o)}
+        className={`w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-gray-50/60 transition-colors ${panelOpen ? 'border-b border-gray-50' : ''}`}>
         <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}14` }}>
           <NotebookPen className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
         </span>
-        <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'ဆေးမှတ်တမ်း နှင့် ညွှန်းပို့ခြင်း', en: 'Clinical Note & Referral' })}</p>
-      </div>
+        <p className="text-sm font-bold text-gray-800 flex-1">{t(mm, { mm: 'ဆေးမှတ်တမ်း နှင့် ညွှန်းပို့ခြင်း', en: 'Clinical Note & Referral' })}</p>
+        {!!appt.doctorNote && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${PRIMARY}12`, color: PRIMARY }}>
+            {t(mm, { mm: 'ရေးထားပြီး', en: 'Provided' })}
+          </span>
+        )}
+        <ChevronDown className={`w-4 h-4 text-gray-300 shrink-0 transition-transform ${panelOpen ? 'rotate-180' : ''}`} />
+      </button>
 
+      {panelOpen && (
       <div className="p-4 flex flex-col gap-4">
         {/* Note */}
         <div>
@@ -244,6 +253,7 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

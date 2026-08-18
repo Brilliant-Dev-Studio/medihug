@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import {
   Search, Stethoscope, Calendar, FileText, Pill,
   Heart, Activity, AlertCircle, Brain, Baby, Eye,
-  ChevronRight, Star, Clock, LayoutGrid, MapPin,
+  ChevronRight, ChevronUp, Star, Clock, LayoutGrid, MapPin,
   Bone, Droplets, Microscope, Syringe, Wind, Thermometer,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
@@ -23,6 +23,7 @@ import PartnerClinicsSlider from '../../components/PartnerClinicsSlider';
 import BestSellingProducts from '../../components/BestSellingProducts';
 import SpecialistDoctorsSection from '../../components/SpecialistDoctorsSection';
 import OurSuggestingDoctorsSection from '../../components/OurSuggestingDoctorsSection';
+import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -205,6 +206,15 @@ interface RawAppointment {
   time: string | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
+  prescription: { status: 'DRAFT' | 'SENT'; diagnosis: string | null; sentAt: string | null } | null;
+}
+
+interface PastPrescription {
+  appointmentId: string;
+  diagnosis: string;
+  doctorName_mm: string;
+  doctorName_en: string;
+  date: string;
 }
 
 const AVATAR_COLORS = ['#2ab5ad', '#8b5cf6', '#f59e0b', '#3b82f6', '#10b981', '#ef4444'];
@@ -218,6 +228,10 @@ export default function PatientDashboard() {
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
   const [apptsLoading, setApptsLoading] = useState(true);
   const [patientName, setPatientName] = useState('');
+  const [pastPrescriptions, setPastPrescriptions] = useState<PastPrescription[]>([]);
+  const [rxCardOpen, setRxCardOpen] = useState(true);
+  const [rxShowAll, setRxShowAll] = useState(false);
+  const [rxViewId, setRxViewId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/doctors?limit=100')
@@ -259,6 +273,18 @@ export default function PatientDashboard() {
             };
           });
         setUpcomingAppointments(upcoming);
+
+        const prescriptions = raw
+          .filter(a => a.prescription?.status === 'SENT')
+          .sort((a, b) => new Date(b.prescription!.sentAt!).getTime() - new Date(a.prescription!.sentAt!).getTime())
+          .map(a => ({
+            appointmentId: a.id,
+            diagnosis: a.prescription!.diagnosis || a.doctor.name,
+            doctorName_mm: a.doctor.name,
+            doctorName_en: a.doctor.nameEn ?? a.doctor.name,
+            date: new Date(a.prescription!.sentAt!).toISOString().slice(0, 10),
+          }));
+        setPastPrescriptions(prescriptions);
       })
       .catch(() => {})
       .finally(() => setApptsLoading(false));
@@ -467,6 +493,49 @@ export default function PatientDashboard() {
             )}
           </div>
 
+          {/* Past Prescriptions */}
+          {!apptsLoading && pastPrescriptions.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <button onClick={() => setRxCardOpen(o => !o)}
+                className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left"
+                style={{ background: `linear-gradient(135deg, ${PRIMARY}0d 0%, ${SECONDARY}0d 100%)` }}>
+                <Clock className="w-4.5 h-4.5 text-gray-400 shrink-0" />
+                <span className="font-bold text-sm flex-1" style={{ color: PRIMARY }}>
+                  {mm ? 'ယခင် ဆေးညွှန်းများ' : 'Past Prescriptions'}
+                </span>
+                <span className="text-[11px] font-bold text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: PRIMARY }}>
+                  {pastPrescriptions.length}
+                </span>
+                <ChevronUp className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${rxCardOpen ? '' : 'rotate-180'}`} />
+              </button>
+
+              {rxCardOpen && (
+                <div className="px-4 py-4 flex flex-col gap-2.5">
+                  {(rxShowAll ? pastPrescriptions : pastPrescriptions.slice(0, 2)).map(p => (
+                    <div key={p.appointmentId} className="rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm text-gray-800 truncate">{p.diagnosis}</p>
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">
+                          {p.date} · {mm ? p.doctorName_mm : p.doctorName_en}
+                        </p>
+                      </div>
+                      <button onClick={() => setRxViewId(p.appointmentId)}
+                        className="flex items-center gap-1 text-xs font-bold shrink-0" style={{ color: PRIMARY }}>
+                        <FileText className="w-3.5 h-3.5" /> {mm ? 'ကြည့်ရန်' : 'VIEW'}
+                      </button>
+                    </div>
+                  ))}
+                  {!rxShowAll && pastPrescriptions.length > 2 && (
+                    <button onClick={() => setRxShowAll(true)}
+                      className="text-center text-xs font-bold py-1" style={{ color: PRIMARY }}>
+                      {mm ? 'ပိုမိုကြည့်ရန်' : 'VIEW MORE'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Blog Categories */}
           <BlogCategoryCircles />
 
@@ -513,7 +582,7 @@ export default function PatientDashboard() {
               {[
                 { label_mm: 'ချိန်းဆိုမှု', label_en: 'Appointments',  value: '0', color: PRIMARY,   bg: '#eff6ff', href: '/patient/appointments' },
                 { label_mm: 'မှတ်တမ်း',      label_en: 'Records',       value: '0', color: '#8b5cf6', bg: '#f5f3ff', href: null },
-                { label_mm: 'ဆေးညွှန်း',     label_en: 'Prescriptions', value: '0', color: '#f59e0b', bg: '#fffbeb', href: null },
+                { label_mm: 'ဆေးညွှန်း',     label_en: 'Prescriptions', value: String(pastPrescriptions.length), color: '#f59e0b', bg: '#fffbeb', href: null },
                 { label_mm: 'ကြိုက်သော',     label_en: 'Favourites',    value: String(favCount), color: '#ec4899', bg: '#fdf2f8', href: '/patient/favourites' },
               ].map(s => {
                 const card = (
@@ -617,6 +686,8 @@ export default function PatientDashboard() {
       {/* ════════ END RIGHT PANEL ════════ */}
 
       </div>{/* end desktop container */}
+
+      {rxViewId && <PrescriptionViewerModal appointmentId={rxViewId} mm={mm} onClose={() => setRxViewId(null)} />}
     </div>
   );
 }

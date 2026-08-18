@@ -91,16 +91,45 @@ export default function DoctorAppointmentsPage() {
   };
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const initials = (name: string) => name.trim().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
 
   return (
-    <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-4 lg:space-y-5">
-      <div>
+    <div className="lg:p-6 max-w-6xl mx-auto lg:space-y-5">
+      <div className="p-4 pb-3 lg:p-0">
         <h1 className="text-xl lg:text-2xl font-bold text-gray-800">My Appointments</h1>
         <p className="text-sm text-gray-500 mt-0.5">{total} total appointments</p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      {/* Filters — mobile */}
+      <div className="lg:hidden px-4 pb-3 flex flex-col gap-2.5 sticky top-0 z-10 bg-gray-50/95 backdrop-blur pt-1 -mt-1">
+        <div className="relative">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            className="w-full pl-10 pr-3 py-2.5 rounded-full border border-gray-200 bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad]"
+            placeholder="Search patient..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+          />
+        </div>
+        <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {(['', ...STATUS_OPTIONS] as const).map(opt => {
+            const active = status === opt;
+            const label = opt === '' ? 'All Status' : STATUS_STYLE[opt].label;
+            return (
+              <button key={opt || 'all'} onClick={() => { setStatus(opt); setPage(1); }}
+                className="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+                style={active
+                  ? { backgroundColor: PRIMARY, borderColor: PRIMARY, color: '#fff' }
+                  : { backgroundColor: '#fff', borderColor: '#e5e7eb', color: '#6b7280' }}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Filters — desktop */}
+      <div className="hidden lg:flex gap-3">
         <div className="relative flex-1 sm:min-w-55">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -119,54 +148,83 @@ export default function DoctorAppointmentsPage() {
         </select>
       </div>
 
-      {/* List */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] overflow-hidden">
-        {loading ? (
-          <div className="divide-y divide-gray-50">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3.5">
-                <div className="flex flex-col gap-1.5 w-32">
-                  <div className="bg-gray-100 rounded-md animate-pulse h-3 w-24" />
-                  <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-20" />
+      {loading ? (
+        <>
+          <div className="lg:hidden px-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-full bg-gray-100 animate-pulse shrink-0" />
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <div className="bg-gray-100 rounded-md animate-pulse h-3 w-28" />
+                    <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-20" />
+                  </div>
+                  <div className="bg-gray-100 rounded-full animate-pulse h-6 w-20 shrink-0" />
                 </div>
-                <div className="hidden lg:block bg-gray-100 rounded-md animate-pulse h-2.5 flex-1" />
-                <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-24 shrink-0" />
-                <div className="hidden lg:block bg-gray-100 rounded-md animate-pulse h-2.5 w-16 shrink-0" />
-                <div className="bg-gray-100 rounded-full animate-pulse h-6 w-20 shrink-0" />
+                <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-full" />
               </div>
             ))}
           </div>
-        ) : appts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <Calendar size={40} strokeWidth={1.2} />
-            <p className="mt-3 text-sm">No appointments found</p>
+          <div className="hidden lg:block bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] overflow-hidden">
+            <div className="divide-y divide-gray-50">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                  <div className="flex flex-col gap-1.5 w-32">
+                    <div className="bg-gray-100 rounded-md animate-pulse h-3 w-24" />
+                    <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-20" />
+                  </div>
+                  <div className="bg-gray-100 rounded-md animate-pulse h-2.5 flex-1" />
+                  <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-24 shrink-0" />
+                  <div className="bg-gray-100 rounded-md animate-pulse h-2.5 w-16 shrink-0" />
+                  <div className="bg-gray-100 rounded-full animate-pulse h-6 w-20 shrink-0" />
+                </div>
+              ))}
+            </div>
           </div>
-        ) : (
-          <>
-            {/* Mobile: card list */}
-            <div className="lg:hidden divide-y divide-gray-50">
-              {appts.map(a => (
+        </>
+      ) : appts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+          <Calendar size={40} strokeWidth={1.2} />
+          <p className="mt-3 text-sm">No appointments found</p>
+        </div>
+      ) : (
+        <>
+          {/* Mobile: card list */}
+          <div className="lg:hidden px-4 space-y-3">
+            {appts.map(a => {
+              const s = STATUS_STYLE[a.status];
+              return (
                 <div key={a.id} onClick={() => router.push(`/doctor/appointments/${a.id}`)}
-                  className="px-4 py-3.5 flex flex-col gap-2 active:bg-gray-50/60 transition-colors cursor-pointer">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm active:scale-[0.98] transition-transform p-4 flex flex-col gap-3 cursor-pointer"
+                  style={{ borderLeft: `3px solid ${s.color}` }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                      style={{ backgroundColor: PRIMARY }}>
+                      {initials(a.user.name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-gray-800 truncate">{a.user.name}</p>
                       <p className="text-xs text-gray-400">{a.user.phone}</p>
                     </div>
                     <div className="shrink-0" onClick={e => e.stopPropagation()}>
-                      <StatusDropdown status={a.status} onChange={s => updateStatus(a.id, s)} />
+                      <StatusDropdown status={a.status} onChange={next => updateStatus(a.id, next)} />
                     </div>
                   </div>
                   {a.reason && <p className="text-xs text-gray-500 line-clamp-2">{a.reason}</p>}
-                  <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
-                    <span className="flex items-center gap-1"><Clock size={11} /> {fmtDate(a.date)}{a.time ? ` · ${a.time}` : ''}</span>
-                    <span className="font-semibold text-gray-800">{a.fee ? `${a.fee.toLocaleString()} Ks` : '—'}</span>
+                  <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-gray-50">
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-full">
+                      <Clock size={11} /> {fmtDate(a.date)}{a.time ? ` · ${a.time}` : ''}
+                    </span>
+                    <span className="font-bold text-gray-800 text-sm">{a.fee ? `${a.fee.toLocaleString()} Ks` : '—'}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
 
-            {/* Desktop: table */}
+          {/* Desktop: table */}
+          <div className="hidden lg:block bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] overflow-hidden">
+            {/* Desktop table below */}
             <table className="hidden lg:table w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -207,30 +265,45 @@ export default function DoctorAppointmentsPage() {
                 ))}
               </tbody>
             </table>
-          </>
-        )}
+          </div>
+        </>
+      )}
 
-        {/* Pagination */}
-        {!loading && total > 0 && (
-          <div className="flex items-center justify-between px-4 lg:px-5 py-3.5 border-t border-gray-100">
+      {/* Pagination */}
+      {!loading && total > 0 && (
+        <>
+          {/* Mobile pagination */}
+          <div className="lg:hidden flex items-center justify-center gap-4 px-4 py-5">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs text-gray-500 font-semibold">{page} / {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Desktop pagination */}
+          <div className="hidden lg:flex items-center justify-between px-1 py-1">
             <p className="text-xs text-gray-400">
-              <span className="hidden sm:inline">Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}</span>
-              <span className="sm:hidden">{page} / {totalPages}</span>
+              Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} of {total}
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft size={15} />
               </button>
-              <span className="hidden sm:inline text-xs text-gray-500 font-semibold px-2">{page} / {totalPages}</span>
+              <span className="text-xs text-gray-500 font-semibold px-2">{page} / {totalPages}</span>
               <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight size={15} />
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 import { theme } from '../../../lib/theme';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -100,6 +100,8 @@ export default function DoctorDetailPage() {
   const [fullSlots,     setFullSlots]     = useState<Set<string>>(new Set());
   const [showCustomRequest,   setShowCustomRequest]   = useState(false);
   const [submittingCustom,    setSubmittingCustom]    = useState(false);
+  const mobileBarRef = useRef<HTMLDivElement>(null);
+  const [mobileBarH, setMobileBarH] = useState(160);
 
   useEffect(() => {
     if (!id) return;
@@ -117,6 +119,16 @@ export default function DoctorDetailPage() {
       .then(data => setFullSlots(new Set<string>(data.fullTimes ?? [])))
       .catch(() => setFullSlots(new Set()));
   }, [id, selectedDay]);
+
+  useEffect(() => {
+    const el = mobileBarRef.current;
+    if (!el) return;
+    const update = () => setMobileBarH(el.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [doctor, tab]);
 
   if (loading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -736,7 +748,7 @@ export default function DoctorDetailPage() {
       </div>
 
       {/* ══ MOBILE ══ */}
-      <div className="lg:hidden min-h-full pb-36">
+      <div className="lg:hidden min-h-full" style={{ paddingBottom: mobileBarH + 64 }}>
         <div className="-mt-18 pt-21 px-4 pb-5"
           style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)`, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
           <div className="flex items-center justify-between mb-5">
@@ -757,7 +769,6 @@ export default function DoctorDetailPage() {
                   : <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-white" style={{ backgroundColor: AVATAR_COLORS[0] }}>{doctor.name.charAt(0)}</div>
                 }
               </div>
-              {doctor.isAvailable && <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full border-2 border-white" style={{ backgroundColor: '#22c55e' }} />}
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold text-white leading-tight">{displayName}</h2>
@@ -778,7 +789,7 @@ export default function DoctorDetailPage() {
 
         {tabContent}
 
-        <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-3 pb-4 z-30">
+        <div ref={mobileBarRef} className="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-3 pb-4 z-30">
           <div className="flex items-center justify-center gap-2 mb-1">
             <span className="text-sm text-gray-500">{mm ? 'တိုင်ပင်ဆွေးနွေးခ' : 'Consultation Fee'}</span>
             <span className="text-sm text-gray-400">-</span>

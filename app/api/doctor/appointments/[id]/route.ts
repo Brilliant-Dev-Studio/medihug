@@ -20,7 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const appointment = await db.appointment.findUnique({
     where: { id },
     include: {
-      user:   { select: { name: true, phone: true } },
+      user:   { select: { name: true, phone: true, profileImage: true } },
       doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
       referredDoctor: { select: { id: true, name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
       referredClinic: { select: { id: true, name: true, nameEn: true, type: true, imageUrl: true } },

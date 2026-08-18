@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       where: { userId: user.id },
       include: {
         doctor: { select: { name: true, nameEn: true, specialty: true, specialtyEn: true, imageUrl: true } },
+        prescription: { select: { status: true, diagnosis: true, sentAt: true } },
       },
       orderBy: { date: 'desc' },
     });

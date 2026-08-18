@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Calendar, Clock, Video, X, ChevronRight,
-  CheckCircle2, Star, RotateCcw, Ban, FileText, CalendarX2,
+  CheckCircle2, Star, RotateCcw, Ban, FileText, CalendarX2, ClipboardCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useLang } from '../../lib/LanguageContext';
 import { combineDateAndTime } from '@/lib/timeSlots';
+import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
 
 const JOIN_WINDOW_MS = 5 * 60 * 1000;
 
@@ -31,6 +32,7 @@ type Appointment = {
   fee: string;
   scheduledAt: Date | null;
   unreadChat: boolean;
+  hasPrescription: boolean;
 };
 
 type PastAppointment = {
@@ -46,6 +48,7 @@ type PastAppointment = {
   fee: string;
   note_en?: string;
   note_mm?: string;
+  hasPrescription: boolean;
 };
 
 /* ─────────────────── raw API shape ─────────────────── */
@@ -60,6 +63,7 @@ interface RawAppointment {
   doctorApproved: boolean;
   unreadPatientChat: boolean;
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
+  prescription: { status: 'DRAFT' | 'SENT' } | null;
 }
 
 function fmtFee(fee: number | null): string {
@@ -81,6 +85,7 @@ function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; pa
     const dt = fmtDateTime(a.date, a.time);
     const doctorName = a.doctor.nameEn ?? a.doctor.name;
     const specEn = a.doctor.specialtyEn ?? a.doctor.specialty;
+    const hasPrescription = a.prescription?.status === 'SENT';
 
     if (a.status === 'COMPLETED' || a.status === 'CANCELLED') {
       past.push({
@@ -93,6 +98,7 @@ function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; pa
         fee: fmtFee(a.fee),
         note_en: a.note ?? a.reason ?? undefined,
         note_mm: a.note ?? a.reason ?? undefined,
+        hasPrescription,
       });
     } else {
       upcoming.push({
@@ -105,6 +111,7 @@ function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; pa
         fee: fmtFee(a.fee),
         scheduledAt: combineDateAndTime(a.date, a.time),
         unreadChat: a.unreadPatientChat,
+        hasPrescription,
       });
     }
   }
@@ -206,7 +213,7 @@ function useNow(intervalMs: number): number {
   return now;
 }
 
-function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
+function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; onViewRx: (id: string) => void }) {
   const cfg = STATUS_CONFIG[appt.status];
   const now = useNow(15000);
   // Falls back to joinable-on-approval if the time couldn't be parsed, so a bad `time` string never hard-blocks the patient.
@@ -287,6 +294,13 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
             >
               <FileText className="w-3.5 h-3.5" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
             </Link>
+            {appt.hasPrescription && (
+              <button onClick={() => onViewRx(appt.id)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white"
+                style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+                <ClipboardCheck className="w-3.5 h-3.5" />{mm ? 'ဆေးညွှန်း' : 'View Rx'}
+              </button>
+            )}
             <Link href={`/patient/appointments/${appt.id}/form`} className="relative w-8 h-8 rounded-xl flex items-center justify-center text-gray-300 active:bg-gray-50">
               <ChevronRight className="w-4 h-4" />
               {appt.unreadChat && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />}
@@ -332,6 +346,13 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
             <FileText className="w-4 h-4" />{mm ? 'ဆေးမှတ်တမ်း' : 'View Form'}
             {appt.unreadChat && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white" />}
           </Link>
+          {appt.hasPrescription && (
+            <button onClick={() => onViewRx(appt.id)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
+              style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+              <ClipboardCheck className="w-4 h-4" />{mm ? 'ဆေးညွှန်း' : 'View Rx'}
+            </button>
+          )}
           {appt.status === 'ready' && joinable && (
             <Link href={`/patient/appointments/${appt.id}/call`} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
               style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
@@ -362,7 +383,7 @@ function UpcomingCard({ appt, mm }: { appt: Appointment; mm: boolean }) {
   );
 }
 
-function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
+function PastCard({ appt, mm, onViewRx }: { appt: PastAppointment; mm: boolean; onViewRx: (id: string) => void }) {
   const cfg = PAST_CONFIG[appt.status];
 
   return (
@@ -407,6 +428,13 @@ function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            {appt.hasPrescription && (
+              <button onClick={() => onViewRx(appt.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
+                style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+                <ClipboardCheck className="w-3 h-3" />{mm ? 'ဆေးညွှန်း' : 'View Rx'}
+              </button>
+            )}
             {appt.status === 'completed' && (
               <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
                 <RotateCcw className="w-3 h-3" />{mm ? 'ထပ်ချိန်းမည်' : 'Book Again'}
@@ -451,6 +479,13 @@ function PastCard({ appt, mm }: { appt: PastAppointment; mm: boolean }) {
             style={{ backgroundColor: cfg.pillBg, color: cfg.pillText }}>
             {mm ? cfg.mm : cfg.en}
           </span>
+          {appt.hasPrescription && (
+            <button onClick={() => onViewRx(appt.id)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
+              style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
+              <ClipboardCheck className="w-4 h-4" />{mm ? 'ဆေးညွှန်း' : 'View Rx'}
+            </button>
+          )}
           {appt.status === 'completed' && (
             <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
               <RotateCcw className="w-3.5 h-3.5" />{mm ? 'ထပ်မံချိန်းဆိုမည်' : 'Book Again'}
@@ -472,6 +507,7 @@ export default function AppointmentsPage() {
   const [hasPhone, setHasPhone] = useState(true);
   const [UPCOMING, setUpcoming] = useState<Appointment[]>([]);
   const [PAST, setPast] = useState<PastAppointment[]>([]);
+  const [rxId, setRxId] = useState<string | null>(null);
   const { lang } = useLang();
   const mm = lang === 'mm';
 
@@ -578,8 +614,8 @@ export default function AppointmentsPage() {
           {/* List */}
           <div className="flex-1 px-6 py-4 pb-8 flex flex-col gap-3">
             {tab === 'upcoming'
-              ? (UPCOMING.length ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
-              : (PAST.length ? PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
+              ? (UPCOMING.length ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} onViewRx={setRxId} />) : <EmptyList mm={mm} />)
+              : (PAST.length ? PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} onViewRx={setRxId} />) : <EmptyList mm={mm} />)
             }
           </div>
         </div>
@@ -681,12 +717,13 @@ export default function AppointmentsPage() {
         {/* List */}
         <div className="px-4 pt-4 pb-28 flex flex-col gap-3">
           {tab === 'upcoming'
-            ? (UPCOMING.length ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
-            : (PAST.length ? PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} />) : <EmptyList mm={mm} />)
+            ? (UPCOMING.length ? UPCOMING.map(a => <UpcomingCard key={a.id} appt={a} mm={mm} onViewRx={setRxId} />) : <EmptyList mm={mm} />)
+            : (PAST.length ? PAST.map(a => <PastCard key={a.id} appt={a} mm={mm} onViewRx={setRxId} />) : <EmptyList mm={mm} />)
           }
         </div>
       </div>
 
+      {rxId && <PrescriptionViewerModal appointmentId={rxId} mm={mm} onClose={() => setRxId(null)} />}
     </div>
   );
 }
