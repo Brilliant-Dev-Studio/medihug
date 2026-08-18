@@ -52,6 +52,7 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
   const chatListenersRef = useRef<ChatListeners>(new Map());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const knownIdsRef = useRef<Set<string> | null>(null); // null = not yet loaded once
 
   const restBase = `/api/${role}/notifications`;
 
@@ -61,7 +62,18 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
     fetch(url)
       .then(r => r.json())
       .then(d => {
-        setNotifications(d.notifications ?? []);
+        const list: NotificationItem[] = d.notifications ?? [];
+        // Play the sound for anything new that showed up via REST catch-up (poll or
+        // WS reconnect) rather than a live push — otherwise those arrive silently.
+        if (knownIdsRef.current) {
+          const isNew = list.some(n => !knownIdsRef.current!.has(n.id));
+          if (isNew) {
+            const a = audioRef.current;
+            if (a) { a.currentTime = 0; a.play().catch(err => console.warn('Notification sound play failed:', err)); }
+          }
+        }
+        knownIdsRef.current = new Set(list.map(n => n.id));
+        setNotifications(list);
         setUnreadCount(d.unreadCount ?? 0);
       })
       .catch(() => {})
@@ -69,6 +81,19 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
   }, [role, phone, restBase]);
 
   useEffect(() => { fetchInitial(); }, [fetchInitial]);
+
+  // Belt-and-suspenders poll: some browsers/networks (observed on Firefox) never
+  // successfully receive the WebSocket push even though the initial fetch and REST
+  // API both work fine. Poll on a slow interval so notifications still arrive
+  // without a manual refresh, regardless of whether the WS ever connects.
+  useEffect(() => {
+    if (role === 'patient' && !phone) return;
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      fetchInitial();
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [role, phone, fetchInitial]);
 
   const markAllRead = useCallback(() => {
     setNotifications(list => list.map(n => ({ ...n, read: true })));
@@ -143,6 +168,7 @@ export function RealtimeProvider({ role, phone, children }: RealtimeProviderProp
           const msg = JSON.parse(e.data);
           if (msg.kind === 'notification') {
             const n: NotificationItem = msg.notification;
+            knownIdsRef.current?.add(n.id);
             setNotifications(list => [n, ...list]);
             setUnreadCount(c => c + 1);
             const a = audioRef.current;

@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Phone, Lock, Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
   const [phone, setPhone]     = useState('');
   const [pin, setPin]         = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -31,7 +29,10 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.replace('/admin/dashboard');
+      // Hard navigation, not router.replace: this tab may have been open across a
+      // deploy, so its client-side chunk manifest can be stale. A full page load
+      // always fetches the current bundle instead of silently hanging on a 404'd chunk.
+      window.location.href = '/admin/dashboard';
     } catch {
       setError('Server ချိတ်ဆက်မှု မအောင်မြင်ပါ။');
       setLoading(false);

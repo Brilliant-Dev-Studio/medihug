@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { Phone, Lock, Eye, EyeOff, Building2, AlertCircle, ShieldCheck } from 'lucide-react';
@@ -9,7 +8,6 @@ import { Phone, Lock, Eye, EyeOff, Building2, AlertCircle, ShieldCheck } from 'l
 const PRIMARY = '#3b5bdb';
 
 export default function PartnerLoginPage() {
-  const router = useRouter();
   const [phone, setPhone]         = useState('');
   const [password, setPassword]   = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +31,10 @@ export default function PartnerLoginPage() {
         return;
       }
 
-      router.replace('/partner/dashboard');
+      // Hard navigation, not router.replace: this tab may have been open across a
+      // deploy, so its client-side chunk manifest can be stale. A full page load
+      // always fetches the current bundle instead of silently hanging on a 404'd chunk.
+      window.location.href = '/partner/dashboard';
     } catch {
       setError('Server ချိတ်ဆက်မှု မအောင်မြင်ပါ။');
       setLoading(false);
