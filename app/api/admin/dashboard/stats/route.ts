@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
       latestRaw,
       rawApptDates,
     ] = await Promise.all([
-      db.user.count(),
-      db.user.count({ where: { createdAt: { lt: d30ago } } }),
+      db.user.count({ where: { role: 'PATIENT' } }),
+      db.user.count({ where: { role: 'PATIENT', createdAt: { lt: d30ago } } }),
       db.doctor.count({ where: { isActive: true } }),
       db.doctor.count({ where: { isActive: true, createdAt: { lt: d30ago } } }),
       db.product.count({ where: { isActive: true } }),
