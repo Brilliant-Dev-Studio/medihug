@@ -352,7 +352,7 @@ model Appointment {
   clinicReferral ClinicReferral?
   messages       AppointmentMessage[]
   refunds        Refund[]
-  prescription   Prescription?
+  prescriptions  Prescription[]
 
   @@index([userId])
   @@index([doctorId])
@@ -367,7 +367,7 @@ model Appointment {
 
 model Prescription {
   id                  String              @id @default(cuid())
-  appointmentId       String              @unique
+  appointmentId       String
   diagnosis           String?
   advice              String?
   referredSpecialist  Boolean             @default(false)

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyDoctorToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 async function requireDoctorId(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get('doctor_token')?.value;
   if (!token) return null;
@@ -17,28 +19,17 @@ async function loadOwnAppointment(id: string, doctorId: string) {
 
 interface MedicineInput { name: string; dosage?: string | null; frequency?: string | null; duration?: string | null }
 
-/* ── GET /api/doctor/appointments/[id]/prescription ── */
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+/* ── PUT /api/doctor/appointments/[id]/prescriptions/[prescriptionId] — update a draft round ── */
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string; prescriptionId: string }> }) {
   const doctorId = await requireDoctorId(req);
   if (!doctorId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id } = await params;
+  const { id, prescriptionId } = await params;
   if (!(await loadOwnAppointment(id, doctorId))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const prescription = await db.prescription.findUnique({
-    where: { appointmentId: id },
-    include: { medicines: { orderBy: { order: 'asc' } } },
-  });
-  return NextResponse.json({ prescription });
-}
-
-/* ── PUT /api/doctor/appointments/[id]/prescription — upsert draft ── */
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const doctorId = await requireDoctorId(req);
-  if (!doctorId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { id } = await params;
-  if (!(await loadOwnAppointment(id, doctorId))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const existing = await db.prescription.findUnique({ where: { id: prescriptionId }, select: { appointmentId: true, status: true } });
+  if (!existing || existing.appointmentId !== id) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (existing.status === 'SENT') return NextResponse.json({ error: 'Prescription already sent — cannot edit' }, { status: 409 });
 
   const body = await req.json();
   const { diagnosis, advice, referredSpecialist, followUpDate, followUpTime, comeAfterDays, medicines } = body as {
@@ -51,11 +42,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Invalid medicines' }, { status: 400 });
   }
 
-  const existing = await db.prescription.findUnique({ where: { appointmentId: id }, select: { id: true, status: true } });
-  if (existing?.status === 'SENT') {
-    return NextResponse.json({ error: 'Prescription already sent — cannot edit' }, { status: 409 });
-  }
-
   const data = {
     diagnosis: diagnosis ?? null,
     advice: advice ?? null,
@@ -66,9 +52,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   };
 
   const prescription = await db.$transaction(async tx => {
-    const p = existing
-      ? await tx.prescription.update({ where: { appointmentId: id }, data })
-      : await tx.prescription.create({ data: { appointmentId: id, ...data } });
+    const p = await tx.prescription.update({ where: { id: prescriptionId }, data });
 
     if (medicines !== undefined) {
       await tx.prescriptionMedicine.deleteMany({ where: { prescriptionId: p.id } });

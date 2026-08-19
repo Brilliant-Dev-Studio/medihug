@@ -63,7 +63,7 @@ interface RawAppointment {
   doctorApproved: boolean;
   unreadPatientChat: boolean;
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
-  prescription: { status: 'DRAFT' | 'SENT' } | null;
+  prescriptions: { status: 'DRAFT' | 'SENT' }[];
 }
 
 function fmtFee(fee: number | null): string {
@@ -85,7 +85,7 @@ function splitAppointments(raw: RawAppointment[]): { upcoming: Appointment[]; pa
     const dt = fmtDateTime(a.date, a.time);
     const doctorName = a.doctor.nameEn ?? a.doctor.name;
     const specEn = a.doctor.specialtyEn ?? a.doctor.specialty;
-    const hasPrescription = a.prescription?.status === 'SENT';
+    const hasPrescription = a.prescriptions.some(p => p.status === 'SENT');
 
     if (a.status === 'COMPLETED' || a.status === 'CANCELLED') {
       past.push({

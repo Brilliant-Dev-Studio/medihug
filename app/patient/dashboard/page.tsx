@@ -206,7 +206,7 @@ interface RawAppointment {
   time: string | null;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   doctor: { name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; imageUrl: string | null };
-  prescription: { status: 'DRAFT' | 'SENT'; diagnosis: string | null; sentAt: string | null } | null;
+  prescriptions: { status: 'DRAFT' | 'SENT'; diagnosis: string | null; sentAt: string | null }[];
 }
 
 interface PastPrescription {
@@ -275,14 +275,14 @@ export default function PatientDashboard() {
         setUpcomingAppointments(upcoming);
 
         const prescriptions = raw
-          .filter(a => a.prescription?.status === 'SENT')
-          .sort((a, b) => new Date(b.prescription!.sentAt!).getTime() - new Date(a.prescription!.sentAt!).getTime())
-          .map(a => ({
+          .flatMap(a => a.prescriptions.filter(p => p.status === 'SENT').map(p => ({ a, p })))
+          .sort((x, y) => new Date(y.p.sentAt!).getTime() - new Date(x.p.sentAt!).getTime())
+          .map(({ a, p }) => ({
             appointmentId: a.id,
-            diagnosis: a.prescription!.diagnosis || a.doctor.name,
+            diagnosis: p.diagnosis || a.doctor.name,
             doctorName_mm: a.doctor.name,
             doctorName_en: a.doctor.nameEn ?? a.doctor.name,
-            date: new Date(a.prescription!.sentAt!).toISOString().slice(0, 10),
+            date: new Date(p.sentAt!).toISOString().slice(0, 10),
           }));
         setPastPrescriptions(prescriptions);
       })

@@ -6,7 +6,7 @@ import { marked } from 'marked';
 import TurndownService from 'turndown';
 import {
   X, Activity, Briefcase, Lightbulb, CalendarDays, ChevronLeft, ChevronRight,
-  FlaskConical, Trash2, Plus, Save, Eye, ArrowLeft, Loader2, Send, Phone,
+  FlaskConical, Trash2, Plus, Save, Eye, ArrowLeft, Loader2, Send, Phone, History, FileText,
 } from 'lucide-react';
 import { PRIMARY, type Appointment } from '@/app/admin/appointments/shared';
 import 'react-quill-new/dist/quill.snow.css';
@@ -22,6 +22,9 @@ interface PrescriptionData {
   diagnosis: string; advice: string; referredSpecialist: boolean;
   followUpDate: string | null; followUpTime: string; comeAfterDays: number | null;
   medicines: Medicine[]; status?: 'DRAFT' | 'SENT';
+}
+interface PrescriptionListItem {
+  id: string; status: 'DRAFT' | 'SENT'; diagnosis: string | null; createdAt: string; sentAt: string | null;
 }
 
 const EMPTY: PrescriptionData = {
@@ -39,7 +42,7 @@ const COME_AFTER_OPTIONS = [
 ];
 
 type Tab = 'diagnosis' | 'medicine' | 'advice' | 'followup';
-type View = 'edit' | 'preview';
+type View = 'history' | 'edit' | 'preview';
 
 /* ── minimal month-grid date picker ── */
 function MonthCalendar({ value, onChange }: { value: string | null; onChange: (iso: string) => void }) {
@@ -100,41 +103,91 @@ export default function PrescriptionComposerModal({ appt, mm, onClose, initialVi
 }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('diagnosis');
-  const [view, setView] = useState<View>(initialView);
+  const [view, setView] = useState<View>('history');
+  const [list, setList] = useState<PrescriptionListItem[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [data, setData] = useState<PrescriptionData>(EMPTY);
   const [diagnosisHtml, setDiagnosisHtml] = useState('');
   const [adviceHtml, setAdviceHtml] = useState('');
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  const load = useCallback(async () => {
+  function applyPrescription(p: { diagnosis: string | null; advice: string | null; referredSpecialist: boolean;
+    followUpDate: string | null; followUpTime: string | null; comeAfterDays: number | null;
+    medicines: Medicine[]; status: 'DRAFT' | 'SENT'; id: string }) {
+    setActiveId(p.id);
+    setData({
+      diagnosis: p.diagnosis ?? '', advice: p.advice ?? '', referredSpecialist: !!p.referredSpecialist,
+      followUpDate: p.followUpDate ? String(p.followUpDate).slice(0, 10) : null,
+      followUpTime: p.followUpTime ?? '', comeAfterDays: p.comeAfterDays ?? null,
+      medicines: (p.medicines ?? []).map((m: Medicine) => ({ name: m.name, dosage: m.dosage ?? '', frequency: m.frequency ?? '', duration: m.duration ?? '' })),
+      status: p.status,
+    });
+    setDiagnosisHtml(toHtml(p.diagnosis ?? ''));
+    setAdviceHtml(toHtml(p.advice ?? ''));
+  }
+
+  const loadList = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/doctor/appointments/${appt.id}/prescription`);
+    const res = await fetch(`/api/doctor/appointments/${appt.id}/prescriptions`, { cache: 'no-store' });
     const json = await res.json().catch(() => null);
-    const p = json?.prescription;
-    if (p) {
-      setData({
-        diagnosis: p.diagnosis ?? '', advice: p.advice ?? '', referredSpecialist: !!p.referredSpecialist,
-        followUpDate: p.followUpDate ? String(p.followUpDate).slice(0, 10) : null,
-        followUpTime: p.followUpTime ?? '', comeAfterDays: p.comeAfterDays ?? null,
-        medicines: (p.medicines ?? []).map((m: Medicine) => ({ name: m.name, dosage: m.dosage ?? '', frequency: m.frequency ?? '', duration: m.duration ?? '' })),
-        status: p.status,
-      });
-      setDiagnosisHtml(toHtml(p.diagnosis ?? ''));
-      setAdviceHtml(toHtml(p.advice ?? ''));
+    const prescriptions: (PrescriptionListItem & { medicines: Medicine[]; advice: string | null; referredSpecialist: boolean; followUpDate: string | null; followUpTime: string | null; comeAfterDays: number | null })[] = json?.prescriptions ?? [];
+    setList(prescriptions);
+
+    const draft = prescriptions.find(p => p.status === 'DRAFT');
+    if (draft) {
+      applyPrescription(draft);
+      setView(initialView);
+    } else if (initialView === 'edit') {
+      const res2 = await fetch(`/api/doctor/appointments/${appt.id}/prescriptions`, { method: 'POST' });
+      const json2 = await res2.json().catch(() => null);
+      if (json2?.prescription) {
+        applyPrescription(json2.prescription);
+        setList(l => [json2.prescription, ...l]);
+        setView('edit');
+      }
+    } else {
+      setView('history');
     }
     setLoading(false);
-  }, [appt.id]);
+  }, [appt.id, initialView]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadList(); }, [loadList]);
 
   const locked = data.status === 'SENT';
 
+  async function startNew() {
+    setCreating(true);
+    setError('');
+    const res = await fetch(`/api/doctor/appointments/${appt.id}/prescriptions`, { method: 'POST' });
+    const json = await res.json().catch(() => null);
+    setCreating(false);
+    if (!res.ok || !json?.prescription) {
+      setError(mm ? 'အသစ် မစနိုင်ပါ' : 'Could not start new prescription');
+      return;
+    }
+    applyPrescription(json.prescription);
+    setList(l => l.some(p => p.id === json.prescription.id) ? l : [json.prescription, ...l]);
+    setTab('diagnosis');
+    setView('edit');
+  }
+
+  function openPast(p: PrescriptionListItem) {
+    fetch(`/api/doctor/appointments/${appt.id}/prescriptions`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(json => {
+        const full = (json?.prescriptions ?? []).find((x: { id: string }) => x.id === p.id);
+        if (full) { applyPrescription(full); setView('preview'); }
+      });
+  }
+
   async function persist(): Promise<boolean> {
+    if (!activeId) return false;
     setSaving(true);
     setError('');
-    const res = await fetch(`/api/doctor/appointments/${appt.id}/prescription`, {
+    const res = await fetch(`/api/doctor/appointments/${appt.id}/prescriptions/${activeId}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         diagnosis: data.diagnosis, advice: data.advice, referredSpecialist: data.referredSpecialist,
@@ -167,9 +220,10 @@ export default function PrescriptionComposerModal({ appt, mm, onClose, initialVi
       setView('edit'); setTab('diagnosis');
       return;
     }
+    if (!activeId) return;
     setSending(true);
     setError('');
-    const res = await fetch(`/api/doctor/appointments/${appt.id}/prescription/send`, { method: 'POST' });
+    const res = await fetch(`/api/doctor/appointments/${appt.id}/prescriptions/${activeId}/send`, { method: 'POST' });
     setSending(false);
     if (!res.ok) {
       const j = await res.json().catch(() => null);
@@ -177,6 +231,7 @@ export default function PrescriptionComposerModal({ appt, mm, onClose, initialVi
       return;
     }
     setData(d => ({ ...d, status: 'SENT' }));
+    setList(l => l.map(p => p.id === activeId ? { ...p, status: 'SENT', sentAt: new Date().toISOString() } : p));
     onSent?.();
     onClose();
   }
@@ -198,13 +253,67 @@ export default function PrescriptionComposerModal({ appt, mm, onClose, initialVi
       <div onClick={e => e.stopPropagation()}
         className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl h-[92vh] sm:h-[85vh] flex flex-col overflow-hidden">
 
-        {view === 'edit' ? (
+        {view === 'history' ? (
           <>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-              <h2 className="text-lg font-bold text-gray-800">{mm ? 'ဆေးညွှန်း ရေးရန်' : 'Prescription Composer'}</h2>
+              <h2 className="text-lg font-bold text-gray-800">{mm ? 'ဆေးညွှန်းများ' : 'Prescriptions'}</h2>
               <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
                 <X className="w-4.5 h-4.5" />
               </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-3">
+              {loading ? (
+                <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+              ) : list.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+                  <FileText className="w-8 h-8 text-gray-200" />
+                  <p className="text-sm text-gray-400">{mm ? 'ဆေးညွှန်း မရှိသေးပါ' : 'No prescriptions yet.'}</p>
+                </div>
+              ) : (
+                list.map((p, i) => (
+                  <button key={p.id} onClick={() => openPast(p)}
+                    className="flex items-center justify-between rounded-xl border border-gray-100 p-4 text-left hover:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">{mm ? `အကြိမ် ${list.length - i}` : `Round ${list.length - i}`}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{p.diagnosis || (mm ? '(ရေးဆွဲဆဲ)' : '(draft)')}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-full"
+                        style={p.status === 'SENT' ? { backgroundColor: `${PRIMARY}15`, color: PRIMARY } : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}>
+                        {p.status === 'SENT' ? (mm ? 'ပို့ပြီး' : 'Sent') : (mm ? 'မပို့ရသေး' : 'Draft')}
+                      </span>
+                      <p className="text-[11px] text-gray-300">{new Date(p.sentAt ?? p.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </button>
+                ))
+              )}
+              {error && <p className="text-xs text-red-500">{error}</p>}
+            </div>
+
+            <div className="px-5 py-4 border-t border-gray-100 shrink-0">
+              <button onClick={startNew} disabled={creating}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-60"
+                style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)` }}>
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {mm ? 'ဆေးညွှန်း အသစ် ရေးမည်' : 'New Prescription'}
+              </button>
+            </div>
+          </>
+        ) : view === 'edit' ? (
+          <>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+              <h2 className="text-lg font-bold text-gray-800">{mm ? 'ဆေးညွှန်း ရေးရန်' : 'Prescription Composer'}</h2>
+              <div className="flex items-center gap-1">
+                {list.length > 0 && (
+                  <button onClick={() => setView('history')} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
+                    <History className="w-4.5 h-4.5" />
+                  </button>
+                )}
+                <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex border-b border-gray-100 shrink-0">
@@ -385,9 +494,16 @@ export default function PrescriptionComposerModal({ appt, mm, onClose, initialVi
           <>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
               <h2 className="text-lg font-bold text-gray-800">{mm ? 'ဆေးညွှန်း အစမ်းကြည့်ခြင်း' : 'Prescription Preview'}</h2>
-              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
-                <X className="w-4.5 h-4.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                {list.length > 0 && (
+                  <button onClick={() => setView('history')} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
+                    <History className="w-4.5 h-4.5" />
+                  </button>
+                )}
+                <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
+                  <X className="w-4.5 h-4.5" />
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-3">
@@ -469,9 +585,9 @@ export default function PrescriptionComposerModal({ appt, mm, onClose, initialVi
             </div>
 
             <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-gray-100 shrink-0">
-              <button onClick={() => setView('edit')} disabled={locked}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-600 disabled:opacity-40">
-                <ArrowLeft className="w-4 h-4" /> {mm ? 'ပြင်ရန် ပြန်သွားမည်' : 'Back to Edit'}
+              <button onClick={() => setView(locked ? 'history' : 'edit')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-600">
+                <ArrowLeft className="w-4 h-4" /> {locked ? (mm ? 'နောက်သို့' : 'Back') : (mm ? 'ပြင်ရန် ပြန်သွားမည်' : 'Back to Edit')}
               </button>
               {locked ? (
                 <span className="text-sm font-bold" style={{ color: PRIMARY }}>{mm ? 'ပို့ပြီးပါပြီ' : 'Sent'}</span>

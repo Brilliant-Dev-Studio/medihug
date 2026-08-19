@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { marked } from 'marked';
-import { X, Loader2, FileWarning } from 'lucide-react';
+import { X, Loader2, FileWarning, ChevronLeft } from 'lucide-react';
 
 const toHtml = (md: string) => (md ? String(marked.parse(md, { async: false })) : '');
 
@@ -10,6 +10,7 @@ const PRIMARY = 'var(--color-primary)';
 
 interface Medicine { name: string; dosage: string | null; frequency: string | null; duration: string | null }
 interface Prescription {
+  id: string;
   diagnosis: string | null; advice: string | null; referredSpecialist: boolean;
   followUpDate: string | null; followUpTime: string | null; comeAfterDays: number | null;
   sentAt: string | null; medicines: Medicine[];
@@ -23,22 +24,30 @@ const COME_AFTER_LABELS: Record<number, { mm: string; en: string }> = {
   30: { mm: '၁ လ',  en: '1 Month' },
 };
 
-/** Read-only view of a doctor-sent prescription, opened from the patient's appointment list. */
+/** Read-only view of doctor-sent prescriptions, opened from the patient's appointment list. Shows every round if more than one was sent. */
 export default function PrescriptionViewerModal({ appointmentId, mm, onClose }: {
   appointmentId: string; mm: boolean; onClose: () => void;
 }) {
   const [loading, setLoading] = useState(true);
-  const [rx, setRx] = useState<Prescription | null>(null);
+  const [list, setList] = useState<Prescription[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/patient/appointments/${appointmentId}/prescription`)
+    fetch(`/api/patient/appointments/${appointmentId}/prescriptions`, { cache: 'no-store' })
       .then(r => r.json())
-      .then(data => { if (active) { setRx(data.prescription ?? null); setLoading(false); } })
+      .then(data => {
+        if (!active) return;
+        const prescriptions: Prescription[] = data.prescriptions ?? [];
+        setList(prescriptions);
+        if (prescriptions.length === 1) setActiveId(prescriptions[0].id);
+        setLoading(false);
+      })
       .catch(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [appointmentId]);
 
+  const rx = list.find(p => p.id === activeId) ?? null;
   const comeAfterLabel = rx?.comeAfterDays ? COME_AFTER_LABELS[rx.comeAfterDays] : undefined;
 
   return (
@@ -47,7 +56,14 @@ export default function PrescriptionViewerModal({ appointmentId, mm, onClose }: 
         className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[90vh] flex flex-col overflow-hidden">
 
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-          <h2 className="text-lg font-bold text-gray-800">{mm ? 'ဆေးညွှန်း' : 'Prescription'}</h2>
+          <div className="flex items-center gap-2">
+            {rx && list.length > 1 && (
+              <button onClick={() => setActiveId(null)} className="w-8 h-8 -ml-2 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
+                <ChevronLeft className="w-4.5 h-4.5" />
+              </button>
+            )}
+            <h2 className="text-lg font-bold text-gray-800">{mm ? 'ဆေးညွှန်း' : 'Prescription'}</h2>
+          </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100">
             <X className="w-4.5 h-4.5" />
           </button>
@@ -56,10 +72,24 @@ export default function PrescriptionViewerModal({ appointmentId, mm, onClose }: 
         <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-3">
           {loading ? (
             <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
-          ) : !rx ? (
+          ) : list.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
               <FileWarning className="w-8 h-8 text-gray-200" />
               <p className="text-sm text-gray-400">{mm ? 'ဆေးညွှန်း မတွေ့ပါ' : 'Prescription not found.'}</p>
+            </div>
+          ) : !rx ? (
+            <div className="flex flex-col gap-2.5">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{mm ? 'ဆေးညွှန်းများ' : 'Prescriptions'}</p>
+              {list.map((p, i) => (
+                <button key={p.id} onClick={() => setActiveId(p.id)}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 p-4 text-left hover:bg-gray-50">
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{mm ? `ဆေးညွှန်း အကြိမ် ${list.length - i}` : `Round ${list.length - i}`}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{p.diagnosis || '—'}</p>
+                  </div>
+                  <p className="text-[11px] text-gray-300 shrink-0 ml-3">{p.sentAt && new Date(p.sentAt).toLocaleDateString()}</p>
+                </button>
+              ))}
             </div>
           ) : (
             <>

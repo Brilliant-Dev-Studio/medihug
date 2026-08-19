@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Calendar, Clock, CreditCard, Phone,
   User, FileText, Stethoscope, AlertTriangle, Video, Loader2, Sparkles, Send, MessageCircle,
-  ClipboardPlus, Eye,
+  ClipboardPlus, Eye, ChevronUp,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
@@ -13,7 +13,107 @@ import {
 } from '@/app/admin/appointments/shared';
 import { useLang } from '@/app/lib/LanguageContext';
 import PrescriptionComposerModal from '@/components/doctor/PrescriptionComposerModal';
+import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
 import AppointmentChatPanel from '@/components/AppointmentChatPanel';
+
+interface PastPrescription {
+  appointmentId: string;
+  diagnosis: string;
+  doctorName_mm: string;
+  doctorName_en: string;
+  date: string;
+}
+
+/** All prescriptions this patient has ever received, across every doctor — read-only, excludes the current appointment. */
+function PastPrescriptionsCard({ phone, currentAppointmentId, mm }: { phone: string; currentAppointmentId: string; mm: boolean }) {
+  const [loading, setLoading] = useState(true);
+  const [list, setList] = useState<PastPrescription[]>([]);
+  const [open, setOpen] = useState(true);
+  const [showAll, setShowAll] = useState(false);
+  const [viewId, setViewId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/patient/appointments?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!active) return;
+        type Raw = { id: string; doctor: { name: string; nameEn: string | null }; prescriptions: { status: string; diagnosis: string | null; sentAt: string | null }[] };
+        const raw: Raw[] = d.appointments ?? [];
+        const prescriptions = raw
+          .filter(a => a.id !== currentAppointmentId)
+          .flatMap(a => a.prescriptions.filter(p => p.status === 'SENT').map(p => ({ a, p })))
+          .sort((x, y) => new Date(y.p.sentAt!).getTime() - new Date(x.p.sentAt!).getTime())
+          .map(({ a, p }) => ({
+            appointmentId: a.id,
+            diagnosis: p.diagnosis || a.doctor.name,
+            doctorName_mm: a.doctor.name,
+            doctorName_en: a.doctor.nameEn ?? a.doctor.name,
+            date: new Date(p.sentAt!).toISOString().slice(0, 10),
+          }));
+        setList(prescriptions);
+      })
+      .catch(() => {})
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [phone, currentAppointmentId]);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-2.5 px-4 py-3 text-left border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}12` }}>
+          <Clock className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
+        </div>
+        <p className="text-sm font-bold flex-1" style={{ color: PRIMARY }}>{t(mm, { mm: 'ယခင် ဆေးညွှန်းများ', en: 'Past Prescriptions' })}</p>
+        {list.length > 0 && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${PRIMARY}12`, color: PRIMARY }}>{list.length}</span>
+        )}
+        <ChevronUp className={`w-4 h-4 text-gray-300 shrink-0 transition-transform ${open ? '' : 'rotate-180'}`} />
+      </button>
+
+      {open && (
+        loading ? (
+          <div className="px-4 py-4 flex flex-col gap-2.5">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-gray-100 px-4 py-3 flex flex-col gap-1.5">
+                <div className="h-3.5 w-36 bg-gray-100 rounded animate-pulse" />
+                <div className="h-2.5 w-28 bg-gray-100 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ) : list.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-1.5 py-8 text-center">
+            <FileText className="w-6 h-6 text-gray-200" />
+            <p className="text-xs text-gray-400">{t(mm, { mm: 'ဆေးညွှန်း မရှိသေးပါ', en: 'No past prescriptions.' })}</p>
+          </div>
+        ) : (
+          <div className="px-4 py-4 flex flex-col gap-2.5">
+            {(showAll ? list : list.slice(0, 2)).map(p => (
+              <div key={p.appointmentId} className="rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-gray-800 truncate">{p.diagnosis}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate">{p.date} · {mm ? p.doctorName_mm : p.doctorName_en}</p>
+                </div>
+                <button onClick={() => setViewId(p.appointmentId)}
+                  className="flex items-center gap-1 text-xs font-bold shrink-0" style={{ color: PRIMARY }}>
+                  <FileText className="w-3.5 h-3.5" /> {t(mm, { mm: 'ကြည့်ရန်', en: 'VIEW' })}
+                </button>
+              </div>
+            ))}
+            {!showAll && list.length > 2 && (
+              <button onClick={() => setShowAll(true)} className="text-center text-xs font-bold py-1" style={{ color: PRIMARY }}>
+                {t(mm, { mm: 'ပိုမိုကြည့်ရန်', en: 'VIEW MORE' })}
+              </button>
+            )}
+          </div>
+        )
+      )}
+
+      {viewId && <PrescriptionViewerModal appointmentId={viewId} mm={mm} onClose={() => setViewId(null)} />}
+    </div>
+  );
+}
 
 function Skel({ className, style }: { className: string; style?: React.CSSProperties }) {
   return <div className={`bg-gray-100 rounded-md animate-pulse ${className}`} style={style} />;
@@ -426,6 +526,8 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
         <div className="lg:col-span-2 flex flex-col gap-5">
 
           {d && <AISummaryCard appt={appt} mm={mm} onSummary={s => setAppt(a => a ? { ...a, aiSummary: s } : a)} />}
+
+          <PastPrescriptionsCard phone={appt.user.phone} currentAppointmentId={id} mm={mm} />
 
           {(appt.reason || appt.note) && (
             <ViewSection collapsible defaultOpen icon={FileText} title={t(mm, { mm: 'အကြောင်းအရာ / မှတ်ချက်', en: 'Reason / Note' })} rows={[
