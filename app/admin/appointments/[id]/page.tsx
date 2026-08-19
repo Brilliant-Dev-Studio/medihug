@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
-  ViewSection, StatusChanger, LangDropdown, STATUS_STYLE, type Appointment,
+  ViewSection, StatusChanger, LangDropdown, STATUS_STYLE, CBPAY_BADGE, type Appointment,
 } from '../shared';
 import { useLang } from '../../../lib/LanguageContext';
 import ImageLightbox from '@/components/admin/ImageLightbox';
@@ -92,9 +92,17 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
           <div className="relative rounded-2xl overflow-hidden">
             <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)` }} />
             <div className="relative p-6 flex flex-col items-center text-center gap-3">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full self-center" style={{ backgroundColor: 'rgba(255,255,255,0.18)', color: '#fff' }}>
-                <s.icon className="w-3.5 h-3.5" /> {t(mm, s.label)}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full self-center" style={{ backgroundColor: 'rgba(255,255,255,0.18)', color: '#fff' }}>
+                  <s.icon className="w-3.5 h-3.5" /> {t(mm, s.label)}
+                </span>
+                {appt.cbPayStatus && appt.cbPayStatus !== 'NONE' && (
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-full"
+                    style={{ backgroundColor: CBPAY_BADGE[appt.cbPayStatus].bg, color: CBPAY_BADGE[appt.cbPayStatus].color }}>
+                    {CBPAY_BADGE[appt.cbPayStatus].label}
+                  </span>
+                )}
+              </div>
               <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0 bg-white/15 text-white border-2 border-white/30 overflow-hidden">
                 {appt.user.profileImage
                   ? <img src={appt.user.profileImage} alt={appt.user.name} className="w-full h-full object-cover" />
@@ -169,6 +177,11 @@ export default function AdminAppointmentDetailPage({ params }: { params: Promise
                     <ZoomIn className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </button>
+              ) : appt.cbPayStatus === 'SUCCESS' ? (
+                <div className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50 flex flex-col items-center justify-center gap-1" style={{ aspectRatio: '4 / 3' }}>
+                  <p className="text-xs font-bold text-emerald-600">{t(mm, { mm: 'CB Pay ဖြင့် ငွေချေပြီး', en: 'Paid via CB Pay' })}</p>
+                  {appt.cbPayTransactionId && <p className="text-[10px] font-mono text-emerald-500">{appt.cbPayTransactionId}</p>}
+                </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 flex items-center justify-center" style={{ aspectRatio: '4 / 3' }}>
                   <p className="text-xs text-gray-400">{t(mm, { mm: 'မတင်ရသေးပါ', en: 'Not uploaded' })}</p>

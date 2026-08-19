@@ -34,6 +34,13 @@ enum Gender {
   FEMALE
 }
 
+enum CbPayStatus {
+  NONE
+  INITIATED
+  SUCCESS
+  FAILED
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -325,6 +332,11 @@ model Appointment {
   platformFeeAmount  Int? // platform's cut, snapshotted at booking time
   doctorPayoutAmount Int? // what the doctor receives, snapshotted at booking time
   receiptUrl    String?
+  cbPayStatus          CbPayStatus @default(NONE)
+  cbPayRefOrder        String?
+  cbPayTransactionId   String?
+  cbPayAmountConfirmed Int?
+  cbPayPaidAt          DateTime?
   intake        Json?
   aiSummary     String?
   doctorNote    String? // doctor-written clinical note for this consultation, Markdown source
@@ -359,6 +371,7 @@ model Appointment {
   @@index([clinicId])
   @@index([referredDoctorId])
   @@index([referredClinicId])
+  @@index([cbPayRefOrder])
 }
 
 // ─────────────────────────────────────────────
@@ -462,6 +475,11 @@ model Order {
   status        OrderStatus @default(PENDING)
   paymentMethod String?
   receiptUrl    String?
+  cbPayStatus          CbPayStatus @default(NONE)
+  cbPayRefOrder        String?
+  cbPayTransactionId   String?
+  cbPayAmountConfirmed Int?
+  cbPayPaidAt          DateTime?
   totalAmount   Int
   note          String?
   cancelReason  String?
@@ -474,6 +492,7 @@ model Order {
   refunds Refund[]
 
   @@index([userId])
+  @@index([cbPayRefOrder])
 }
 
 model OrderItem {

@@ -27,6 +27,8 @@ export interface Appointment {
   cancelReason?: string | null;
   cancelledAt?: string | null;
   receiptUrl: string | null;
+  cbPayStatus?: 'NONE' | 'INITIATED' | 'SUCCESS' | 'FAILED';
+  cbPayTransactionId?: string | null;
   intake: IntakeData | null;
   aiSummary?: string | null;
   doctorNote?: string | null;
@@ -55,6 +57,12 @@ export const STATUS_STYLE: Record<Appointment['status'], { bg: string; color: st
 };
 
 export const STATUS_OPTIONS: Appointment['status'][] = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
+
+export const CBPAY_BADGE: Record<'INITIATED' | 'SUCCESS' | 'FAILED', { bg: string; color: string; label: string }> = {
+  INITIATED: { bg: '#fffbeb', color: '#d97706', label: 'CB Pay: awaiting payment' },
+  SUCCESS:   { bg: '#ecfdf5', color: '#10b981', label: 'CB Pay ✓ Verified' },
+  FAILED:    { bg: '#fef2f2', color: '#ef4444', label: 'CB Pay: failed' },
+};
 
 /* ── intake label maps (bilingual) ── */
 export const MED_LABELS: Record<string, T> = {

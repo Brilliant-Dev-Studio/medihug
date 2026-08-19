@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Calendar, Clock, CreditCard, Phone,
   User, FileText, Stethoscope, AlertTriangle, Video, Loader2, Sparkles, Send, MessageCircle,
-  ClipboardPlus, Eye, ChevronUp,
+  ClipboardPlus, Eye, ChevronUp, Plus,
 } from 'lucide-react';
 import {
   PRIMARY, AVATAR_COLORS, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI, t,
@@ -17,6 +17,7 @@ import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
 import AppointmentChatPanel from '@/components/AppointmentChatPanel';
 
 interface PastPrescription {
+  id: string;
   appointmentId: string;
   diagnosis: string;
   doctorName_mm: string;
@@ -25,7 +26,7 @@ interface PastPrescription {
 }
 
 /** All prescriptions this patient has ever received, across every doctor — read-only, excludes the current appointment. */
-function PastPrescriptionsCard({ phone, currentAppointmentId, mm }: { phone: string; currentAppointmentId: string; mm: boolean }) {
+function PastPrescriptionsCard({ phone, currentAppointmentId, mm, onAdd }: { phone: string; currentAppointmentId: string; mm: boolean; onAdd: () => void }) {
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState<PastPrescription[]>([]);
   const [open, setOpen] = useState(true);
@@ -38,13 +39,14 @@ function PastPrescriptionsCard({ phone, currentAppointmentId, mm }: { phone: str
       .then(r => r.json())
       .then(d => {
         if (!active) return;
-        type Raw = { id: string; doctor: { name: string; nameEn: string | null }; prescriptions: { status: string; diagnosis: string | null; sentAt: string | null }[] };
+        type Raw = { id: string; doctor: { name: string; nameEn: string | null }; prescriptions: { id: string; status: string; diagnosis: string | null; sentAt: string | null }[] };
         const raw: Raw[] = d.appointments ?? [];
         const prescriptions = raw
           .filter(a => a.id !== currentAppointmentId)
           .flatMap(a => a.prescriptions.filter(p => p.status === 'SENT').map(p => ({ a, p })))
           .sort((x, y) => new Date(y.p.sentAt!).getTime() - new Date(x.p.sentAt!).getTime())
           .map(({ a, p }) => ({
+            id: p.id,
             appointmentId: a.id,
             diagnosis: p.diagnosis || a.doctor.name,
             doctorName_mm: a.doctor.name,
@@ -60,17 +62,27 @@ function PastPrescriptionsCard({ phone, currentAppointmentId, mm }: { phone: str
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-      <button type="button" onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2.5 px-4 py-3 text-left border-b border-gray-50 hover:bg-gray-50/60 transition-colors">
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}12` }}>
-          <Clock className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
-        </div>
-        <p className="text-sm font-bold flex-1" style={{ color: PRIMARY }}>{t(mm, { mm: 'ယခင် ဆေးညွှန်းများ', en: 'Past Prescriptions' })}</p>
+      <div className="w-full flex items-center gap-2.5 px-4 py-3 border-b border-gray-50">
+        <button type="button" onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-2.5 flex-1 min-w-0 text-left hover:opacity-80 transition-opacity">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}12` }}>
+            <Clock className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
+          </div>
+          <span className="text-sm font-bold flex-1" style={{ color: PRIMARY }}>{t(mm, { mm: 'ယခင် ဆေးညွှန်းများ', en: 'Past Prescriptions' })}</span>
+        </button>
         {list.length > 0 && (
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${PRIMARY}12`, color: PRIMARY }}>{list.length}</span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0" style={{ backgroundColor: `${PRIMARY}12`, color: PRIMARY }}>{list.length}</span>
         )}
-        <ChevronUp className={`w-4 h-4 text-gray-300 shrink-0 transition-transform ${open ? '' : 'rotate-180'}`} />
-      </button>
+        <button type="button" onClick={onAdd}
+          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity"
+          style={{ backgroundColor: `${PRIMARY}12`, color: PRIMARY }}
+          aria-label={t(mm, { mm: 'ဆေးညွှန်း အသစ် ရေးမည်', en: 'New prescription' })}>
+          <Plus className="w-4 h-4" />
+        </button>
+        <button type="button" onClick={() => setOpen(o => !o)} className="shrink-0 text-gray-300">
+          <ChevronUp className={`w-4 h-4 transition-transform ${open ? '' : 'rotate-180'}`} />
+        </button>
+      </div>
 
       {open && (
         loading ? (
@@ -90,7 +102,7 @@ function PastPrescriptionsCard({ phone, currentAppointmentId, mm }: { phone: str
         ) : (
           <div className="px-4 py-4 flex flex-col gap-2.5">
             {(showAll ? list : list.slice(0, 2)).map(p => (
-              <div key={p.appointmentId} className="rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between gap-3">
+              <div key={p.id} className="rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-bold text-sm text-gray-800 truncate">{p.diagnosis}</p>
                   <p className="text-xs text-gray-400 mt-0.5 truncate">{p.date} · {mm ? p.doctorName_mm : p.doctorName_en}</p>
@@ -315,7 +327,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
   const [callStarting, setCallStarting] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [rxOpen, setRxOpen] = useState(false);
-  const [rxView, setRxView] = useState<'edit' | 'preview'>('edit');
+  const [rxView, setRxView] = useState<'history' | 'edit' | 'preview'>('history');
 
   const fetchAppt = useCallback(async () => {
     setLoading(true);
@@ -498,7 +510,7 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
                 style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #1a9990 100%)` }}>
                 <Eye className="w-4 h-4" /> {t(mm, { mm: 'အစမ်းကြည့်ပြီး ပို့မည်', en: 'Preview & Send Rx' })}
               </button>
-              <button onClick={() => { setRxView('edit'); setRxOpen(true); }}
+              <button onClick={() => { setRxView('history'); setRxOpen(true); }}
                 className="w-full py-2.5 rounded-xl text-sm font-bold border-2 flex items-center justify-center gap-2"
                 style={{ borderColor: PRIMARY, color: PRIMARY }}>
                 <ClipboardPlus className="w-4 h-4" /> {t(mm, { mm: 'ဆေးညွှန်း ရေးမည်', en: 'Compose Rx' })}
@@ -527,7 +539,8 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
 
           {d && <AISummaryCard appt={appt} mm={mm} onSummary={s => setAppt(a => a ? { ...a, aiSummary: s } : a)} />}
 
-          <PastPrescriptionsCard phone={appt.user.phone} currentAppointmentId={id} mm={mm} />
+          <PastPrescriptionsCard phone={appt.user.phone} currentAppointmentId={id} mm={mm}
+            onAdd={() => { setRxView('edit'); setRxOpen(true); }} />
 
           {(appt.reason || appt.note) && (
             <ViewSection collapsible defaultOpen icon={FileText} title={t(mm, { mm: 'အကြောင်းအရာ / မှတ်ချက်', en: 'Reason / Note' })} rows={[

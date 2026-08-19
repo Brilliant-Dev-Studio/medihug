@@ -18,13 +18,20 @@ const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 
 const PAYMENT_METHOD_IMG: Record<string, string> = {
-  kpay: '/payment/Kpay.jpg', wavepay: '/payment/waveMoney.png', aya: '/payment/ayaPay.png', cb: '/payment/cbPay.jpg',
+  mmqr: '/MMQRLOGO.jpg', cb: '/payment/cbPay.jpg',
+};
+const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
+  mmqr: 'Scan to pay', cb: '09 xxx xxx xxx',
 };
 const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
-  id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: '09 xxx xxx xxx',
+  id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
 }));
 
 interface Product { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; packSize: string | null; }
+
+function navigateTo(url: string) {
+  window.location.href = url;
+}
 
 function getPatient(): { name: string; phone: string } | null {
   if (typeof window === 'undefined') return null;
@@ -56,7 +63,7 @@ function CheckoutContent() {
   const [name,  setName]  = useState(patient?.name  ?? '');
   const [phone, setPhone] = useState(patient?.phone ?? '');
 
-  const [payMethod, setPayMethod] = useState('kpay');
+  const [payMethod, setPayMethod] = useState('mmqr');
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
   const [note,      setNote]      = useState('');
@@ -65,6 +72,8 @@ function CheckoutContent() {
   const [done,       setDone]       = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{ id: string; total: number } | null>(null);
   const [copied,     setCopied]     = useState(false);
+  const [zoomQr,     setZoomQr]     = useState(false);
+  const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -95,10 +104,11 @@ function CheckoutContent() {
   }
 
   async function handleSubmit() {
-    if (!name.trim() || !phone.trim() || !receipt) return;
+    const isCb = payMethod === 'cb';
+    if (!name.trim() || !phone.trim() || (!isCb && !receipt)) return;
     setSubmitting(true); setError('');
     try {
-      const receiptUrl = await compressAndUpload(receipt.file, () => {}, '/api/patient/upload');
+      const receiptUrl = isCb ? null : await compressAndUpload(receipt!.file, () => {}, '/api/patient/upload');
       const res = await fetch('/api/patient/orders', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -111,6 +121,24 @@ function CheckoutContent() {
       if (!res.ok) { setError(data.error ?? (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong')); setSubmitting(false); return; }
       localStorage.setItem('medihug_patient', JSON.stringify({ name: name.trim(), phone: phone.trim() }));
       checkoutLines.forEach(l => removeItem(l.productId));
+
+      if (isCb) {
+        const initRes = await fetch('/api/payments/cbpay/initiate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kind: 'order', id: data.order.id }),
+        });
+        const initData = await initRes.json();
+        if (!initRes.ok) {
+          setError(mm ? 'CB Pay ချိတ်ဆက်၍မရပါ။ ထပ်စမ်းကြည့်ပါ' : 'Could not start CB Pay. Please try again.');
+          setSubmitting(false);
+          return;
+        }
+        setCbDeeplink(initData.deeplink);
+        setSubmitting(false);
+        navigateTo(initData.deeplink);
+        return;
+      }
+
       setPlacedOrder({ id: data.order.id, total: data.order.totalAmount });
       setSubmitting(false);
       setDone(true);
@@ -200,7 +228,8 @@ function CheckoutContent() {
   }
 
   const selected = PAYMENT_METHODS.find(p => p.id === payMethod)!;
-  const canSubmit = !!name.trim() && !!phone.trim() && !!receipt && !submitting;
+  const isCb = payMethod === 'cb';
+  const canSubmit = !!name.trim() && !!phone.trim() && !submitting && (isCb || !!receipt);
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -298,19 +327,36 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              <div className="px-4 py-3 rounded-xl flex items-center gap-3" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
-                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                  <Image src={selected.img} alt={selected.label} width={40} height={40} className="object-contain w-full h-full" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
-                  <p className="text-xs text-gray-500">
-                    {mm ? 'ဤနံပါတ်သို့ ငွေလွှဲပေးပါ → ' : 'Transfer to → '}
-                    <span className="font-bold text-gray-700">{selected.number}</span>
+              {selected.id !== 'cb' ? (
+                <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
+                  <p className="text-xs font-bold" style={{ color: PRIMARY }}>MMQR</p>
+                  <button type="button" onClick={() => setZoomQr(true)}
+                    className="w-40 h-40 rounded-xl overflow-hidden border border-gray-100 bg-white flex items-center justify-center active:scale-95 transition-transform">
+                    <Image src="/payment/mmqr.jpg" alt="MMQR" width={160} height={160} className="object-contain w-full h-full" />
+                  </button>
+                  <p className="text-xs text-gray-500 text-center">
+                    {mm ? 'ပုံကို နှိပ်ပြီး ချဲ့ကြည့်နိုင်ပါသည် · MMQR ကို စကင်ဖတ်ပြီး ငွေလွှဲပေးပါ' : 'Tap image to zoom · Scan the MMQR to pay'}
                   </p>
                 </div>
-              </div>
+              ) : (
+                <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2 text-center" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
+                  <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
+                    <Image src={selected.img} alt={selected.label} width={40} height={40} className="object-contain w-full h-full" />
+                  </div>
+                  <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
+                  <p className="text-xs text-gray-500">
+                    {mm ? 'အော်ဒါတင်ပြီးရင် CBPay app ဖွင့်ပြီး PIN နှိပ်ပြီး ငွေချေရပါမည်' : "You'll be redirected to the CBPay app to approve payment with your PIN."}
+                  </p>
+                  {cbDeeplink && (
+                    <p className="text-[11px] text-amber-500 mt-1">
+                      {mm ? 'App မဖွင့်ဘူးလား? Mobile ဖုန်းပေါ်တွင် CBPay app ရှိမရှိ စစ်ပါ' : "Didn't open? Make sure you're on your phone with the CBPay app installed."}{' '}
+                      <a href={cbDeeplink} className="underline font-semibold">{mm ? 'ထပ်ကြိုးစားရန်' : 'Try again'}</a>
+                    </p>
+                  )}
+                </div>
+              )}
 
+              {!isCb && (
               <div>
                 <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">{mm ? 'ငွေလွှဲပြေစာ တင်ပါ' : 'Upload payment receipt'}</p>
                 {receipt ? (
@@ -343,12 +389,13 @@ function CheckoutContent() {
                 )}
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
               </div>
+              )}
             </div>
 
             {error && <p className="text-center text-xs text-red-500 font-semibold">{error}</p>}
 
             <div className="flex flex-col gap-2">
-              {!receipt && (
+              {!isCb && !receipt && (
                 <p className="text-center text-xs text-amber-500 font-semibold">
                   {mm ? '⚠ ငွေပေးချေပြေစာ တင်ရန် လိုအပ်သည်' : '⚠ Please upload payment receipt to continue'}
                 </p>
@@ -365,6 +412,22 @@ function CheckoutContent() {
           </>
         )}
       </div>
+
+      {zoomQr && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6"
+          onClick={() => setZoomQr(false)}
+        >
+          <button onClick={() => setZoomQr(false)}
+            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <div className="bg-white rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/payment/mmqr.jpg" alt="MMQR" className="block w-auto h-auto max-w-[92vw] max-h-[88vh]" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

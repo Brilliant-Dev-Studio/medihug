@@ -19,11 +19,18 @@ const SECONDARY = 'var(--color-primary-dark)';
 const ACCENT    = 'var(--color-accent)';
 
 const PAYMENT_METHOD_IMG: Record<string, string> = {
-  kpay: '/payment/Kpay.jpg', wavepay: '/payment/waveMoney.png', aya: '/payment/ayaPay.png', cb: '/payment/cbPay.jpg',
+  mmqr: '/MMQRLOGO.jpg', cb: '/payment/cbPay.jpg',
+};
+const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
+  mmqr: 'Scan to pay', cb: '09 xxx xxx xxx',
 };
 const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
-  id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: '09 xxx xxx xxx',
+  id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
 }));
+
+function navigateTo(url: string) {
+  window.location.href = url;
+}
 
 export default function BookingPage() {
   return (
@@ -56,7 +63,7 @@ function BookingContent() {
   const basePrice    = Number(params.get('basePrice') ?? '22000');
 
   /* ── local state ── */
-  const [payMethod,  setPayMethod]  = useState<string>('kpay');
+  const [payMethod,  setPayMethod]  = useState<string>('mmqr');
   const [receipt,    setReceipt]    = useState<{ file: File; url: string } | null>(null);
   const [dragOver,   setDragOver]   = useState(false);
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
@@ -81,18 +88,20 @@ function BookingContent() {
   }
 
   function handleSubmit() {
-    if (!receipt) return;
+    if (!receipt && payMethod !== 'cb') return;
     setStep('intake');
   }
 
   const [lastIntake, setLastIntake] = useState<IntakeData | null>(null);
+  const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
 
   async function handleIntakeDone(intake: IntakeData) {
+    const isCb = payMethod === 'cb';
     setLastIntake(intake);
     setSubmitting(true);
     setSubmitErr(null);
     try {
-      const receiptUrl = receipt ? await compressAndUpload(receipt.file, () => {}, '/api/patient/upload') : null;
+      const receiptUrl = isCb ? null : (receipt ? await compressAndUpload(receipt.file, () => {}, '/api/patient/upload') : null);
       const res = await fetch('/api/patient/bookings', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -116,6 +125,24 @@ function BookingContent() {
         return;
       }
       localStorage.setItem('medihug_patient', JSON.stringify({ name: intake.name, phone: intake.phone }));
+
+      if (isCb) {
+        const initRes = await fetch('/api/payments/cbpay/initiate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kind: 'appointment', id: data.appointment.id }),
+        });
+        const initData = await initRes.json();
+        if (!initRes.ok) {
+          setSubmitErr({ message: mm ? 'CB Pay ချိတ်ဆက်၍မရပါ။ ထပ်စမ်းကြည့်ပါ' : 'Could not start CB Pay. Please try again.' });
+          setSubmitting(false);
+          return;
+        }
+        setCbDeeplink(initData.deeplink);
+        setSubmitting(false);
+        navigateTo(initData.deeplink);
+        return;
+      }
+
       setSubmitting(false);
       setStep('done');
     } catch (err) {
@@ -172,6 +199,21 @@ function BookingContent() {
                     </button>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+          {cbDeeplink && (
+            <div className="mb-4 rounded-2xl border p-4 flex items-start gap-3" style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a' }}>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold" style={{ color: '#b45309' }}>
+                  {mm ? 'CBPay app မဖွင့်ဘူးလား?' : "Didn't open?"}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: '#92400e' }}>
+                  {mm ? 'Mobile ဖုန်းပေါ်တွင် CBPay app ရှိမရှိ စစ်ပြီး ထပ်နှိပ်ကြည့်ပါ' : "Make sure you're on your phone with the CBPay app installed, then tap to try again."}
+                </p>
+                <a href={cbDeeplink} className="inline-block mt-2 text-xs font-bold px-3.5 py-2 rounded-xl text-white" style={{ backgroundColor: '#d97706' }}>
+                  {mm ? 'ထပ်ကြိုးစားရန်' : 'Try again'}
+                </a>
               </div>
             </div>
           )}
@@ -275,7 +317,7 @@ function BookingContent() {
 
           {/* Submit bar */}
           <div className="mt-auto px-6 pb-6">
-            <SubmitBar mm={mm} receipt={receipt} fee={fee} onSubmit={handleSubmit} />
+            <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} onSubmit={handleSubmit} />
           </div>
         </div>
       </div>
@@ -324,7 +366,7 @@ function BookingContent() {
           className="fixed bottom-16 left-0 right-0 px-4 pt-3 pb-4 border-t border-gray-100 z-30"
           style={{ backgroundColor: '#fff', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
         >
-          <SubmitBar mm={mm} receipt={receipt} fee={fee} onSubmit={handleSubmit} />
+          <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} onSubmit={handleSubmit} />
         </div>
       </div>
     </div>
@@ -436,6 +478,7 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
   handleFile: (f: File) => void; handleDrop: (e: React.DragEvent) => void;
   fee: string;
 }) {
+  const [zoomQr, setZoomQr] = useState(false);
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
       {/* Section title */}
@@ -495,26 +538,56 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
       {/* QR / account info for selected method */}
       {(() => {
         const selected = PAYMENT_METHODS.find(p => p.id === payMethod)!;
+        if (selected.id !== 'cb') {
+          return (
+            <div
+              className="px-4 py-4 rounded-xl flex flex-col items-center gap-2"
+              style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}
+            >
+              <p className="text-xs font-bold" style={{ color: PRIMARY }}>MMQR</p>
+              <button type="button" onClick={() => setZoomQr(true)}
+                className="w-40 h-40 rounded-xl overflow-hidden border border-gray-100 bg-white flex items-center justify-center active:scale-95 transition-transform">
+                <Image src="/payment/mmqr.jpg" alt="MMQR" width={160} height={160} className="object-contain w-full h-full" />
+              </button>
+              <p className="text-xs text-gray-500 text-center">
+                {mm ? 'ပုံကို နှိပ်ပြီး ချဲ့ကြည့်နိုင်ပါသည် · MMQR ကို စကင်ဖတ်ပြီး ငွေလွှဲပေးပါ' : 'Tap image to zoom · Scan the MMQR to pay'}
+              </p>
+              {zoomQr && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6"
+                  onClick={() => setZoomQr(false)}
+                >
+                  <button onClick={() => setZoomQr(false)}
+                    className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                  <div className="bg-white rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/payment/mmqr.jpg" alt="MMQR" className="block w-auto h-auto max-w-[92vw] max-h-[88vh]" />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
         return (
           <div
-            className="px-4 py-3 rounded-xl flex items-center gap-3"
+            className="px-4 py-4 rounded-xl flex flex-col items-center gap-2 text-center"
             style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}
           >
             <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
               <Image src={selected.img} alt={selected.label} width={40} height={40} className="object-contain w-full h-full" />
             </div>
-            <div>
-              <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
-              <p className="text-xs text-gray-500">
-                {mm ? 'ဤနံပါတ်သို့ ငွေလွှဲပေးပါ → ' : 'Transfer to → '}
-                <span className="font-bold text-gray-700">{selected.number}</span>
-              </p>
-            </div>
+            <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
+            <p className="text-xs text-gray-500">
+              {mm ? 'ချိန်းဆိုမှု တင်ပြပြီးရင် CBPay app ဖွင့်ပြီး PIN နှိပ်ပြီး ငွေချေရပါမည်' : "You'll be redirected to the CBPay app to approve payment with your PIN."}
+            </p>
           </div>
         );
       })()}
 
       {/* Receipt upload */}
+      {payMethod !== 'cb' && (
       <div>
         <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">
           {mm ? 'ငွေလွှဲပြေစာ တင်ပါ' : 'Upload payment receipt'}
@@ -574,17 +647,18 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
         />
       </div>
+      )}
     </div>
   );
 }
 
-function SubmitBar({ mm, receipt, fee, onSubmit }: {
-  mm: boolean; receipt: { file: File; url: string } | null; fee: string; onSubmit: () => void;
+function SubmitBar({ mm, receipt, payMethod, fee, onSubmit }: {
+  mm: boolean; receipt: { file: File; url: string } | null; payMethod: string; fee: string; onSubmit: () => void;
 }) {
-  const canSubmit = receipt !== null;
+  const canSubmit = payMethod === 'cb' || receipt !== null;
   return (
     <div className="flex flex-col gap-2">
-      {!receipt && (
+      {payMethod !== 'cb' && !receipt && (
         <p className="text-center text-xs text-amber-500 font-semibold">
           {mm ? '⚠ ငွေပေးချေပြေစာ တင်ရန် လိုအပ်သည်' : '⚠ Please upload payment receipt to continue'}
         </p>

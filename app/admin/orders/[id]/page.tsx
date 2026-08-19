@@ -16,6 +16,8 @@ interface Order {
   id: string;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   totalAmount: number; paymentMethod: string | null; receiptUrl: string | null; note: string | null;
+  cbPayStatus: 'NONE' | 'INITIATED' | 'SUCCESS' | 'FAILED';
+  cbPayTransactionId: string | null;
   cancelReason: string | null;
   createdAt: string;
   user: { id: string; name: string; phone: string };
@@ -29,6 +31,12 @@ const STATUS_STYLE: Record<Order['status'], { bg: string; color: string }> = {
   CANCELLED: { bg: '#fef2f2', color: '#ef4444' },
 };
 const STATUS_OPTIONS: Order['status'][] = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'];
+
+const CBPAY_BADGE: Record<'INITIATED' | 'SUCCESS' | 'FAILED', { bg: string; color: string; label: string }> = {
+  INITIATED: { bg: '#fffbeb', color: '#d97706', label: 'CB Pay: awaiting payment' },
+  SUCCESS:   { bg: '#ecfdf5', color: '#10b981', label: 'CB Pay ✓ Verified' },
+  FAILED:    { bg: '#fef2f2', color: '#ef4444', label: 'CB Pay: failed' },
+};
 
 export default function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -76,6 +84,13 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         <button onClick={() => router.back()} className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-gray-700 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Orders
         </button>
+        <div className="flex items-center gap-2">
+        {order.cbPayStatus !== 'NONE' && (
+          <span className="text-xs font-bold px-3 py-2 rounded-xl"
+            style={{ backgroundColor: CBPAY_BADGE[order.cbPayStatus].bg, color: CBPAY_BADGE[order.cbPayStatus].color }}>
+            {CBPAY_BADGE[order.cbPayStatus].label}
+          </span>
+        )}
         <div className="relative">
           <select
             value={order.status}
@@ -86,6 +101,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: STATUS_STYLE[order.status].color }} />
+        </div>
         </div>
       </div>
 
@@ -172,6 +188,11 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
               <a href={order.receiptUrl} target="_blank" rel="noopener noreferrer" className="block relative rounded-xl overflow-hidden border border-gray-100" style={{ height: 200 }}>
                 <img src={order.receiptUrl} alt="receipt" className="w-full h-full object-contain bg-gray-50" />
               </a>
+            ) : order.cbPayStatus === 'SUCCESS' ? (
+              <div className="flex flex-col items-center justify-center gap-1 py-8 text-emerald-600 border border-dashed border-emerald-200 rounded-xl bg-emerald-50">
+                <p className="text-xs font-bold">Paid via CB Pay</p>
+                {order.cbPayTransactionId && <p className="text-[10px] font-mono text-emerald-500">Transaction ID: {order.cbPayTransactionId}</p>}
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-gray-300 border border-dashed border-gray-200 rounded-xl">
                 <ImageIcon className="w-6 h-6 mb-1.5" />
