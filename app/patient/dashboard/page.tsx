@@ -494,22 +494,38 @@ export default function PatientDashboard() {
           </div>
 
           {/* Past Prescriptions */}
-          {!apptsLoading && pastPrescriptions.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <button onClick={() => setRxCardOpen(o => !o)}
-                className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left"
-                style={{ background: `linear-gradient(135deg, ${PRIMARY}0d 0%, ${SECONDARY}0d 100%)` }}>
-                <Clock className="w-4.5 h-4.5 text-gray-400 shrink-0" />
-                <span className="font-bold text-sm flex-1" style={{ color: PRIMARY }}>
-                  {mm ? 'ယခင် ဆေးညွှန်းများ' : 'Past Prescriptions'}
-                </span>
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <button onClick={() => setRxCardOpen(o => !o)}
+              className="w-full flex items-center gap-2.5 px-4 py-3.5 text-left"
+              style={{ background: `linear-gradient(135deg, ${PRIMARY}0d 0%, ${SECONDARY}0d 100%)` }}>
+              <Clock className="w-4.5 h-4.5 text-gray-400 shrink-0" />
+              <span className="font-bold text-sm flex-1" style={{ color: PRIMARY }}>
+                {mm ? 'ယခင် ဆေးညွှန်းများ' : 'Past Prescriptions'}
+              </span>
+              {pastPrescriptions.length > 0 && (
                 <span className="text-[11px] font-bold text-white w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: PRIMARY }}>
                   {pastPrescriptions.length}
                 </span>
-                <ChevronUp className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${rxCardOpen ? '' : 'rotate-180'}`} />
-              </button>
+              )}
+              <ChevronUp className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${rxCardOpen ? '' : 'rotate-180'}`} />
+            </button>
 
-              {rxCardOpen && (
+            {rxCardOpen && (
+              apptsLoading ? (
+                <div className="px-4 py-4 flex flex-col gap-2.5">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="rounded-xl border border-gray-100 px-4 py-3 flex flex-col gap-1.5">
+                      <div className="h-3.5 w-36 bg-gray-100 rounded animate-pulse" />
+                      <div className="h-2.5 w-28 bg-gray-100 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              ) : pastPrescriptions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-1.5 py-8 text-center">
+                  <FileText className="w-6 h-6 text-gray-200" />
+                  <p className="text-xs text-gray-400">{mm ? 'ဆေးညွှန်း မရှိသေးပါ' : 'No data'}</p>
+                </div>
+              ) : (
                 <div className="px-4 py-4 flex flex-col gap-2.5">
                   {(rxShowAll ? pastPrescriptions : pastPrescriptions.slice(0, 2)).map(p => (
                     <div key={p.appointmentId} className="rounded-xl border border-gray-100 px-4 py-3 flex items-center justify-between gap-3">
@@ -532,9 +548,9 @@ export default function PatientDashboard() {
                     </button>
                   )}
                 </div>
-              )}
-            </div>
-          )}
+              )
+            )}
+          </div>
 
           {/* Blog Categories */}
           <BlogCategoryCircles />
