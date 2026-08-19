@@ -85,7 +85,7 @@ export async function requestCbPayOrder(input: {
  * hasn't landed yet. transactionStatus: P=pending, S=success, F=fail, E=expired. */
 export async function checkCbPayStatus(input: {
   orderId: string; generateRefOrder: string;
-}): Promise<PnvResult<{ transactionStatus: 'P' | 'S' | 'F' | 'E' }>> {
+}): Promise<PnvResult<{ transactionStatus: 'P' | 'S' | 'F' | 'E'; transactionId?: string; totalAmount?: number }>> {
   const config = getConfig();
   if (!config) return { error: 'CBPAY_NOT_CONFIGURED' };
 
@@ -97,7 +97,11 @@ export async function checkCbPayStatus(input: {
     });
     const data = await res.json();
     if (!res.ok || !data.transactionStatus) return { error: data.msg ?? 'CBPAY_STATUS_CHECK_FAILED' };
-    return { transactionStatus: data.transactionStatus };
+    return {
+      transactionStatus: data.transactionStatus,
+      transactionId: data.transactionId ?? undefined,
+      totalAmount: typeof data.totalAmount === 'number' ? data.totalAmount : Number(data.totalAmount) || undefined,
+    };
   } catch (e) {
     console.error('checkCbPayStatus failed:', e);
     return { error: 'CBPAY_STATUS_CHECK_FAILED' };

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { parseSlotTimes, maxPerSlotFor, dayBounds } from '@/lib/timeSlots';
 import { computePatientPrice, computePlatformCut, resolveCommission } from '@/lib/commission';
 import { notify } from '@/lib/notify';
+import { checkCbPayStatus } from '@/lib/cbpay';
 
 /* ── POST /api/patient/bookings ── */
 export async function POST(req: NextRequest) {
@@ -12,10 +13,26 @@ export async function POST(req: NextRequest) {
     const {
       name, phone, doctorId, date, time, reason, note,
       paymentMethod, receiptUrl, intake,
+      cbPayOrderId, cbPayGenerateRefOrder,
     } = body;
 
     if (!name || !phone || !doctorId || !date) {
       return NextResponse.json({ error: 'name, phone, doctorId, date are required.' }, { status: 400 });
+    }
+
+    // CB Pay bookings are only created once payment already succeeded (patient pays first,
+    // fills the medical intake form after) — re-verify with CB Bank server-side rather than
+    // trusting the client's claim; this is the real trust boundary, not the client payload.
+    let cbPayVerified: { transactionId?: string; totalAmount?: number } | null = null;
+    if (paymentMethod === 'cb') {
+      if (!cbPayOrderId || !cbPayGenerateRefOrder) {
+        return NextResponse.json({ error: 'CB Pay payment has not been completed.', code: 'CBPAY_NOT_CONFIRMED' }, { status: 402 });
+      }
+      const check = await checkCbPayStatus({ orderId: cbPayOrderId, generateRefOrder: cbPayGenerateRefOrder });
+      if ('error' in check || check.transactionStatus !== 'S') {
+        return NextResponse.json({ error: 'CB Pay payment could not be confirmed.', code: 'CBPAY_NOT_CONFIRMED' }, { status: 402 });
+      }
+      cbPayVerified = { transactionId: check.transactionId, totalAmount: check.totalAmount };
     }
 
     const doctor = await db.doctor.findUnique({ where: { id: doctorId } });
@@ -86,6 +103,14 @@ export async function POST(req: NextRequest) {
           doctorPayoutAmount,
           receiptUrl:    receiptUrl ?? null,
           intake:        intake ?? undefined,
+          ...(cbPayVerified ? {
+            cbPayStatus: 'SUCCESS' as const,
+            cbPayRefOrder: cbPayGenerateRefOrder,
+            cbPayTransactionId: cbPayVerified.transactionId ?? null,
+            cbPayAmountConfirmed: cbPayVerified.totalAmount != null ? Math.round(cbPayVerified.totalAmount) : null,
+            cbPayPaidAt: new Date(),
+            status: 'CONFIRMED' as const,
+          } : {}),
         },
         include: { doctor: true, user: true },
       });

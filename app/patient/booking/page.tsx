@@ -1,7 +1,7 @@
 'use client';
 import { theme } from '../../lib/theme';
 
-import { useState, useRef, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -76,6 +76,69 @@ function BookingContent() {
     ? `${slotStart} → ${slotEnd}${duration ? ` (${duration})` : ''}`
     : slotStart;
 
+  /* CB Pay gates the medical intake form behind actual payment success, mirroring how other
+   * methods gate it behind the receipt upload — see PaymentCard/SubmitBar's isCb branches. */
+  const [cbPhase, setCbPhase] = useState<'idle' | 'paying' | 'failed'>('idle');
+  const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
+  const [cbProof, setCbProof] = useState<{ orderId: string; generateRefOrder: string } | null>(null);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollAttempts = useRef(0);
+
+  useEffect(() => () => { if (pollRef.current) clearTimeout(pollRef.current); }, []);
+
+  function pollCbPayStatus(orderId: string, generateRefOrder: string) {
+    pollAttempts.current += 1;
+    if (pollAttempts.current > 60) { // ~3 minutes at 3s intervals
+      setCbPhase('failed');
+      setSubmitErr({ message: mm ? 'ငွေချေမှု ကြာမြင့်နေပါသည်။ ထပ်စမ်းကြည့်ပါ' : 'Payment is taking too long. Please try again.' });
+      return;
+    }
+    pollRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/payments/cbpay/pending?orderId=${encodeURIComponent(orderId)}&generateRefOrder=${encodeURIComponent(generateRefOrder)}`);
+        const data = await res.json();
+        if (res.ok && data.transactionStatus === 'S') {
+          setCbPhase('idle');
+          setStep('intake');
+          return;
+        }
+        if (res.ok && (data.transactionStatus === 'F' || data.transactionStatus === 'E')) {
+          setCbPhase('failed');
+          setSubmitErr({ message: mm ? 'CB Pay ငွေချေမှု မအောင်မြင်ပါ' : 'CB Pay payment was not successful.' });
+          return;
+        }
+        pollCbPayStatus(orderId, generateRefOrder); // still 'P' — keep waiting
+      } catch {
+        pollCbPayStatus(orderId, generateRefOrder);
+      }
+    }, 3000);
+  }
+
+  async function startCbPayment() {
+    setCbPhase('paying');
+    setSubmitErr(null);
+    pollAttempts.current = 0;
+    try {
+      const res = await fetch('/api/payments/cbpay/pending', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: basePrice * sessions, orderDetails: 'Medihug consultation booking' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCbPhase('failed');
+        setSubmitErr({ message: mm ? 'CB Pay ချိတ်ဆက်၍မရပါ။ ထပ်စမ်းကြည့်ပါ' : 'Could not start CB Pay. Please try again.' });
+        return;
+      }
+      setCbProof({ orderId: data.orderId, generateRefOrder: data.generateRefOrder });
+      setCbDeeplink(data.deeplink);
+      navigateTo(data.deeplink);
+      pollCbPayStatus(data.orderId, data.generateRefOrder);
+    } catch {
+      setCbPhase('failed');
+      setSubmitErr({ message: mm ? 'ဆာဗာအမှား' : 'Server error' });
+    }
+  }
+
   function handleFile(file: File) {
     if (!file.type.startsWith('image/')) return;
     setReceipt({ file, url: URL.createObjectURL(file) });
@@ -88,12 +151,12 @@ function BookingContent() {
   }
 
   function handleSubmit() {
-    if (!receipt && payMethod !== 'cb') return;
+    if (payMethod === 'cb') { startCbPayment(); return; }
+    if (!receipt) return;
     setStep('intake');
   }
 
   const [lastIntake, setLastIntake] = useState<IntakeData | null>(null);
-  const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
 
   async function handleIntakeDone(intake: IntakeData) {
     const isCb = payMethod === 'cb';
@@ -116,6 +179,7 @@ function BookingContent() {
           fee: basePrice * sessions,
           receiptUrl,
           intake,
+          ...(isCb && cbProof ? { cbPayOrderId: cbProof.orderId, cbPayGenerateRefOrder: cbProof.generateRefOrder } : {}),
         }),
       });
       const data = await res.json();
@@ -125,24 +189,6 @@ function BookingContent() {
         return;
       }
       localStorage.setItem('medihug_patient', JSON.stringify({ name: intake.name, phone: intake.phone }));
-
-      if (isCb) {
-        const initRes = await fetch('/api/payments/cbpay/initiate', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ kind: 'appointment', id: data.appointment.id }),
-        });
-        const initData = await initRes.json();
-        if (!initRes.ok) {
-          setSubmitErr({ message: mm ? 'CB Pay ချိတ်ဆက်၍မရပါ။ ထပ်စမ်းကြည့်ပါ' : 'Could not start CB Pay. Please try again.' });
-          setSubmitting(false);
-          return;
-        }
-        setCbDeeplink(initData.deeplink);
-        setSubmitting(false);
-        navigateTo(initData.deeplink);
-        return;
-      }
-
       setSubmitting(false);
       setStep('done');
     } catch (err) {
@@ -199,21 +245,6 @@ function BookingContent() {
                     </button>
                   )}
                 </div>
-              </div>
-            </div>
-          )}
-          {cbDeeplink && (
-            <div className="mb-4 rounded-2xl border p-4 flex items-start gap-3" style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a' }}>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold" style={{ color: '#b45309' }}>
-                  {mm ? 'CBPay app မဖွင့်ဘူးလား?' : "Didn't open?"}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: '#92400e' }}>
-                  {mm ? 'Mobile ဖုန်းပေါ်တွင် CBPay app ရှိမရှိ စစ်ပြီး ထပ်နှိပ်ကြည့်ပါ' : "Make sure you're on your phone with the CBPay app installed, then tap to try again."}
-                </p>
-                <a href={cbDeeplink} className="inline-block mt-2 text-xs font-bold px-3.5 py-2 rounded-xl text-white" style={{ backgroundColor: '#d97706' }}>
-                  {mm ? 'ထပ်ကြိုးစားရန်' : 'Try again'}
-                </a>
               </div>
             </div>
           )}
@@ -317,7 +348,7 @@ function BookingContent() {
 
           {/* Submit bar */}
           <div className="mt-auto px-6 pb-6">
-            <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} onSubmit={handleSubmit} />
+            <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} onSubmit={handleSubmit} />
           </div>
         </div>
       </div>
@@ -366,7 +397,7 @@ function BookingContent() {
           className="fixed bottom-16 left-0 right-0 px-4 pt-3 pb-4 border-t border-gray-100 z-30"
           style={{ backgroundColor: '#fff', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
         >
-          <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} onSubmit={handleSubmit} />
+          <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} onSubmit={handleSubmit} />
         </div>
       </div>
     </div>
@@ -580,7 +611,7 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
             </div>
             <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
             <p className="text-xs text-gray-500">
-              {mm ? 'ချိန်းဆိုမှု တင်ပြပြီးရင် CBPay app ဖွင့်ပြီး PIN နှိပ်ပြီး ငွေချေရပါမည်' : "You'll be redirected to the CBPay app to approve payment with your PIN."}
+              {mm ? 'ငွေချေမှု အောင်မြင်မှ ဆေးမှတ်တမ်း ဖြည့်ရပါမည်' : "You'll pay first, then fill in the medical form once payment succeeds."}
             </p>
           </div>
         );
@@ -652,13 +683,37 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
   );
 }
 
-function SubmitBar({ mm, receipt, payMethod, fee, onSubmit }: {
-  mm: boolean; receipt: { file: File; url: string } | null; payMethod: string; fee: string; onSubmit: () => void;
+function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, onSubmit }: {
+  mm: boolean; receipt: { file: File; url: string } | null; payMethod: string; fee: string;
+  cbPhase: 'idle' | 'paying' | 'failed'; cbDeeplink: string | null; onSubmit: () => void;
 }) {
-  const canSubmit = payMethod === 'cb' || receipt !== null;
+  const isCb = payMethod === 'cb';
+  const canSubmit = isCb ? cbPhase !== 'paying' : receipt !== null;
+
+  if (isCb && cbPhase === 'paying') {
+    return (
+      <div className="flex flex-col items-center gap-2 py-2">
+        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: `${PRIMARY}30`, borderTopColor: PRIMARY }} />
+        <p className="text-xs font-semibold text-gray-500 text-center">
+          {mm ? 'CBPay app တွင် PIN နှိပ်ပြီး ငွေချေရန် စောင့်နေပါသည်...' : 'Waiting for you to approve payment in the CBPay app...'}
+        </p>
+        {cbDeeplink && (
+          <a href={cbDeeplink} className="text-xs font-bold underline" style={{ color: PRIMARY }}>
+            {mm ? 'App မဖွင့်ဘူးလား? ထပ်ကြိုးစားရန်' : "Didn't open? Try again"}
+          </a>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
-      {payMethod !== 'cb' && !receipt && (
+      {isCb && cbPhase === 'failed' && (
+        <p className="text-center text-xs text-red-500 font-semibold">
+          {mm ? '⚠ ငွေချေမှု မအောင်မြင်ပါ။ ထပ်စမ်းကြည့်ပါ' : '⚠ Payment was not successful. Please try again.'}
+        </p>
+      )}
+      {!isCb && !receipt && (
         <p className="text-center text-xs text-amber-500 font-semibold">
           {mm ? '⚠ ငွေပေးချေပြေစာ တင်ရန် လိုအပ်သည်' : '⚠ Please upload payment receipt to continue'}
         </p>
@@ -674,7 +729,9 @@ function SubmitBar({ mm, receipt, payMethod, fee, onSubmit }: {
           cursor: canSubmit ? 'pointer' : 'not-allowed',
         }}
       >
-        {mm ? 'ချိန်းဆိုမှု တင်ပြမည်' : 'Submit Booking'}
+        {isCb
+          ? (mm ? 'CB Pay ဖြင့် ငွေချေမည်' : 'Pay with CB Pay')
+          : (mm ? 'ချိန်းဆိုမှု တင်ပြမည်' : 'Submit Booking')}
       </button>
     </div>
   );

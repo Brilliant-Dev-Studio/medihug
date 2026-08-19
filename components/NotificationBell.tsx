@@ -53,7 +53,9 @@ function NotificationRow({ n, onClick }: { n: NotificationItem; onClick: () => v
 
 /** Bell icon + popover. Safe to render more than once (e.g. mobile + desktop headers) inside a
  * single RealtimeProvider — it only reads the shared notification state, it doesn't create it. */
-export function NotificationBellButton() {
+export function NotificationBellButton({ iconColor = '#6b7280', hoverBg = 'rgba(107,114,128,0.1)' }: {
+  iconColor?: string; hoverBg?: string;
+} = {}) {
   const { notifications, unreadCount, loading, markAllRead } = useRealtime();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -69,8 +71,13 @@ export function NotificationBellButton() {
 
   return (
     <div className="relative" ref={wrapRef}>
-      <button onClick={() => setOpen(v => !v)} className="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors">
-        <Bell className="w-4.5 h-4.5 text-gray-500" />
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="relative w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = hoverBg)}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+      >
+        <Bell className="w-4.5 h-4.5" style={{ color: iconColor }} />
         {unreadCount > 0 && (
           <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full text-[9px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: '#ef4444' }}>
             {unreadCount > 9 ? '9+' : unreadCount}

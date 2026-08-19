@@ -127,7 +127,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <IncomingCallRing />
     <SupportChatWidget />
     <PatientAIChatWidget stacked />
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen overflow-hidden bg-gray-50 flex">
 
       {/* ── Sidebar (desktop lg+) ── */}
       <aside
@@ -243,7 +243,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         >
           {/* Sticky mobile header */}
           <div
-            className="sticky top-0 z-40 px-4 py-4 flex items-center justify-between transition-all duration-300 print:hidden"
+            className="sticky top-0 z-60 px-4 py-4 flex items-center justify-between transition-all duration-300 print:hidden"
             style={{
               background: headerBg,
               boxShadow: scrolled ? '0 1px 12px rgba(0,0,0,0.08)' : 'none',
@@ -269,7 +269,10 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
                   </span>
                 )}
               </Link>
-              <NotificationBellButton />
+              <NotificationBellButton
+                iconColor={(scrolled && !isDetailPage) ? PRIMARY : '#fff'}
+                hoverBg={(scrolled && !isDetailPage) ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.15)'}
+              />
               <PatientAvatar
                 src={avatarUrl} loading={avatarLoading}
                 bg={(scrolled && !isDetailPage) ? PRIMARY : 'rgba(255,255,255,0.2)'}
