@@ -202,25 +202,25 @@ export default function AdminAppointmentsPage() {
                   <td className="px-4 py-3.5">
                     <StatusBadgeClickable status={a.status} onChanged={next => updateStatus(a.id, next)} />
                   </td>
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3.5 whitespace-nowrap">
                     <div className="flex items-center gap-1.5">
                       <a href={`/admin/appointments/${a.id}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
+                        className="inline-flex items-center gap-1 shrink-0 text-xs font-semibold px-2.5 py-1.5 rounded-xl border transition-all hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
                         style={{ borderColor: '#e5e7eb', color: '#6b7280' }}>
-                        <Eye className="w-3.5 h-3.5" /> {t(mm, { mm: 'ကြည့်ရှုရန်', en: 'View' })}
+                        <Eye className="w-3.5 h-3.5 shrink-0" /> {t(mm, { mm: 'ကြည့်ရှုရန်', en: 'View' })}
                       </a>
                       {canModerate && (
                         a.callActive ? (
                           <a href={`/admin/moderate/${a.id}`} target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-xl text-white animate-pulse"
+                            className="inline-flex items-center gap-1 shrink-0 text-xs font-bold px-2.5 py-1.5 rounded-xl text-white animate-pulse"
                             style={{ backgroundColor: '#dc2626' }}>
-                            <Video className="w-3.5 h-3.5" /> {t(mm, { mm: 'ဝင်ရောက်ရန်', en: 'Join' })}
+                            <Video className="w-3.5 h-3.5 shrink-0" /> {t(mm, { mm: 'ဝင်ရောက်ရန်', en: 'Join' })}
                           </a>
                         ) : (
                           <span title={t(mm, { mm: 'Call live မဖြစ်သေးပါ', en: 'No live call right now' })}
-                            className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-xl text-white opacity-30 cursor-not-allowed select-none"
+                            className="inline-flex items-center gap-1 shrink-0 text-xs font-bold px-2.5 py-1.5 rounded-xl text-white opacity-30 cursor-not-allowed select-none"
                             style={{ backgroundColor: '#dc2626' }}>
-                            <Video className="w-3.5 h-3.5" /> {t(mm, { mm: 'ဝင်ရောက်ရန်', en: 'Join' })}
+                            <Video className="w-3.5 h-3.5 shrink-0" /> {t(mm, { mm: 'ဝင်ရောက်ရန်', en: 'Join' })}
                           </span>
                         )
                       )}

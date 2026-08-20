@@ -82,7 +82,7 @@ export const t = {
     specialOffersTitle: 'အထူး အစီအစဉ်များ',
 
     // Partner Clinics
-    partnerTitle: 'မိတ်ဖက် ဆေးရုံ/ဆေးခန်းများ',
+    partnerTitle: 'မိတ်ဖက်များ',
     partnerSubtitle: 'ယုံကြည်စိတ်ချရသော ကျန်းမာရေး ဝန်ဆောင်မှု ပေးသူများ',
     viewDetails: 'အသေးစိတ်ကြည့်ရန်',
   },
@@ -168,7 +168,7 @@ export const t = {
     specialOffersTitle: 'Special Offers',
 
     // Partner Clinics
-    partnerTitle: 'Partner Hospitals & Clinics',
+    partnerTitle: 'Partners',
     partnerSubtitle: 'Trusted healthcare service providers',
     viewDetails: 'View Details',
   },

@@ -8,6 +8,7 @@ import { useLang } from '../../lib/LanguageContext';
 import { useTheme } from '../../lib/ThemeContext';
 import { themes, ThemeId } from '../../lib/theme';
 import { compressAndUpload } from '@/components/admin/uploadImage';
+import HealthLogSection from '@/components/HealthLogSection';
 
 interface FavDoctor { id: string; name: string; nameEn: string | null; imageUrl: string | null; }
 interface FavProduct { id: string; name: string; nameEn: string | null; imageUrl: string | null; }
@@ -332,6 +333,9 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Health Trackers */}
+      <HealthLogSection phone={phone} mm={mm} />
 
       {/* Theme */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">

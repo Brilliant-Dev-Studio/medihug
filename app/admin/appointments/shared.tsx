@@ -370,10 +370,10 @@ export function StatusBadgeClickable({ status, onChanged }: {
     <div className="relative" onClick={e => e.stopPropagation()}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full"
+        className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full whitespace-nowrap"
         style={{ backgroundColor: s.bg, color: s.color }}
       >
-        <s.icon className="w-3 h-3" /> {t(mm, s.label)} <ChevronDown className="w-3 h-3" />
+        <s.icon className="w-3 h-3 shrink-0" /> {t(mm, s.label)} <ChevronDown className="w-3 h-3 shrink-0" />
       </button>
       {open && (
         <>

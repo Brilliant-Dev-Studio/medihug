@@ -14,6 +14,7 @@ import OurDoctors from '../components/OurDoctors';
 import DoctorSpecialties from '../components/DoctorSpecialties';
 import HealthcarePrograms from '../components/HealthcarePrograms';
 import PartnerClinics from '../components/PartnerClinics';
+import PartnerCategories from '../components/PartnerCategories';
 import BlogArticles from '../components/BlogArticles';
 import SpecialOffersBanner from '../components/SpecialOffersBanner';
 import { useLang } from '../lib/LanguageContext';
@@ -243,6 +244,7 @@ export default function Home() {
     <TopSellingProducts />
     <Testimonials />
     <SpecialOffersBanner />
+    <PartnerCategories />
     <PartnerClinics />
     <BlogArticles />
     </>

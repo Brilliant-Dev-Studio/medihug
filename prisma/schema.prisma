@@ -34,6 +34,19 @@ enum Gender {
   FEMALE
 }
 
+enum HealthLogType {
+  WEIGHT
+  WAIST
+  BLOOD_PRESSURE
+  BLOOD_SUGAR
+  MEAL
+  EXERCISE
+  WATER
+  SLEEP
+  STEPS
+  MEDICATION
+}
+
 enum CbPayStatus {
   NONE
   INITIATED
@@ -97,6 +110,7 @@ model User {
   notifications       Notification[]
   deletionRequestsMade     DeletionRequest[] @relation("DeletionRequester")
   deletionRequestsReviewed DeletionRequest[] @relation("DeletionReviewer")
+  healthLogs               HealthLog[]
 }
 
 // ─────────────────────────────────────────────
@@ -781,6 +795,25 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Health Log — manual self-tracking entries (weight, BP, meals, etc.) a patient logs from
+// their own profile. `data` shape is type-specific; see lib/healthLog.ts for the field maps.
+// ─────────────────────────────────────────────
+
+model HealthLog {
+  id       String        @id @default(cuid())
+  userId   String
+  type     HealthLogType
+  loggedAt DateTime      @default(now())
+  data     Json
+  note     String?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, loggedAt])
 }
 
 // ─────────────────────────────────────────────

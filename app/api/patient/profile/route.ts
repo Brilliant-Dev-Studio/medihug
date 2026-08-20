@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const user = await db.user.findUnique({
       where:  { phone },
-      select: { id: true, name: true, phone: true, gender: true, birthday: true, state: true, township: true, profileImage: true },
+      select: { id: true, name: true, phone: true, gender: true, birthday: true, state: true, township: true, profileImage: true, role: true },
     });
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 

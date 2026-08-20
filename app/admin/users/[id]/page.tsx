@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '@/components/admin/ConfirmModal';
+import PatientHealthLogsCard from '@/components/PatientHealthLogsCard';
 
 const PRIMARY = '#2ab5ad';
 
@@ -196,6 +197,8 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
               ))}
             </div>
           </div>
+
+          <PatientHealthLogsCard endpoint={`/api/admin/health-logs?userId=${encodeURIComponent(id)}`} mm={false} />
 
         </div>
 

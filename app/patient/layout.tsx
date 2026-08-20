@@ -50,6 +50,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
+  const [portalBlocked, setPortalBlocked] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +67,15 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
       .then(d => {
+        // Non-patient accounts (admins etc.) must never land in the patient portal, even if
+        // they went through the patient sign-in/OTP flow — kick them to their real portal.
+        if (d.user?.role && d.user.role !== 'PATIENT') {
+          localStorage.removeItem('medihug_patient');
+          setPortalBlocked(true);
+          const ADMIN_ROLES = ['SUPER_ADMIN', 'CO_ADMIN', 'PARTNER_MANAGER', 'POS_ADMIN', 'SUPPORT_ADMIN', 'MODERATOR'];
+          router.replace(ADMIN_ROLES.includes(d.user.role) ? '/admin/login' : '/signin');
+          return;
+        }
         if (d.user?.profileImage) setAvatarUrl(d.user.profileImage);
         if (d.user?.name) setPatientName(d.user.name);
       })
@@ -93,7 +103,9 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
-  }, [pathname]);
+    // authChecked gates when the scrollable div actually mounts (portal renders null until
+    // then) — without it, this effect can run once against a null ref and never re-attach.
+  }, [pathname, authChecked]);
 
   const scrollToTop = () => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -107,7 +119,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   if (pathname.endsWith('/call')) return <><IncomingCallRing />{children}</>;
 
   // No session → don't render portal at all (redirect handled above).
-  if (!authChecked || !patientPhone) return null;
+  if (!authChecked || !patientPhone || portalBlocked) return null;
 
   const sidebarW = collapsed ? 'lg:w-20' : 'lg:w-64';
   const mainML   = collapsed ? 'lg:ml-20' : 'lg:ml-64';
@@ -127,11 +139,11 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <IncomingCallRing />
     <SupportChatWidget />
     <PatientAIChatWidget stacked />
-    <div className="h-screen overflow-hidden bg-gray-50 flex">
+    <div className="h-dvh overflow-hidden bg-gray-50 flex">
 
       {/* ── Sidebar (desktop lg+) ── */}
       <aside
-        className={`hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-gray-100 z-50 transition-all duration-300 print:hidden ${sidebarW}`}
+        className={`hidden lg:flex flex-col fixed left-0 top-0 h-dvh bg-white border-r border-gray-100 z-50 transition-all duration-300 print:hidden ${sidebarW}`}
       >
         {/* Logo */}
         <div className="px-4 py-5 border-b border-gray-100 flex items-center justify-start min-h-18">
@@ -239,7 +251,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
         {/* Mobile scroll container */}
         <div
           ref={scrollRef}
-          className="lg:hidden h-screen overflow-y-auto overscroll-y-contain pb-16 flex flex-col w-screen max-w-full"
+          className="lg:hidden h-dvh overflow-y-auto overscroll-y-contain pb-16 flex flex-col w-screen max-w-full"
         >
           {/* Sticky mobile header */}
           <div

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { notify } from '@/lib/notify';
 
 /* ── POST /api/patient/custom-time-requests ──
  * Patient asks for a time outside the doctor's fixed slots. Goes straight
@@ -40,6 +41,22 @@ export async function POST(req: NextRequest) {
         note:          note ?? null,
       },
     });
+
+    const admins = await db.user.findMany({
+      where:  { role: 'SUPER_ADMIN', isActive: true },
+      select: { id: true },
+    });
+    for (const admin of admins) {
+      notify({
+        userId: admin.id,
+        type: 'new-custom-time-request',
+        title: user.name,
+        body: `requested a custom time with Dr. ${doctor.name}.`,
+        actionUrl: '/admin/custom-time-requests',
+        actorName: user.name,
+        actorAvatar: user.profileImage,
+      });
+    }
 
     return NextResponse.json({ request }, { status: 201 });
   } catch (e) {

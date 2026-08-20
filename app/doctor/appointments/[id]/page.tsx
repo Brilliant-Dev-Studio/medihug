@@ -15,6 +15,7 @@ import { useLang } from '@/app/lib/LanguageContext';
 import PrescriptionComposerModal from '@/components/doctor/PrescriptionComposerModal';
 import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
 import AppointmentChatPanel from '@/components/AppointmentChatPanel';
+import PatientHealthLogsCard from '@/components/PatientHealthLogsCard';
 
 interface PastPrescription {
   id: string;
@@ -541,6 +542,8 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
 
           <PastPrescriptionsCard phone={appt.user.phone} currentAppointmentId={id} mm={mm}
             onAdd={() => { setRxView('edit'); setRxOpen(true); }} />
+
+          <PatientHealthLogsCard endpoint={`/api/doctor/health-logs?phone=${encodeURIComponent(appt.user.phone)}`} mm={mm} />
 
           {(appt.reason || appt.note) && (
             <ViewSection collapsible defaultOpen icon={FileText} title={t(mm, { mm: 'အကြောင်းအရာ / မှတ်ချက်', en: 'Reason / Note' })} rows={[

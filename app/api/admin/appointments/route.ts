@@ -10,10 +10,12 @@ export async function GET(req: NextRequest) {
     const doctorId = searchParams.get('doctorId') ?? '';
     const from     = searchParams.get('from')     ?? '';
     const to       = searchParams.get('to')       ?? '';
+    const hasIntake = searchParams.get('hasIntake') === 'true';
     const page     = parseInt(searchParams.get('page')     ?? '1');
     const pageSize = parseInt(searchParams.get('pageSize') ?? '10');
 
     const where: Record<string, unknown> = {};
+    if (hasIntake) where.intake = { not: null };
 
     if (search) {
       where.OR = [
