@@ -15,6 +15,7 @@ import { NotificationBellButton } from '@/components/NotificationBell';
 import PatientAvatar from '@/components/PatientAvatar';
 import IncomingCallRing from '@/components/IncomingCallRing';
 import SupportChatWidget from '@/components/SupportChatWidget';
+import DebugLogPanel from '@/components/DebugLogPanel';
 import PatientAIChatWidget from '@/components/PatientAIChatWidget';
 import { useCart } from '../lib/useCart';
 
@@ -139,6 +140,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <IncomingCallRing />
     <SupportChatWidget />
     <PatientAIChatWidget stacked />
+    <DebugLogPanel />
     <div className="h-dvh overflow-hidden bg-gray-50 flex">
 
       {/* ── Sidebar (desktop lg+) ── */}

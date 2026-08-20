@@ -14,6 +14,7 @@ import { useCart } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
 import { tryOpenDeeplink } from '@/lib/deeplink';
+import { pushLog } from '@/lib/debugLog';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -116,6 +117,7 @@ function CheckoutContent() {
         }),
       });
       const data = await res.json();
+      pushLog('POST /api/patient/orders', { status: res.status, ok: res.ok, data });
       if (!res.ok) { setError(data.error ?? (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong')); setSubmitting(false); return; }
       localStorage.setItem('medihug_patient', JSON.stringify({ name: name.trim(), phone: phone.trim() }));
       checkoutLines.forEach(l => removeItem(l.productId));
@@ -126,6 +128,7 @@ function CheckoutContent() {
           body: JSON.stringify({ kind: 'order', id: data.order.id }),
         });
         const initData = await initRes.json();
+        pushLog('POST /api/payments/cbpay/initiate', { status: initRes.status, ok: initRes.ok, initData });
         if (!initRes.ok) {
           setError(mm ? 'CB Pay ချိတ်ဆက်၍မရပါ။ ထပ်စမ်းကြည့်ပါ' : 'Could not start CB Pay. Please try again.');
           setSubmitting(false);
@@ -134,7 +137,8 @@ function CheckoutContent() {
         setCbDeeplink(initData.deeplink);
         setCbAppMissing(false);
         setSubmitting(false);
-        tryOpenDeeplink(initData.deeplink, () => setCbAppMissing(true));
+        pushLog('Opening CBPay deeplink', { deeplink: initData.deeplink });
+        tryOpenDeeplink(initData.deeplink, () => { pushLog('CBPay app not detected', {}); setCbAppMissing(true); });
         return;
       }
 
@@ -142,6 +146,7 @@ function CheckoutContent() {
       setSubmitting(false);
       setDone(true);
     } catch (err) {
+      pushLog('handleSubmit error', { message: err instanceof Error ? err.message : String(err) });
       setError(err instanceof Error ? err.message : (mm ? 'ဆာဗာအမှား' : 'Server error'));
       setSubmitting(false);
     }

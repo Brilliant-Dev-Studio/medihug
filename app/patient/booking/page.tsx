@@ -14,6 +14,7 @@ import IntakeForm, { IntakeData } from './IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
 import { tryOpenDeeplink } from '@/lib/deeplink';
+import { pushLog } from '@/lib/debugLog';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -95,6 +96,7 @@ function BookingContent() {
       try {
         const res = await fetch(`/api/payments/cbpay/pending?orderId=${encodeURIComponent(orderId)}&generateRefOrder=${encodeURIComponent(generateRefOrder)}`);
         const data = await res.json();
+        pushLog('GET /api/payments/cbpay/pending (poll)', { attempt: pollAttempts.current, status: res.status, ok: res.ok, data });
         if (res.ok && data.transactionStatus === 'S') {
           setCbPhase('idle');
           setStep('intake');
@@ -106,7 +108,8 @@ function BookingContent() {
           return;
         }
         pollCbPayStatus(orderId, generateRefOrder); // still 'P' — keep waiting
-      } catch {
+      } catch (err) {
+        pushLog('GET /api/payments/cbpay/pending (poll) error', { message: err instanceof Error ? err.message : String(err) });
         pollCbPayStatus(orderId, generateRefOrder);
       }
     }, 3000);
@@ -129,6 +132,7 @@ function BookingContent() {
         body: JSON.stringify({ amount: basePrice * sessions, orderDetails: 'Medihug consultation booking' }),
       });
       const data = await res.json();
+      pushLog('POST /api/payments/cbpay/pending', { status: res.status, ok: res.ok, data });
       if (!res.ok) {
         setCbPhase('failed');
         setSubmitErr({ message: mm ? 'CB Pay ချိတ်ဆက်၍မရပါ။ ထပ်စမ်းကြည့်ပါ' : 'Could not start CB Pay. Please try again.' });
@@ -136,9 +140,11 @@ function BookingContent() {
       }
       setCbProof({ orderId: data.orderId, generateRefOrder: data.generateRefOrder });
       setCbDeeplink(data.deeplink);
-      tryOpenDeeplink(data.deeplink, () => setCbAppMissing(true));
+      pushLog('Opening CBPay deeplink', { deeplink: data.deeplink });
+      tryOpenDeeplink(data.deeplink, () => { pushLog('CBPay app not detected', {}); setCbAppMissing(true); });
       pollCbPayStatus(data.orderId, data.generateRefOrder);
-    } catch {
+    } catch (err) {
+      pushLog('startCbPayment error', { message: err instanceof Error ? err.message : String(err) });
       setCbPhase('failed');
       setSubmitErr({ message: mm ? 'ဆာဗာအမှား' : 'Server error' });
     }
@@ -188,6 +194,7 @@ function BookingContent() {
         }),
       });
       const data = await res.json();
+      pushLog('POST /api/patient/bookings', { status: res.status, ok: res.ok, data });
       if (!res.ok) {
         setSubmitErr({ message: data.error ?? (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong'), code: data.code });
         setSubmitting(false);
@@ -197,6 +204,7 @@ function BookingContent() {
       setSubmitting(false);
       setStep('done');
     } catch (err) {
+      pushLog('handleIntakeDone error', { message: err instanceof Error ? err.message : String(err) });
       setSubmitErr({ message: err instanceof Error ? err.message : (mm ? 'ဆာဗာအမှား' : 'Server error') });
       setSubmitting(false);
     }
