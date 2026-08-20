@@ -60,7 +60,7 @@ export async function requestCbPayOrder(input: {
         authenToken: config.authenToken,
         ecommerceId: config.ecommerceId,
         subMerId: config.subMerId,
-        transactionType: '1',
+        transactionType: '0', // "0" = Web, "1" = native mobile app — this flow runs from a browser deeplink
         orderId: input.orderId,
         orderDetails: input.orderDetails,
         amount,

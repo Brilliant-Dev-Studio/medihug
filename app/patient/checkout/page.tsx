@@ -13,6 +13,7 @@ import { useLang } from '../../lib/LanguageContext';
 import { useCart } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
+import { tryOpenDeeplink } from '@/lib/deeplink';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -21,17 +22,13 @@ const PAYMENT_METHOD_IMG: Record<string, string> = {
   mmqr: '/MMQRLOGO.jpg', cb: '/payment/cbPay.jpg',
 };
 const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
-  mmqr: 'Scan to pay', cb: '09 xxx xxx xxx',
+  mmqr: 'Scan to pay', cb: 'Pay with PIN',
 };
 const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
   id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
 }));
 
 interface Product { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; packSize: string | null; }
-
-function navigateTo(url: string) {
-  window.location.href = url;
-}
 
 function getPatient(): { name: string; phone: string } | null {
   if (typeof window === 'undefined') return null;
@@ -74,6 +71,7 @@ function CheckoutContent() {
   const [copied,     setCopied]     = useState(false);
   const [zoomQr,     setZoomQr]     = useState(false);
   const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
+  const [cbAppMissing, setCbAppMissing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -134,8 +132,9 @@ function CheckoutContent() {
           return;
         }
         setCbDeeplink(initData.deeplink);
+        setCbAppMissing(false);
         setSubmitting(false);
-        navigateTo(initData.deeplink);
+        tryOpenDeeplink(initData.deeplink, () => setCbAppMissing(true));
         return;
       }
 
@@ -347,11 +346,19 @@ function CheckoutContent() {
                   <p className="text-xs text-gray-500">
                     {mm ? 'အော်ဒါတင်ပြီးရင် CBPay app ဖွင့်ပြီး PIN နှိပ်ပြီး ငွေချေရပါမည်' : "You'll be redirected to the CBPay app to approve payment with your PIN."}
                   </p>
-                  {cbDeeplink && (
-                    <p className="text-[11px] text-amber-500 mt-1">
-                      {mm ? 'App မဖွင့်ဘူးလား? Mobile ဖုန်းပေါ်တွင် CBPay app ရှိမရှိ စစ်ပါ' : "Didn't open? Make sure you're on your phone with the CBPay app installed."}{' '}
-                      <a href={cbDeeplink} className="underline font-semibold">{mm ? 'ထပ်ကြိုးစားရန်' : 'Try again'}</a>
+                  {cbDeeplink && cbAppMissing && (
+                    <p className="text-[11px] text-red-500 mt-1 font-semibold">
+                      {mm ? 'ဤစက်ပေါ်တွင် CBPay app ကို ရှာမတွေ့ပါ။ Mobile ဖုန်းပေါ်တွင် CBPay app ထည့်သွင်းပြီး ပြန်စမ်းကြည့်ပါ' : "CBPay app not found on this device. Please install the CBPay app on your phone and try again."}
                     </p>
+                  )}
+                  {cbDeeplink && (
+                    <button
+                      type="button"
+                      onClick={() => { setCbAppMissing(false); tryOpenDeeplink(cbDeeplink, () => setCbAppMissing(true)); }}
+                      className="text-[11px] text-amber-600 underline font-semibold mt-1"
+                    >
+                      {mm ? 'ထပ်ကြိုးစားရန်' : 'Try again'}
+                    </button>
                   )}
                 </div>
               )}

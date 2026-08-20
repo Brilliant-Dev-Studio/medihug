@@ -13,6 +13,7 @@ import { useLang } from '../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from './IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
+import { tryOpenDeeplink } from '@/lib/deeplink';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -22,15 +23,11 @@ const PAYMENT_METHOD_IMG: Record<string, string> = {
   mmqr: '/MMQRLOGO.jpg', cb: '/payment/cbPay.jpg',
 };
 const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
-  mmqr: 'Scan to pay', cb: '09 xxx xxx xxx',
+  mmqr: 'Scan to pay', cb: 'Pay with PIN',
 };
 const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
   id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
 }));
-
-function navigateTo(url: string) {
-  window.location.href = url;
-}
 
 export default function BookingPage() {
   return (
@@ -80,6 +77,7 @@ function BookingContent() {
    * methods gate it behind the receipt upload — see PaymentCard/SubmitBar's isCb branches. */
   const [cbPhase, setCbPhase] = useState<'idle' | 'paying' | 'failed'>('idle');
   const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
+  const [cbAppMissing, setCbAppMissing] = useState(false);
   const [cbProof, setCbProof] = useState<{ orderId: string; generateRefOrder: string } | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollAttempts = useRef(0);
@@ -114,8 +112,15 @@ function BookingContent() {
     }, 3000);
   }
 
+  function retryDeeplink() {
+    if (!cbDeeplink) return;
+    setCbAppMissing(false);
+    tryOpenDeeplink(cbDeeplink, () => setCbAppMissing(true));
+  }
+
   async function startCbPayment() {
     setCbPhase('paying');
+    setCbAppMissing(false);
     setSubmitErr(null);
     pollAttempts.current = 0;
     try {
@@ -131,7 +136,7 @@ function BookingContent() {
       }
       setCbProof({ orderId: data.orderId, generateRefOrder: data.generateRefOrder });
       setCbDeeplink(data.deeplink);
-      navigateTo(data.deeplink);
+      tryOpenDeeplink(data.deeplink, () => setCbAppMissing(true));
       pollCbPayStatus(data.orderId, data.generateRefOrder);
     } catch {
       setCbPhase('failed');
@@ -348,7 +353,7 @@ function BookingContent() {
 
           {/* Submit bar */}
           <div className="mt-auto px-6 pb-6">
-            <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} onSubmit={handleSubmit} />
+            <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink} onSubmit={handleSubmit} />
           </div>
         </div>
       </div>
@@ -397,7 +402,7 @@ function BookingContent() {
           className="fixed bottom-16 left-0 right-0 px-4 pt-3 pb-4 border-t border-gray-100 z-30"
           style={{ backgroundColor: '#fff', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
         >
-          <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} onSubmit={handleSubmit} />
+          <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink} onSubmit={handleSubmit} />
         </div>
       </div>
     </div>
@@ -683,9 +688,10 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
   );
 }
 
-function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, onSubmit }: {
+function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, cbAppMissing, onRetryDeeplink, onSubmit }: {
   mm: boolean; receipt: { file: File; url: string } | null; payMethod: string; fee: string;
-  cbPhase: 'idle' | 'paying' | 'failed'; cbDeeplink: string | null; onSubmit: () => void;
+  cbPhase: 'idle' | 'paying' | 'failed'; cbDeeplink: string | null; cbAppMissing: boolean;
+  onRetryDeeplink: () => void; onSubmit: () => void;
 }) {
   const isCb = payMethod === 'cb';
   const canSubmit = isCb ? cbPhase !== 'paying' : receipt !== null;
@@ -697,10 +703,15 @@ function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, onSubmit 
         <p className="text-xs font-semibold text-gray-500 text-center">
           {mm ? 'CBPay app တွင် PIN နှိပ်ပြီး ငွေချေရန် စောင့်နေပါသည်...' : 'Waiting for you to approve payment in the CBPay app...'}
         </p>
+        {cbAppMissing && (
+          <p className="text-xs text-red-500 font-semibold text-center">
+            {mm ? 'ဤစက်ပေါ်တွင် CBPay app ကို ရှာမတွေ့ပါ။ Mobile ဖုန်းပေါ်တွင် CBPay app ထည့်သွင်းပြီး ပြန်စမ်းကြည့်ပါ' : 'CBPay app not found on this device. Please install the CBPay app on your phone and try again.'}
+          </p>
+        )}
         {cbDeeplink && (
-          <a href={cbDeeplink} className="text-xs font-bold underline" style={{ color: PRIMARY }}>
-            {mm ? 'App မဖွင့်ဘူးလား? ထပ်ကြိုးစားရန်' : "Didn't open? Try again"}
-          </a>
+          <button type="button" onClick={onRetryDeeplink} className="text-xs font-bold underline" style={{ color: PRIMARY }}>
+            {mm ? 'ထပ်ကြိုးစားရန်' : 'Try again'}
+          </button>
         )}
       </div>
     );
