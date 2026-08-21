@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, Stethoscope, ShoppingBag,
   Calendar, FileText, BarChart2, Settings, LogOut,
   ShieldCheck, Menu, X, ChevronRight, ChevronDown, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
-  Bell, CalendarClock, Headset, HeartPulse, Store,
+  Bell, CalendarClock, Headset, HeartPulse, Store, ClipboardCheck,
   Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
   ArrowLeftRight, History, Trash2, ClipboardList,
 } from 'lucide-react';
@@ -46,6 +46,7 @@ const navGroups = [
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients', perm: 'dashboard.view' as Permission },
       { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors', perm: 'partners.manage' as Permission },
       { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments', perm: 'dashboard.view' as Permission },
+      { href: '/admin/program-enrollments', icon: ClipboardCheck, mm: 'အစီအစဉ် ဆေးမှတ်တမ်းများ', en: 'Program Enrollments', perm: 'dashboard.view' as Permission },
       { href: '/admin/medical-records', icon: ClipboardList, mm: 'ဆေးမှတ်တမ်းများ', en: 'Medical Records', perm: 'dashboard.view' as Permission },
       { href: '/admin/orders',       icon: ShoppingBag,  mm: 'အော်ဒါများ',       en: 'Orders', perm: 'pos.manage' as Permission },
       { href: '/admin/custom-time-requests', icon: CalendarClock, mm: 'အထူးအချိန်တောင်းဆိုမှုများ', en: 'Custom Time Requests', perm: 'dashboard.view' as Permission },

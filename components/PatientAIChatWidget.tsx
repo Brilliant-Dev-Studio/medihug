@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bot, X, Send } from 'lucide-react';
+import { Bot, X, Send, AlertTriangle } from 'lucide-react';
 import { useLang } from '@/app/lib/LanguageContext';
 
 const PRIMARY = 'var(--color-primary, #2ab5ad)';
@@ -36,8 +36,18 @@ export default function PatientAIChatWidget({ stacked = false }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const accRef = useRef('');
+
+  useEffect(() => {
+    setAcknowledged(localStorage.getItem('medihug_ai_disclaimer_ack') === '1');
+  }, []);
+
+  function acknowledge() {
+    localStorage.setItem('medihug_ai_disclaimer_ack', '1');
+    setAcknowledged(true);
+  }
 
   useEffect(() => {
     if (open) listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
@@ -119,6 +129,51 @@ export default function PatientAIChatWidget({ stacked = false }: Props) {
               </div>
             </div>
 
+            {!acknowledged ? (
+              <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 bg-gray-50">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: '#d97706' }} />
+                  <p className="text-xs font-bold" style={{ color: '#92400e' }}>
+                    {mm ? 'MediHug AI Health Assistant အသုံးပြုခြင်းဆိုင်ရာ သတိပြုချက်' : 'Notice on Using the MediHug AI Health Assistant'}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 text-[11px] text-gray-600 leading-relaxed">
+                  <p>
+                    {mm
+                      ? 'MediHug AI Health Assistant သည် သုံးစွဲသူများအား ကျန်းမာရေးဆိုင်ရာ အထွေထွေအချက်အလက်များ ရှာဖွေခြင်း၊ MediHug ၏ ကျန်းမာရေးဝန်ဆောင်မှုများနှင့် ကျန်းမာရေးပညာရှင်များကို ရှာဖွေခြင်းနှင့် သက်ဆိုင်ရာ ဝန်ဆောင်မှုများသို့ လမ်းညွှန်ပေးခြင်းတို့အတွက် ကူညီပေးရန် ရည်ရွယ်ထားပါသည်။'
+                      : "The MediHug AI Health Assistant is intended to help users find general health information, find MediHug's healthcare services and healthcare professionals, and navigate to relevant services."}
+                  </p>
+                  <p>
+                    {mm
+                      ? 'AI Health Assistant သည် ဆရာဝန် သို့မဟုတ် အခြားအရည်အချင်းပြည့်မီသော ကျန်းမာရေးပညာရှင်၏ အစားထိုးမဟုတ်ပါ။ AI မှပေးသော တုံ့ပြန်ချက်များသည် ရောဂါရှာဖွေခြင်း၊ ဆေးကုသမှုဆုံးဖြတ်ချက်ချခြင်း၊ ဆေးညွှန်းပေးခြင်း သို့မဟုတ် တစ်ဦးချင်းအတွက် အတည်ပြုထားသော ဆေးဘက်ဆိုင်ရာအကြံပြုချက်အဖြစ် မယူဆသင့်ပါ။'
+                      : 'The AI Health Assistant is not a substitute for a doctor or other qualified healthcare professional. AI responses should not be treated as a diagnosis, a treatment decision, a prescription, or individually validated medical advice.'}
+                  </p>
+                  <p>
+                    {mm
+                      ? 'AI နည်းပညာသည် အချို့သောအခြေအနေများတွင် မှားယွင်းသော၊ မပြည့်စုံသော သို့မဟုတ် လက်ရှိအခြေအနေနှင့် မကိုက်ညီသော အချက်အလက်များကို ပေးနိုင်ပါသည်။ ထို့ကြောင့် ကျန်းမာရေးနှင့်ပတ်သက်သော အရေးကြီးသော ဆုံးဖြတ်ချက်များမချမီ အရည်အချင်းပြည့်မီသော ဆရာဝန် သို့မဟုတ် ကျန်းမာရေးပညာရှင်ထံမှ သင့်လျော်သော ဆေးဘက်ဆိုင်ရာအကြံဉာဏ် ရယူသင့်ပါသည်။'
+                      : 'AI technology may, in some cases, provide information that is inaccurate, incomplete, or not up to date. You should therefore obtain appropriate medical advice from a qualified doctor or healthcare professional before making important health decisions.'}
+                  </p>
+                  <p>
+                    {mm
+                      ? 'အရေးပေါ်အခြေအနေများ၊ အသက်အန္တရာယ်ရှိနိုင်သော လက္ခဏာများ သို့မဟုတ် ချက်ချင်းဆေးကုသရန်လိုအပ်သော အခြေအနေများတွင် MediHug AI Health Assistant ကို အားကိုးခြင်းမပြုဘဲ အနီးဆုံး အရေးပေါ်ဆေးကုသမှုဌာန သို့မဟုတ် ဆေးရုံသို့ ချက်ချင်းသွားရောက်ပါ။'
+                      : 'In an emergency, if you have potentially life-threatening symptoms, or if immediate medical treatment is required, do not rely on the MediHug AI Health Assistant — go immediately to the nearest emergency facility or hospital.'}
+                  </p>
+                  <p>
+                    {mm
+                      ? 'AI မှပေးသော အချက်အလက်များကို အသုံးပြုခြင်းဖြင့် သုံးစွဲသူသည် မိမိ၏ကျန်းမာရေးအခြေအနေအတွက် လိုအပ်သည့် ကျွမ်းကျင်သူဆေးဘက်ဆိုင်ရာအကြံဉာဏ် ရယူရန် တာဝန်ရှိပါသည်။'
+                      : 'By using information provided by the AI, the user is responsible for obtaining the expert medical advice necessary for their own health condition.'}
+                  </p>
+                </div>
+                <button
+                  onClick={acknowledge}
+                  className="mt-1 w-full py-2.5 rounded-xl text-white text-xs font-bold shrink-0"
+                  style={{ backgroundColor: PRIMARY }}
+                >
+                  {mm ? 'နားလည်ပြီး သဘောတူပါသည်' : 'I Understand & Agree'}
+                </button>
+              </div>
+            ) : (
+            <>
             <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2 bg-gray-50">
               {messages.length === 0 && (
                 <div className="mt-6 flex flex-col gap-3">
@@ -175,6 +230,8 @@ export default function PatientAIChatWidget({ stacked = false }: Props) {
                 <Send className="w-4 h-4" />
               </button>
             </div>
+            </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

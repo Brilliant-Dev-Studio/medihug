@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { LayoutDashboard, Calendar, LogOut, Menu, X, Stethoscope, User, FileText, Bell, Wallet } from 'lucide-react';
+import { LayoutDashboard, Calendar, LogOut, Menu, X, Stethoscope, User, FileText, Bell, Wallet, HeartPulse } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
 
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/doctor/dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/doctor/wallet',        icon: Wallet,          label: 'Wallet' },
   { href: '/doctor/appointments',  icon: Calendar,        label: 'My Appointments' },
+  { href: '/doctor/programs',      icon: HeartPulse,      label: 'Program Patients' },
   { href: '/doctor/notifications', icon: Bell,            label: 'Notifications' },
   { href: '/doctor/profile',       icon: User,            label: 'My Profile' },
   { href: '/doctor/blogs',         icon: FileText,        label: 'My Blogs' },

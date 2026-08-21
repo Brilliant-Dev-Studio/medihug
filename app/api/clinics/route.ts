@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
 
     const clinics = await db.clinic.findMany({
       where,
+      include: { _count: { select: { doctors: true } } },
       orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,

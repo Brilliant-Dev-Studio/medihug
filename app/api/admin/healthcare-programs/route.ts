@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, order, isActive } = body;
+    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, price, order, isActive, doctorIds } = body;
 
     if (!imageUrl || !titleMm) {
       return NextResponse.json({ error: 'imageUrl, titleMm are required.' }, { status: 400 });
@@ -27,8 +27,12 @@ export async function POST(req: NextRequest) {
         imageUrl, titleMm, titleEn: titleEn || null,
         descMm: descMm || null, descEn: descEn || null,
         ctaLink: ctaLink || null,
+        price: price ?? 0,
         order: order ?? 0,
         isActive: isActive ?? true,
+        doctors: Array.isArray(doctorIds) && doctorIds.length > 0
+          ? { create: doctorIds.map((doctorId: string) => ({ doctorId })) }
+          : undefined,
       },
     });
 

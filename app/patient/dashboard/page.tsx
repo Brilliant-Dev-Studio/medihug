@@ -10,7 +10,7 @@ import {
   Search, Stethoscope, Calendar, FileText, Pill,
   Heart, Activity, AlertCircle, Brain, Baby, Eye,
   ChevronRight, ChevronUp, Star, Clock, LayoutGrid, MapPin,
-  Bone, Droplets, Microscope, Syringe, Wind, Thermometer,
+  Bone, Droplets, Microscope, Syringe, Wind, Thermometer, HeartPulse,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import emptyLottie from '../../../public/lottie-empty.json';
@@ -20,6 +20,7 @@ import AdSlider from '../../components/AdSlider';
 import HealthBlogSlider from '../../components/HealthBlogSlider';
 import BlogCategoryCircles from '../../components/BlogCategoryCircles';
 import PartnerClinicsSlider from '../../components/PartnerClinicsSlider';
+import HealthcareProgramsSlider from '../../components/HealthcareProgramsSlider';
 import BestSellingProducts from '../../components/BestSellingProducts';
 import SpecialistDoctorsSection from '../../components/SpecialistDoctorsSection';
 import OurSuggestingDoctorsSection from '../../components/OurSuggestingDoctorsSection';
@@ -169,6 +170,7 @@ const categories = [
   { icon: Activity,     mm: 'BMI\nတိုင်းတာ',              en: 'BMI\nChecker',         color: '#10b981', bg: '#f0fdf4', href: '/patient/bmi' },
   { icon: FileText,     mm: 'ကျန်းမာရေး\nမှတ်တမ်း',      en: 'Health\nRecords',      color: '#8b5cf6', bg: '#f5f3ff', href: '/patient/records' },
   { icon: LayoutGrid,   mm: 'ကုသမှု\nအမျိုးအစား',         en: 'Categories',           color: '#f59e0b', bg: '#fffbeb', href: '/patient/categories' },
+  { icon: HeartPulse,   mm: 'ကျန်းမာရေး\nအစီအစဉ်',        en: 'Health\nPrograms',     color: '#14b8a6', bg: '#f0fdfa', href: '/patient/programs' },
   { icon: Heart,        mm: 'ဆောင်းပါး\nများ',             en: 'Health\nBlog',         color: '#ef4444', bg: '#fef2f2', href: '/patient/blog' },
 ];
 
@@ -566,6 +568,9 @@ export default function PatientDashboard() {
 
           {/* Best Selling Products */}
           <BestSellingProducts />
+
+          {/* Healthcare Programs */}
+          <HealthcareProgramsSlider />
 
           {/* Partner Clinics */}
           <PartnerClinicsSlider />

@@ -58,7 +58,7 @@ export default function PartnerClinicsSlider() {
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/clinics?isActive=true&isPartner=true&pageSize=8')
+    fetch('/api/clinics?limit=8')
       .then(r => r.json())
       .then(d => { setClinics(d.clinics ?? []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -69,7 +69,7 @@ export default function PartnerClinicsSlider() {
       <div className="flex items-center justify-between mb-3 lg:mb-4">
         <div>
           <h2 className="font-bold text-base lg:text-xl" style={{ color: PRIMARY }}>
-            {mm ? 'မိတ်ဖက် ဆေးရုံ ဆေးခန်းများ' : 'Partner Clinics'}
+            {mm ? 'မိတ်ဖက်များ' : 'Partners'}
           </h2>
           <p className="text-xs text-gray-400 mt-0.5 lg:hidden">
             {mm ? 'တည်ထောင်ထားသော မိတ်ဖက်များ' : 'Our trusted partners'}

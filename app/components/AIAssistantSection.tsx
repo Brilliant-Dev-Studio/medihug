@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { Bot, Stethoscope, Building2, ShoppingBag, HeartPulse, Languages } from 'lucide-react';
+import { Bot, Stethoscope, Building2, ShoppingBag, HeartPulse, Languages, AlertTriangle } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
 const FEATURES = [
@@ -98,7 +98,7 @@ export default function AIAssistantSection() {
           })}
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-3">
           <motion.span whileHover={{ scale: 1.045 }} whileTap={{ scale: 0.97 }} className="inline-block">
             <Link
               href="/patient/dashboard"
@@ -109,6 +109,46 @@ export default function AIAssistantSection() {
               {mm ? 'AI နှင့် မေးမြန်းကြည့်ပါ' : 'Try the AI Assistant'}
             </Link>
           </motion.span>
+          <div className="flex items-center gap-3">
+            <Link href="/ai-terms" className="text-xs text-gray-400 underline hover:text-gray-600 transition-colors">
+              {mm ? 'AI အသုံးပြုမှု စည်းကမ်းချက်များ' : 'AI Terms of Use'}
+            </Link>
+            <span className="text-gray-300 text-xs">·</span>
+            <Link href="/ai-privacy" className="text-xs text-gray-400 underline hover:text-gray-600 transition-colors">
+              {mm ? 'AI ကိုယ်ရေးကိုယ်တာနှင့် သဘောတူညီချက်' : 'AI Privacy & Consent'}
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-8 max-w-2xl mx-auto rounded-2xl border p-4 sm:p-5 flex gap-3" style={{ borderColor: '#fde68a', backgroundColor: '#fffbeb' }}>
+          <AlertTriangle className="w-4.5 h-4.5 shrink-0 mt-0.5" style={{ color: '#d97706' }} />
+          <div>
+            <p className="text-xs sm:text-sm font-bold mb-1.5" style={{ color: '#92400e' }}>
+              {mm ? 'AI Health Assistant သတိပြုရန်' : 'AI Health Assistant Notice'}
+            </p>
+            <div className="flex flex-col gap-1.5 text-[11px] sm:text-xs leading-relaxed" style={{ color: '#92400e' }}>
+              <p>
+                {mm
+                  ? 'MediHug AI Health Assistant သည် ကျန်းမာရေးဆိုင်ရာ အထွေထွေအချက်အလက်များ၊ MediHug ၏ ဝန်ဆောင်မှုများ၊ ဆရာဝန်များနှင့် ကျန်းမာရေးအစီအစဉ်များကို ရှာဖွေရာတွင် ကူညီပေးရန် ရည်ရွယ်ထားသော AI အကူအညီပေးစနစ်တစ်ခုသာ ဖြစ်ပါသည်။'
+                  : "MediHug AI Health Assistant is an AI-based tool intended to help you find general health information, MediHug's services, doctors, and health programs."}
+              </p>
+              <p>
+                {mm
+                  ? 'AI မှပေးသော အချက်အလက်များသည် ဆရာဝန်၏ ရောဂါရှာဖွေခြင်း (Diagnosis)၊ ကုသမှုညွှန်ကြားချက် (Treatment) သို့မဟုတ် ဆေးညွှန်း (Prescription) ကို အစားထိုးခြင်းမပြုပါ။'
+                  : "Information provided by the AI does not replace a doctor's diagnosis, treatment instructions, or prescription."}
+              </p>
+              <p>
+                {mm
+                  ? 'AI မှပေးသော အချက်အလက်များတွင် မှားယွင်းမှု သို့မဟုတ် မပြည့်စုံမှုများ ပါဝင်နိုင်ပါသည်။ ကျန်းမာရေးနှင့်ပတ်သက်သော အရေးကြီးသော ဆုံးဖြတ်ချက်များကို AI တစ်ခုတည်းအပေါ် မူတည်၍ မပြုလုပ်ဘဲ အရည်အချင်းပြည့်မီသော ကျန်းမာရေးပညာရှင်နှင့် တိုင်ပင်ပါ။'
+                  : 'Information from the AI may be inaccurate or incomplete. Please consult a qualified healthcare professional before making important health decisions, rather than relying on AI alone.'}
+              </p>
+              <p>
+                {mm
+                  ? 'အရေးပေါ်အခြေအနေများတွင် AI Chat ကို အသုံးပြု၍ အကူအညီစောင့်ဆိုင်းခြင်းမပြုဘဲ အနီးဆုံး အရေးပေါ်ဆေးကုသမှုဌာနသို့ ချက်ချင်းသွားရောက်ပါ။'
+                  : 'In an emergency, do not wait for help from AI Chat — go immediately to the nearest emergency medical facility.'}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -85,6 +85,7 @@ export default function Header() {
           {[
             { href: '/', label: tr.home },
             { href: '/doctors', label: tr.navDoctors },
+            { href: '/clinics', label: tr.navPartners },
             { href: '/blog', label: tr.navBlog },
             { href: '/contact', label: tr.contact },
             { href: '/privacy', label: tr.privacy },
@@ -150,6 +151,7 @@ export default function Header() {
           {[
             { href: '/', label: tr.home },
             { href: '/doctors', label: tr.navDoctors },
+            { href: '/clinics', label: tr.navPartners },
             { href: '/blog', label: tr.navBlog },
             { href: '/contact', label: tr.contact },
             { href: '/privacy', label: tr.privacy },

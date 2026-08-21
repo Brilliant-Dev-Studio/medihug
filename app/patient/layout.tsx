@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
-  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper, ShoppingCart, ChevronUp,
+  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper, ShoppingCart, ChevronUp, HeartPulse,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
@@ -29,6 +29,7 @@ const navItems = [
 
 // Shown only in the desktop sidebar, not the mobile bottom nav
 const desktopOnlyNavItems = [
+  { href: '/patient/programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်', en: 'Programs' },
   { href: '/patient/blog', icon: Newspaper, mm: 'ဆောင်းပါးများ', en: 'Blog' },
 ];
 

@@ -111,6 +111,7 @@ model User {
   deletionRequestsMade     DeletionRequest[] @relation("DeletionRequester")
   deletionRequestsReviewed DeletionRequest[] @relation("DeletionReviewer")
   healthLogs               HealthLog[]
+  programEnrollments       ProgramEnrollment[]
 }
 
 // ─────────────────────────────────────────────
@@ -156,6 +157,7 @@ model Doctor {
   referredAppointments Appointment[]     @relation("AppointmentReferralDoctor")
   issuedReferrals    ClinicReferral[]
   clinicDoctors      ClinicDoctor[]
+  programs           ProgramDoctor[]
   slots              DoctorSlot[]
   gallery            DoctorGallery[]
   favoritedBy        FavoriteDoctor[]
@@ -646,10 +648,60 @@ model HealthcareProgram {
   descMm    String?
   descEn    String?
   ctaLink   String?
+  price     Int      @default(0)
   order     Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  doctors     ProgramDoctor[]
+  enrollments ProgramEnrollment[]
+}
+
+enum ProgramEnrollmentStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model ProgramDoctor {
+  id        String   @id @default(cuid())
+  programId String
+  doctorId  String
+  createdAt DateTime @default(now())
+
+  program HealthcareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  doctor  Doctor            @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, doctorId])
+  @@index([doctorId])
+}
+
+model ProgramEnrollment {
+  id            String @id @default(cuid())
+  programId     String
+  userId        String
+  paymentMethod String?
+  receiptUrl    String?
+  cbPayStatus          CbPayStatus @default(NONE)
+  cbPayRefOrder        String?
+  cbPayTransactionId   String?
+  cbPayAmountConfirmed Int?
+  cbPayPaidAt          DateTime?
+  amount        Int
+  intake        Json?
+  status        ProgramEnrollmentStatus @default(PENDING_REVIEW)
+  reviewNote    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  program HealthcareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([programId])
+  @@index([userId])
+  @@index([cbPayRefOrder])
 }
 
 // ─────────────────────────────────────────────

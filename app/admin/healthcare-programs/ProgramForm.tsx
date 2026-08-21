@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, Loader2, Stethoscope } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
+import MarkdownEditor from '@/components/admin/MarkdownEditor';
 
 const PRIMARY = '#2ab5ad';
 
@@ -13,15 +15,20 @@ export interface Program {
   titleMm: string; titleEn: string | null;
   descMm: string | null; descEn: string | null;
   ctaLink: string | null;
+  price: number;
   order: number;
   isActive: boolean;
   createdAt: string;
+  doctors?: { doctorId: string }[];
 }
+
+interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
 
 export const EMPTY_FORM = {
   imageUrl: '', titleMm: '', titleEn: '',
   descMm: '', descEn: '', ctaLink: '',
-  order: 0, isActive: true,
+  price: 0, order: 0, isActive: true,
+  doctorIds: [] as string[],
 };
 
 const inp = 'w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
@@ -41,12 +48,25 @@ export default function ProgramForm({ editing }: { editing: Program | null }) {
   const [form, setForm] = useState(editing ? {
     imageUrl: editing.imageUrl, titleMm: editing.titleMm, titleEn: editing.titleEn ?? '',
     descMm: editing.descMm ?? '', descEn: editing.descEn ?? '', ctaLink: editing.ctaLink ?? '',
-    order: editing.order, isActive: editing.isActive,
+    price: editing.price, order: editing.order, isActive: editing.isActive,
+    doctorIds: editing.doctors?.map(d => d.doctorId) ?? [],
   } : EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/doctors?pageSize=500&isActive=true')
+      .then(r => r.json())
+      .then(d => setDoctorOptions(d.doctors ?? []))
+      .catch(() => {});
+  }, []);
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
+  const toggleDoctor = (id: string) => setForm(f => ({
+    ...f,
+    doctorIds: f.doctorIds.includes(id) ? f.doctorIds.filter(d => d !== id) : [...f.doctorIds, id],
+  }));
 
   const handleSubmit = async () => {
     if (!form.imageUrl || !form.titleMm) {
@@ -98,9 +118,44 @@ export default function ProgramForm({ editing }: { editing: Program | null }) {
           <input className={inp} value={form.titleEn} onChange={e => set('titleEn', e.target.value)} placeholder="Weight Management Program" /></div>
 
         <div><label className={lbl}>Description (Myanmar)</label>
-          <textarea rows={3} className={inp + ' resize-none'} value={form.descMm} onChange={e => set('descMm', e.target.value)} /></div>
+          <MarkdownEditor value={form.descMm} onChange={v => set('descMm', v)} placeholder="ကိုယ်အလေးချိန် စီမံခန့်ခွဲမှု အစီအစဉ်အကြောင်း..." /></div>
         <div><label className={lbl}>Description (English)</label>
-          <textarea rows={3} className={inp + ' resize-none'} value={form.descEn} onChange={e => set('descEn', e.target.value)} /></div>
+          <MarkdownEditor value={form.descEn} onChange={v => set('descEn', v)} placeholder="About this program..." /></div>
+      </Section>
+
+      <Section title="Price">
+        <div><label className={lbl}>Price (MMK)</label>
+          <input type="number" className={inp} value={form.price || ''} onChange={e => set('price', parseInt(e.target.value) || 0)} placeholder="0" /></div>
+        <p className="text-xs text-gray-400">Set above 0 to make this a purchasable program — patients pay this amount, then fill a medical form for review.</p>
+      </Section>
+
+      <Section title="Assigned Doctors">
+        <p className="text-xs text-gray-400 -mt-1">Doctors attached here get notified once an enrollment for this program is approved.</p>
+        {doctorOptions.length === 0 ? (
+          <p className="text-xs text-gray-400">No doctors found.</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+            {doctorOptions.map(d => {
+              const checked = form.doctorIds.includes(d.id);
+              return (
+                <label key={d.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-gray-100 hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" checked={checked} onChange={() => toggleDoctor(d.id)} className="accent-teal-500 shrink-0" />
+                  <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+                    {d.imageUrl ? (
+                      <Image src={d.imageUrl} alt={d.name} width={32} height={32} className="object-cover w-full h-full" />
+                    ) : (
+                      <Stethoscope className="w-4 h-4 text-gray-300" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-700 truncate">{d.nameEn ?? d.name}</p>
+                    <p className="text-xs text-gray-400 truncate">{d.specialty}</p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        )}
       </Section>
 
       <Section title="Link & Order">
