@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ShoppingBag } from 'lucide-react';
+import Link from 'next/link';
+import { ShoppingBag, Plus } from 'lucide-react';
 
 interface Product {
   id: string; name: string; nameEn: string | null;
@@ -45,14 +46,26 @@ export default function PartnerProductsPage() {
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto flex flex-col gap-4">
-      <h1 className="text-lg font-bold text-gray-800">Products</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold text-gray-800">Products</h1>
+        <Link href="/partner/products/new"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: '#3b5bdb' }}>
+          <Plus size={16} /> New Product
+        </Link>
+      </div>
 
       {loading ? (
         <ProductsSkeleton />
       ) : products.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
           <ShoppingBag className="w-8 h-8 mx-auto text-gray-200 mb-2" />
-          <p className="text-sm text-gray-400">No products linked to this clinic yet.</p>
+          <p className="text-sm text-gray-400 mb-4">No products linked to this clinic yet.</p>
+          <Link href="/partner/products/new"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#3b5bdb' }}>
+            <Plus size={16} /> Add your first product
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

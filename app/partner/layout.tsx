@@ -5,18 +5,22 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck, QrCode } from 'lucide-react';
+import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck, QrCode, HeartPulse, Bell } from 'lucide-react';
+import { RealtimeProvider } from '@/components/RealtimeProvider';
+import { NotificationBellButton } from '@/components/NotificationBell';
 
 const PRIMARY = '#3b5bdb';
 
-interface ClinicInfo { id: string; name: string; nameEn: string | null; imageUrl: string | null; }
+interface ClinicInfo { id: string; name: string; nameEn: string | null; imageUrl: string | null; userId?: string; }
 
 const navItems = [
   { href: '/partner/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/partner/appointments', icon: Calendar,        label: 'Appointments' },
   { href: '/partner/doctors',      icon: Stethoscope,     label: 'Doctors' },
   { href: '/partner/products',     icon: ShoppingBag,     label: 'Products' },
+  { href: '/partner/programs',     icon: HeartPulse,      label: 'Programs' },
   { href: '/partner/orders',       icon: Receipt,         label: 'Orders' },
+  { href: '/partner/notifications', icon: Bell,           label: 'Notifications' },
   { href: '/partner/referrals',    icon: QrCode,          label: 'Verify Referral' },
   { href: '/partner/login-history', icon: ShieldCheck,    label: 'Login History' },
   { href: '/partner/profile',      icon: Building2,       label: 'Clinic Profile' },
@@ -122,7 +126,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     </div>
   );
 
-  return (
+  const body = (
     <div className="min-h-screen bg-gray-50 flex">
       <aside
         className="hidden lg:flex flex-col w-56 shrink-0 h-screen sticky top-0"
@@ -136,9 +140,12 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
           <Image src="/medihug-logo.png" alt="MediHug" width={28} height={28} className="object-contain" />
           <p className="text-sm font-bold text-gray-800">Partner Portal</p>
         </div>
-        <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
-          <Menu className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {clinic?.userId && <NotificationBellButton />}
+          <button onClick={() => setOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -159,10 +166,13 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
             <p className="text-sm font-bold text-gray-800">{pageTitle}</p>
             <p className="text-[11px] text-gray-400 leading-none mt-0.5">MediHug Partner Portal</p>
           </div>
+          {clinic?.userId && <NotificationBellButton />}
         </header>
 
         <main className="flex-1 min-w-0">{children}</main>
       </div>
     </div>
   );
+
+  return <RealtimeProvider role="partner">{body}</RealtimeProvider>;
 }

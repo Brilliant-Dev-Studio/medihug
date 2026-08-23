@@ -80,6 +80,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       });
     }
 
+    if (program.clinicId) {
+      const clinic = await db.clinic.findUnique({ where: { id: program.clinicId }, select: { ownerId: true } });
+      if (clinic?.ownerId) {
+        notify({
+          userId: clinic.ownerId,
+          type: 'new-program-enrollment',
+          title: enrollment.user.name,
+          body: `enrolled in "${program.titleMm}" — pending Super Admin review.`,
+          actionUrl: `/partner/programs`,
+          actorName: enrollment.user.name,
+          actorAvatar: enrollment.user.profileImage,
+        });
+      }
+    }
+
     return NextResponse.json({ enrollment }, { status: 201 });
   } catch (e) {
     console.error(e);

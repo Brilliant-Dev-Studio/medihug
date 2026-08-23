@@ -133,6 +133,28 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Appointment.clinicId is never actually populated anywhere in the app, so derive the
+    // relevant clinic(s) via ClinicDoctor instead — the real source of truth for which
+    // clinic(s) a doctor belongs to (a doctor can belong to more than one).
+    const clinics = await db.clinic.findMany({
+      where: { ownerId: { not: null }, doctors: { some: { doctorId } } },
+      select: { ownerId: true },
+    });
+    const seenOwners = new Set<string>();
+    for (const c of clinics) {
+      if (!c.ownerId || seenOwners.has(c.ownerId)) continue;
+      seenOwners.add(c.ownerId);
+      notify({
+        userId: c.ownerId,
+        type: 'new-appointment-booked',
+        title: appointment.user.name,
+        body: `booked an appointment with Dr. ${appointment.doctor.name}.`,
+        actionUrl: `/partner/appointments`,
+        actorName: appointment.user.name,
+        actorAvatar: appointment.user.profileImage,
+      });
+    }
+
     return NextResponse.json({ appointment }, { status: 201 });
   } catch (e) {
     if (e instanceof Error && e.message === 'SLOT_TAKEN') {

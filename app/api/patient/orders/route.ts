@@ -67,6 +67,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const productIds = order.items.map(i => i.productId);
+    const clinics = await db.clinic.findMany({
+      where: { ownerId: { not: null }, products: { some: { productId: { in: productIds } } } },
+      select: { ownerId: true },
+    });
+    const seenOwners = new Set<string>();
+    for (const c of clinics) {
+      if (!c.ownerId || seenOwners.has(c.ownerId)) continue;
+      seenOwners.add(c.ownerId);
+      notify({
+        userId: c.ownerId,
+        type: 'new-order-placed',
+        title: order.user.name,
+        body: `placed an order for ${order.totalAmount.toLocaleString()} MMK.`,
+        actionUrl: `/partner/orders`,
+        actorName: order.user.name,
+        actorAvatar: order.user.profileImage,
+      });
+    }
+
     return NextResponse.json({ order }, { status: 201 });
   } catch (e) {
     if (e instanceof Error && e.message === 'OUT_OF_STOCK') {

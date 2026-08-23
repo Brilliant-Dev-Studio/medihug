@@ -22,6 +22,12 @@ const INCLUDE = {
     },
   },
   branches: { orderBy: { order: 'asc' as const } },
+  gallery: { orderBy: { order: 'asc' as const } },
+  programs: {
+    where: { isActive: true },
+    select: { id: true, imageUrl: true, titleMm: true, titleEn: true, price: true },
+    orderBy: { createdAt: 'desc' as const },
+  },
 };
 
 /* ── GET /api/clinics/[id] — public clinic detail, active partner clinics only ── */

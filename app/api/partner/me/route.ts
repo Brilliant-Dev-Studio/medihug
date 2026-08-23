@@ -15,5 +15,5 @@ export async function GET(req: NextRequest) {
   });
   if (!clinic) return NextResponse.json({ clinic: null }, { status: 404 });
 
-  return NextResponse.json({ clinic, ownerName: payload.name });
+  return NextResponse.json({ clinic: { ...clinic, userId: payload.id }, ownerName: payload.name });
 }

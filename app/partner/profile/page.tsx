@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Loader2, Save } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import { Loader2, Save, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImageDropzone from '@/components/admin/ImageDropzone';
+import { compressAndUpload } from '@/components/admin/uploadImage';
 
 const PRIMARY = '#3b5bdb';
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#3b5bdb]/40 focus:border-[#3b5bdb] transition-colors';
@@ -74,10 +76,15 @@ function ProfileSkeleton() {
   );
 }
 
+interface GalleryPhoto { id: string; imageUrl: string; captionMm: string | null; captionEn: string | null; }
+
 export default function PartnerProfilePage() {
   const [form, setForm] = useState<ClinicForm>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [gallery, setGallery] = useState<GalleryPhoto[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const galleryFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/partner/clinic')
@@ -94,9 +101,38 @@ export default function PartnerProfilePage() {
           aboutMm: c.aboutMm ?? '', aboutEn: c.aboutEn ?? '',
           imageUrl: c.imageUrl ?? '', coverUrl: c.coverUrl ?? '',
         });
+        setGallery(c.gallery ?? []);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleGalleryUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    try {
+      const imageUrl = await compressAndUpload(file, () => {});
+      const res = await fetch('/api/partner/gallery', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setGallery(g => [...g, data.photo]);
+    } catch {
+      toast.error('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeGalleryPhoto(id: string) {
+    const prev = gallery;
+    setGallery(g => g.filter(p => p.id !== id));
+    const res = await fetch(`/api/partner/gallery/${id}`, { method: 'DELETE' });
+    if (!res.ok) { setGallery(prev); toast.error('Delete failed'); }
+  }
 
   const set = <K extends keyof ClinicForm>(key: K, value: ClinicForm[K]) => setForm(f => ({ ...f, [key]: value }));
 
@@ -136,6 +172,28 @@ export default function PartnerProfilePage() {
           <ImageDropzone label="Logo / ဓာတ်ပုံ (1:1)" value={form.imageUrl} onChange={v => set('imageUrl', v)} aspect="square" />
           <ImageDropzone label="Cover Image (16:6)" value={form.coverUrl} onChange={v => set('coverUrl', v)} aspect="wide" />
         </div>
+      </Section>
+
+      <Section title="Gallery">
+        <p className="text-xs text-gray-400 -mt-2">Photos shown on your clinic&apos;s public profile</p>
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+          {gallery.map(p => (
+            <div key={p.id} className="relative rounded-xl overflow-hidden border border-gray-100 bg-gray-50" style={{ aspectRatio: '1' }}>
+              <Image src={p.imageUrl} alt="" fill className="object-cover" />
+              <button onClick={() => removeGalleryPhoto(p.id)}
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center">
+                <X className="w-3.5 h-3.5 text-white" />
+              </button>
+            </div>
+          ))}
+          <button onClick={() => galleryFileRef.current?.click()} disabled={uploading}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 hover:border-gray-300 text-gray-400 transition-colors disabled:opacity-60"
+            style={{ aspectRatio: '1' }}>
+            {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+            <span className="text-[10px] font-semibold">Add Photo</span>
+          </button>
+        </div>
+        <input ref={galleryFileRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryUpload} />
       </Section>
 
       <Section title="Basic Info">

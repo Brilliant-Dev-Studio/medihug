@@ -8,6 +8,7 @@ import {
   ArrowLeft, Phone, Clock, MapPin, Globe, Star,
   Stethoscope, ShoppingBag, CheckCircle2, Heart,
   Building2, ChevronRight, Share2, Pill, Navigation,
+  Images, X, HeartPulse,
 } from 'lucide-react';
 import { FaFacebook, FaTiktok } from 'react-icons/fa6';
 import { useLang } from '../../../lib/LanguageContext';
@@ -46,6 +47,8 @@ interface Clinic {
   doctors: ClinicDoctor[];
   products: ClinicProduct[];
   branches: { id: string; title: string; titleEn: string | null; address: string; addressEn: string | null; mapUrl: string | null }[];
+  gallery: { id: string; imageUrl: string; captionMm: string | null; captionEn: string | null }[];
+  programs: { id: string; imageUrl: string; titleMm: string; titleEn: string | null; price: number }[];
 }
 
 /* ─── skeleton ─── */
@@ -121,6 +124,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
   const [loading,   setLoading]   = useState(true);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [lightbox, setLightbox]   = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/clinics/${id}`)
@@ -410,6 +414,29 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
           </div>
         )}
 
+        {/* gallery */}
+        {clinic.gallery.length > 0 && (
+          <div>
+            <SectionHeader
+              icon={<Images className="w-4 h-4" style={{ color: PRIMARY }} />}
+              label={mm ? 'ဓာတ်ပုံများ' : 'Gallery'}
+              count={clinic.gallery.length}
+              unit={mm ? 'ပုံ' : 'photos'}
+            />
+            <div className="grid grid-cols-3 gap-2">
+              {clinic.gallery.map(g => {
+                const caption = mm ? (g.captionMm ?? g.captionEn) : (g.captionEn ?? g.captionMm);
+                return (
+                  <button key={g.id} type="button" onClick={() => setLightbox(g.imageUrl)}
+                    className="relative rounded-xl overflow-hidden border border-gray-100 bg-gray-50" style={{ aspectRatio: '1' }}>
+                    <Image src={g.imageUrl} alt={caption ?? ''} fill className="object-cover" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* doctors */}
         {clinic.doctors.length > 0 && (
           <div>
@@ -577,7 +604,52 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
           </div>
         )}
 
+        {/* healthcare programs */}
+        {clinic.programs.length > 0 && (
+          <div>
+            <SectionHeader
+              icon={<HeartPulse className="w-4 h-4" style={{ color: PRIMARY }} />}
+              label={mm ? 'ကျန်းမာရေး အစီအစဉ်များ' : 'Healthcare Programs'}
+              count={clinic.programs.length}
+              unit={mm ? 'ခု' : 'items'}
+            />
+            <div className="flex gap-3 overflow-x-auto pb-1 lg:grid lg:grid-cols-4 lg:overflow-x-visible lg:pb-0" style={{ scrollbarWidth: 'none' }}>
+              {clinic.programs.map(pr => {
+                const prName = mm ? pr.titleMm : (pr.titleEn ?? pr.titleMm);
+                return (
+                  <Link key={pr.id} href={`/patient/programs/${pr.id}`}
+                    className="shrink-0 w-40 lg:w-auto bg-white rounded-2xl border border-gray-100 overflow-hidden active:scale-[0.97] transition-transform shadow-sm hover:shadow-md">
+                    <div className="relative w-full h-32 bg-gray-50 overflow-hidden">
+                      <Image src={pr.imageUrl} alt={prName} fill sizes="(max-width: 768px) 160px, 25vw" className="object-cover" />
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{prName}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-sm font-extrabold" style={{ color: PRIMARY }}>
+                          {pr.price.toLocaleString()} MMK
+                        </p>
+                        <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
       </div>
+
+      {lightbox && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center px-4" onClick={() => setLightbox(null)}>
+          <button onClick={() => setLightbox(null)} className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
+            <X className="w-5 h-5 text-white" />
+          </button>
+          <div className="relative w-full max-w-2xl aspect-square" onClick={e => e.stopPropagation()}>
+            <Image src={lightbox} alt="" fill className="object-contain" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

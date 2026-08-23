@@ -40,7 +40,7 @@ export function useRealtime() {
 type ChatListeners = Map<string, Set<(message: unknown) => void>>;
 
 interface RealtimeProviderProps {
-  role: 'admin' | 'doctor' | 'patient';
+  role: 'admin' | 'doctor' | 'patient' | 'partner';
   phone?: string; // required when role === 'patient'
   children: ReactNode;
 }

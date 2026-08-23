@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { experimental_upgradeWebSocket, type WebSocket, type WebSocketData } from '@vercel/functions';
-import { verifyAdminToken, verifyDoctorToken } from '@/lib/jwt';
+import { verifyAdminToken, verifyDoctorToken, verifyPartnerToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
 import { getSubscriber } from '@/lib/realtime';
 
@@ -59,6 +59,7 @@ function unsubscribeLocal(channel: string, ws: WebSocket) {
 export async function GET(req: NextRequest) {
   const adminToken = req.cookies.get('admin_token')?.value;
   const doctorToken = req.cookies.get('doctor_token')?.value;
+  const partnerToken = req.cookies.get('partner_token')?.value;
 
   let userId: string | null = null;
   if (adminToken) {
@@ -66,6 +67,9 @@ export async function GET(req: NextRequest) {
     userId = payload?.id ?? null;
   } else if (doctorToken) {
     const payload = await verifyDoctorToken(doctorToken);
+    userId = payload?.id ?? null;
+  } else if (partnerToken) {
+    const payload = await verifyPartnerToken(partnerToken);
     userId = payload?.id ?? null;
   }
 

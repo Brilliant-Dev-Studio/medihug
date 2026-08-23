@@ -259,6 +259,7 @@ model Clinic {
   loginLogs    ClinicLoginLog[]
   commissionRules CommissionRule[]
   revenueEntries  RevenueEntry[]
+  programs        HealthcareProgram[]
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -651,11 +652,15 @@ model HealthcareProgram {
   price     Int      @default(0)
   order     Int      @default(0)
   isActive  Boolean  @default(true)
+  clinicId  String?  // set when a Partner clinic listed this program themselves; null = platform-authored
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  clinic      Clinic?             @relation(fields: [clinicId], references: [id], onDelete: SetNull)
   doctors     ProgramDoctor[]
   enrollments ProgramEnrollment[]
+
+  @@index([clinicId])
 }
 
 enum ProgramEnrollmentStatus {

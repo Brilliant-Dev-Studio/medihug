@@ -14,7 +14,10 @@ export async function GET(req: NextRequest) {
   const clinicId = await requireClinicId(req);
   if (!clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const clinic = await db.clinic.findUnique({ where: { id: clinicId } });
+  const clinic = await db.clinic.findUnique({
+    where: { id: clinicId },
+    include: { gallery: { orderBy: { order: 'asc' } } },
+  });
   if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json({ clinic });
 }
