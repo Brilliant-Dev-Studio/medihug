@@ -16,7 +16,7 @@ const DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface Slot { dayOfWeek: number; startTime: string; endTime: string; duration: number; maxPerSlot: number; }
 interface Doctor {
-  name: string; nameEn: string | null; specialty: string; bio: string | null;
+  name: string; nameEn: string | null; specialty: string; specialtyEn: string | null; bio: string | null;
   phone: string | null; phoneSecondary: string | null; viber: string | null;
   imageUrl: string | null; coverUrl: string | null; experience: number; rating: number; reviewCount: number; price: number;
   isAvailable: boolean; qualifications: string | null; careerMm: string | null; careerEn: string | null;
@@ -122,6 +122,7 @@ function ProfileSkeleton() {
 }
 
 interface EditForm {
+  name: string; nameEn: string; specialty: string; specialtyEn: string;
   bio: string; phoneSecondary: string; viber: string; location: string;
   careerMm: string; careerEn: string; qualifications: string;
   clinicNote: string; clinicNoteEn: string;
@@ -130,6 +131,7 @@ interface EditForm {
 
 function toForm(d: Doctor): EditForm {
   return {
+    name: d.name, nameEn: d.nameEn ?? '', specialty: d.specialty, specialtyEn: d.specialtyEn ?? '',
     bio: d.bio ?? '', phoneSecondary: d.phoneSecondary ?? '', viber: d.viber ?? '', location: d.location ?? '',
     careerMm: d.careerMm ?? '', careerEn: d.careerEn ?? '', qualifications: d.qualifications ?? '',
     clinicNote: d.clinicNote ?? '', clinicNoteEn: d.clinicNoteEn ?? '',
@@ -178,10 +180,14 @@ export default function DoctorProfilePage() {
   const cancelEdit = () => { setEditing(false); setForm(null); };
 
   const saveEdit = async () => {
-    if (!form) return;
+    if (!form || !form.name.trim() || !form.specialty.trim()) return;
     setSaving(true);
     try {
       const updated = await patchProfile({
+        name: form.name.trim(),
+        nameEn: form.nameEn || null,
+        specialty: form.specialty.trim(),
+        specialtyEn: form.specialtyEn || null,
         bio: form.bio || null,
         phoneSecondary: form.phoneSecondary || null,
         viber: form.viber || null,
@@ -331,12 +337,35 @@ export default function DoctorProfilePage() {
           </div>
 
           <div className="mt-4">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{doctor.name}</h1>
-              <BadgeCheck className="w-4.5 h-4.5 shrink-0" style={{ color: PRIMARY }} />
-            </div>
-            {doctor.nameEn && <p className="text-sm text-gray-400 mt-0.5">{doctor.nameEn}</p>}
-            <p className="text-sm font-semibold mt-1.5" style={{ color: PRIMARY }}>{doctor.specialty}</p>
+            {editing && form ? (
+              <div className="flex flex-col gap-2 max-w-sm">
+                <div>
+                  <label className={lbl}>Name (Myanmar) *</label>
+                  <input className={inp} placeholder="Name" value={form.name} onChange={e => set('name', e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Name (English)</label>
+                  <input className={inp} placeholder="Name (English)" value={form.nameEn} onChange={e => set('nameEn', e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Specialty (Myanmar) *</label>
+                  <input className={inp} placeholder="Specialty" value={form.specialty} onChange={e => set('specialty', e.target.value)} />
+                </div>
+                <div>
+                  <label className={lbl}>Specialty (English)</label>
+                  <input className={inp} placeholder="Specialty (English)" value={form.specialtyEn} onChange={e => set('specialtyEn', e.target.value)} />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{doctor.name}</h1>
+                  <BadgeCheck className="w-4.5 h-4.5 shrink-0" style={{ color: PRIMARY }} />
+                </div>
+                {doctor.nameEn && <p className="text-sm text-gray-400 mt-0.5">{doctor.nameEn}</p>}
+                <p className="text-sm font-semibold mt-1.5" style={{ color: PRIMARY }}>{doctor.specialty}</p>
+              </>
+            )}
 
             {editing && form ? (
               <textarea rows={3} className={inp + ' mt-3 max-w-xl resize-none'} placeholder="Bio"

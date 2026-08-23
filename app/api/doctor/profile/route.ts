@@ -31,9 +31,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Fields a doctor may edit on their own profile. Identity (name/specialty), login phone,
-// pricing/experience and weekly slots stay admin-controlled — those go through the admin panel.
+// Fields a doctor may edit on their own profile. Login phone, pricing/experience and weekly
+// slots stay admin-controlled — those go through the admin panel.
 const EDITABLE_FIELDS = [
+  'name', 'nameEn', 'specialty', 'specialtyEn',
   'imageUrl', 'coverUrl', 'bio', 'phoneSecondary', 'viber', 'location',
   'careerMm', 'careerEn', 'qualifications',
   'clinicNote', 'clinicNoteEn', 'languages', 'clinicTypesMm', 'clinicTypesEn',
@@ -47,6 +48,13 @@ export async function PATCH(req: NextRequest) {
     if (!doctorId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
+    if (body.name !== undefined && !String(body.name).trim()) {
+      return NextResponse.json({ error: 'Name cannot be empty.' }, { status: 400 });
+    }
+    if (body.specialty !== undefined && !String(body.specialty).trim()) {
+      return NextResponse.json({ error: 'Specialty cannot be empty.' }, { status: 400 });
+    }
+
     const data: Record<string, unknown> = {};
     for (const key of EDITABLE_FIELDS) {
       if (body[key] !== undefined) data[key] = body[key];
