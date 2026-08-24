@@ -28,7 +28,6 @@ export default function Home() {
   const stats = [
     { value: '100%', label: mm ? 'အတည်ပြုပြီးသား ဆရာဝန်များ' : 'Verified Doctors' },
     { value: '24/7', label: mm ? 'အမြဲတမ်း ဝန်ဆောင်မှု' : 'Always Available' },
-    { value: mm ? 'အခမဲ့' : 'Free', label: mm ? 'စာရင်းသွင်းရန်' : 'To Join' },
   ];
   const specialties = mm
     ? ['အထွေထွေ', 'နှလုံးရောဂါကု', 'ကလေးရောဂါကု']

@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { Bot, Stethoscope, Building2, ShoppingBag, HeartPulse, Languages, AlertTriangle } from 'lucide-react';
+import { Bot, Stethoscope, Building2, ShoppingBag, HeartPulse, Languages, AlertTriangle, ChevronDown } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
 const FEATURES = [
@@ -38,6 +39,7 @@ const PRIMARY = '#0d2b6e';
 export default function AIAssistantSection() {
   const { lang } = useLang();
   const mm = lang === 'mm';
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <section className="w-full py-12 sm:py-20 px-6" style={{ background: 'linear-gradient(180deg, #f8f7ff 0%, #ffffff 100%)' }}>
@@ -120,13 +122,20 @@ export default function AIAssistantSection() {
           </div>
         </div>
 
-        <div className="mt-8 max-w-2xl mx-auto rounded-2xl border p-4 sm:p-5 flex gap-3" style={{ borderColor: '#fde68a', backgroundColor: '#fffbeb' }}>
-          <AlertTriangle className="w-4.5 h-4.5 shrink-0 mt-0.5" style={{ color: '#d97706' }} />
-          <div>
-            <p className="text-xs sm:text-sm font-bold mb-1.5" style={{ color: '#92400e' }}>
-              {mm ? 'AI Health Assistant သတိပြုရန်' : 'AI Health Assistant Notice'}
+        <div className="mt-6 max-w-2xl mx-auto rounded-xl border" style={{ borderColor: '#fde68a', backgroundColor: '#fffbeb' }}>
+          <button
+            type="button"
+            onClick={() => setExpanded(e => !e)}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" style={{ color: '#d97706' }} />
+            <p className="flex-1 text-[11px] sm:text-xs font-semibold" style={{ color: '#92400e' }}>
+              {mm ? 'AI Health Assistant သတိပြုရန် — ဆရာဝန်၏ ရောဂါရှာဖွေချက်ကို အစားထိုးခြင်းမပြုပါ' : "AI Health Assistant Notice — doesn't replace a doctor's diagnosis"}
             </p>
-            <div className="flex flex-col gap-1.5 text-[11px] sm:text-xs leading-relaxed" style={{ color: '#92400e' }}>
+            <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} style={{ color: '#d97706' }} />
+          </button>
+          {expanded && (
+            <div className="flex flex-col gap-1.5 text-[11px] sm:text-xs leading-relaxed px-4 pb-4" style={{ color: '#92400e' }}>
               <p>
                 {mm
                   ? 'MediHug AI Health Assistant သည် ကျန်းမာရေးဆိုင်ရာ အထွေထွေအချက်အလက်များ၊ MediHug ၏ ဝန်ဆောင်မှုများ၊ ဆရာဝန်များနှင့် ကျန်းမာရေးအစီအစဉ်များကို ရှာဖွေရာတွင် ကူညီပေးရန် ရည်ရွယ်ထားသော AI အကူအညီပေးစနစ်တစ်ခုသာ ဖြစ်ပါသည်။'
@@ -148,7 +157,7 @@ export default function AIAssistantSection() {
                   : 'In an emergency, do not wait for help from AI Chat — go immediately to the nearest emergency medical facility.'}
               </p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </section>
