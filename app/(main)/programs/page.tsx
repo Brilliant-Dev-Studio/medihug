@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, HeartPulse } from 'lucide-react';
@@ -8,9 +9,11 @@ import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
 
+interface Category { id: string; name: string; nameEn: string | null; }
 interface Program {
   id: string; imageUrl: string; titleMm: string; titleEn: string | null;
   descMm: string | null; descEn: string | null; ctaLink: string | null; price: number;
+  category: Category | null;
 }
 
 function SkeletonCard() {
@@ -25,18 +28,27 @@ function SkeletonCard() {
   );
 }
 
-export default function ProgramsListPage() {
+function ProgramsListPageInner() {
   const { lang, tr } = useLang();
   const mm = lang === 'mm';
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const searchParams = useSearchParams();
+  const [programs, setPrograms]   = useState<Program[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [filterCat, setFilterCat] = useState(() => searchParams.get('category') ?? 'all');
   const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    fetch('/api/healthcare-programs')
-      .then(r => r.json())
-      .then(d => { setPrograms(d.programs ?? []); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch('/api/healthcare-programs').then(r => r.json()),
+      fetch('/api/program-categories').then(r => r.json()),
+    ]).then(([pd, cd]) => {
+      setPrograms(pd.programs ?? []);
+      setCategories(cd.categories ?? []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
+
+  const filteredPrograms = filterCat === 'all' ? programs : programs.filter(p => p.category?.id === filterCat);
 
   return (
     <main className="min-h-screen bg-white">
@@ -49,18 +61,34 @@ export default function ProgramsListPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-10 sm:py-14">
+        {!loading && categories.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            <button onClick={() => setFilterCat('all')}
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+              style={filterCat === 'all' ? { backgroundColor: PRIMARY, color: '#fff', borderColor: PRIMARY } : { color: '#6b7280', borderColor: '#e5e7eb' }}>
+              {mm ? 'အားလုံး' : 'All'}
+            </button>
+            {categories.map(c => (
+              <button key={c.id} onClick={() => setFilterCat(c.id)}
+                className="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+                style={filterCat === c.id ? { backgroundColor: PRIMARY, color: '#fff', borderColor: PRIMARY } : { color: '#6b7280', borderColor: '#e5e7eb' }}>
+                {mm ? c.name : (c.nameEn ?? c.name)}
+              </button>
+            ))}
+          </div>
+        )}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
-        ) : programs.length === 0 ? (
+        ) : filteredPrograms.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-300 gap-2">
             <HeartPulse className="w-10 h-10" />
             <p className="text-sm text-gray-400">{mm ? 'အစီအစဉ် မရှိသေးပါ' : 'No programs yet'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {programs.map(p => {
+            {filteredPrograms.map(p => {
               const name = mm ? p.titleMm : (p.titleEn ?? p.titleMm);
               const rawDesc = mm ? (p.descMm ?? p.descEn) : (p.descEn ?? p.descMm);
               const desc = rawDesc?.replace(/[#*_`>~-]/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1').trim();
@@ -91,5 +119,13 @@ export default function ProgramsListPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function ProgramsListPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProgramsListPageInner />
+    </Suspense>
   );
 }

@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [show, setShow] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ username: '', phone: '', password: '', confirm: '' });
 
   const mm = lang === 'mm';
@@ -52,11 +53,32 @@ export default function RegisterPage() {
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    toast.success(mm ? 'OTP ကုဒ် ပေးပို့နေသည်...' : 'Sending OTP code...');
-    router.push('/verify');
+    const phone = form.phone.trim();
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/otp/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? (mm ? 'OTP ပို့၍မရပါ' : 'Could not send OTP'));
+        return;
+      }
+
+      sessionStorage.setItem('medihug_login_role', 'PATIENT');
+      sessionStorage.setItem('medihug_pending_register', JSON.stringify({
+        username: form.username.trim(), phone, password: form.password,
+      }));
+
+      toast.success(mm ? 'OTP ကုဒ် ပေးပို့ပြီးပါပြီ' : 'OTP code sent');
+      router.push('/verify');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const steps = [
@@ -225,10 +247,11 @@ export default function RegisterPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity mt-1"
+                  disabled={submitting}
+                  className="w-full py-3.5 rounded-xl text-white font-semibold text-sm hover:opacity-90 transition-opacity mt-1 disabled:opacity-50"
                   style={{ backgroundColor: '#0d2b6e' }}
                 >
-                  {lang === 'mm' ? 'စာရင်းသွင်းရန်' : 'Register'}
+                  {submitting ? (mm ? 'ပို့နေသည်...' : 'Sending...') : (lang === 'mm' ? 'စာရင်းသွင်းရန်' : 'Register')}
                 </button>
 
               </form>

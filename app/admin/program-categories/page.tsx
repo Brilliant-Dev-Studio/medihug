@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, HeartPulse, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import ImageUploadSlot from '@/components/admin/ImageUploadSlot';
 
 const PRIMARY = '#2ab5ad';
@@ -10,7 +10,7 @@ interface Category { id: string; name: string; nameEn: string | null; iconUrl: s
 
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
-export default function ProductCategoriesPage() {
+export default function ProgramCategoriesPage() {
   const [categories,   setCategories]   = useState<Category[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [total,        setTotal]        = useState(0);
@@ -40,7 +40,7 @@ export default function ProductCategoriesPage() {
     setLoading(true);
     const q   = new URLSearchParams({ page: String(p) });
     if (search) q.set('search', search);
-    const res = await fetch(`/api/admin/product-categories?${q}`);
+    const res = await fetch(`/api/admin/program-categories?${q}`);
     const d   = await res.json();
     setCategories(d.categories ?? []);
     setTotal(d.total ?? 0);
@@ -60,7 +60,7 @@ export default function ProductCategoriesPage() {
   const handleCreate = async () => {
     if (!newName.trim()) { setCreateError('Myanmar name is required.'); return; }
     setSavingNew(true); setCreateError('');
-    const res  = await fetch('/api/admin/product-categories', {
+    const res  = await fetch('/api/admin/program-categories', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: newName.trim(), nameEn: newNameEn.trim(), iconUrl: newIconUrl, bgImageUrl: newBgUrl }),
     });
@@ -77,7 +77,7 @@ export default function ProductCategoriesPage() {
 
   const handleEdit = async (id: string) => {
     if (!editName.trim()) return;
-    const res = await fetch(`/api/admin/product-categories/${id}`, {
+    const res = await fetch(`/api/admin/program-categories/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: editName.trim(), nameEn: editNameEn.trim(), iconUrl: editIconUrl, bgImageUrl: editBgUrl }),
     });
@@ -87,7 +87,7 @@ export default function ProductCategoriesPage() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeletingId(deleteTarget.id);
-    await fetch(`/api/admin/product-categories/${deleteTarget.id}`, { method: 'DELETE' });
+    await fetch(`/api/admin/program-categories/${deleteTarget.id}`, { method: 'DELETE' });
     setDeletingId(null);
     setDeleteTarget(null);
     load(page);
@@ -99,7 +99,7 @@ export default function ProductCategoriesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-800">Product Categories</h1>
+          <h1 className="text-xl font-bold text-gray-800">Program Categories</h1>
           <p className="text-sm text-gray-400 mt-0.5">{total} categories</p>
         </div>
         {!creating && (
@@ -198,7 +198,7 @@ export default function ProductCategoriesPage() {
                 </td></tr>
               ) : categories.length === 0 ? (
                 <tr><td colSpan={5} className="py-16 text-center">
-                  <Layers className="w-8 h-8 mx-auto text-gray-200 mb-2" />
+                  <HeartPulse className="w-8 h-8 mx-auto text-gray-200 mb-2" />
                   <p className="text-sm text-gray-400">No categories found.</p>
                 </td></tr>
               ) : categories.map((c, i) => (
@@ -248,7 +248,7 @@ export default function ProductCategoriesPage() {
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={c.iconUrl} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <Layers className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
+                              <HeartPulse className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
                             )}
                           </div>
                           <span className="text-sm font-semibold text-gray-700">{c.name}</span>
@@ -329,7 +329,7 @@ export default function ProductCategoriesPage() {
           <div className="relative bg-white rounded-2xl p-6 w-80 shadow-2xl">
             <h3 className="font-bold text-gray-800 mb-2">Delete category?</h3>
             <p className="text-sm text-gray-500 mb-5">
-              <span className="font-medium text-gray-700">"{deleteTarget.name}"</span> will be permanently deleted.
+              <span className="font-medium text-gray-700">&quot;{deleteTarget.name}&quot;</span> will be permanently deleted.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteTarget(null)}

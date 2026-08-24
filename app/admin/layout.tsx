@@ -63,6 +63,7 @@ const navGroups = [
       { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs', perm: 'dashboard.view' as Permission },
       { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories', perm: 'dashboard.view' as Permission },
       { href: '/admin/healthcare-programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်များ', en: 'Healthcare Programs', perm: 'dashboard.view' as Permission },
+      { href: '/admin/program-categories', icon: Layers,      mm: 'Program Category',   en: 'Program Categories', perm: 'dashboard.view' as Permission },
       { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers', perm: 'dashboard.view' as Permission },
       { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads', perm: 'dashboard.view' as Permission },
       { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records', perm: 'dashboard.view' as Permission },

@@ -19,15 +19,18 @@ export interface Program {
   order: number;
   isActive: boolean;
   createdAt: string;
+  categoryId?: string | null;
   doctors?: { doctorId: string }[];
 }
 
 interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
+interface CategoryOption { id: string; name: string; nameEn: string | null; }
 
 export const EMPTY_FORM = {
   imageUrl: '', titleMm: '', titleEn: '',
   descMm: '', descEn: '', ctaLink: '',
   price: 0, order: 0, isActive: true,
+  categoryId: '',
   doctorIds: [] as string[],
 };
 
@@ -49,16 +52,22 @@ export default function ProgramForm({ editing }: { editing: Program | null }) {
     imageUrl: editing.imageUrl, titleMm: editing.titleMm, titleEn: editing.titleEn ?? '',
     descMm: editing.descMm ?? '', descEn: editing.descEn ?? '', ctaLink: editing.ctaLink ?? '',
     price: editing.price, order: editing.order, isActive: editing.isActive,
+    categoryId: editing.categoryId ?? '',
     doctorIds: editing.doctors?.map(d => d.doctorId) ?? [],
   } : EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
   useEffect(() => {
     fetch('/api/admin/doctors?pageSize=500&isActive=true')
       .then(r => r.json())
       .then(d => setDoctorOptions(d.doctors ?? []))
+      .catch(() => {});
+    fetch('/api/program-categories')
+      .then(r => r.json())
+      .then(d => setCategoryOptions(d.categories ?? []))
       .catch(() => {});
   }, []);
 
@@ -121,6 +130,17 @@ export default function ProgramForm({ editing }: { editing: Program | null }) {
           <MarkdownEditor value={form.descMm} onChange={v => set('descMm', v)} placeholder="ကိုယ်အလေးချိန် စီမံခန့်ခွဲမှု အစီအစဉ်အကြောင်း..." /></div>
         <div><label className={lbl}>Description (English)</label>
           <MarkdownEditor value={form.descEn} onChange={v => set('descEn', v)} placeholder="About this program..." /></div>
+      </Section>
+
+      <Section title="Category">
+        <div><label className={lbl}>Program Category</label>
+          <select className={inp} value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
+            <option value="">— Uncategorized —</option>
+            {categoryOptions.map(c => (
+              <option key={c.id} value={c.id}>{c.name}{c.nameEn ? ` (${c.nameEn})` : ''}</option>
+            ))}
+          </select>
+        </div>
       </Section>
 
       <Section title="Price">

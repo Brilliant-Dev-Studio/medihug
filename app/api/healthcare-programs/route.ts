@@ -6,6 +6,7 @@ export async function GET() {
   try {
     const programs = await db.healthcareProgram.findMany({
       where: { isActive: true },
+      include: { category: { select: { id: true, name: true, nameEn: true } } },
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
     });
     return NextResponse.json({ programs });

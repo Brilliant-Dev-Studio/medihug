@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { sendSms } from '@/lib/sms';
 
 /* ── POST /api/auth/forgot-password/request ──
  * Generates a 6-digit OTP for a phone with a password-based account
@@ -18,14 +19,15 @@ export async function POST(req: NextRequest) {
     const user = await db.user.findUnique({ where: { phone }, select: { id: true, role: true, isActive: true } });
 
     if (user && user.role !== 'PATIENT' && user.isActive) {
-      // No SMS gateway wired up yet — mock code, matches the existing /verify screen's default OTP.
-      const code = '123456';
+      const code = String(Math.floor(100000 + Math.random() * 900000));
       const codeHash = await bcrypt.hash(code, 10);
 
       await db.passwordResetOtp.updateMany({ where: { phone, consumed: false }, data: { consumed: true } });
       await db.passwordResetOtp.create({
         data: { phone, codeHash, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
       });
+
+      await sendSms(phone, `Your MediHug verification code is ${code}. Valid for 10 minutes.`);
     }
 
     return NextResponse.json({ success: true });

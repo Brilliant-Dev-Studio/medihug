@@ -49,6 +49,8 @@ export default function SpecialOffersBanner() {
     );
   }
 
+  if (offers.length === 0) return null;
+
   const offer = offers[current];
 
   return (
@@ -56,12 +58,6 @@ export default function SpecialOffersBanner() {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-sm sm:text-2xl font-bold mb-3" style={{ color: '#0d2b6e' }}>{tr.specialOffersTitle}</h2>
 
-        {offers.length === 0 ? (
-          <div className="rounded-2xl bg-gray-50 border border-gray-100 flex flex-col items-center justify-center gap-2 text-gray-300" style={{ minHeight: '260px' }}>
-            <Image src="/9169253-removebg-preview.png" alt="No data" width={90} height={90} className="opacity-70" />
-            <p className="text-sm text-gray-400">{lang === 'mm' ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
-          </div>
-        ) : (
         <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: '260px' }}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -118,7 +114,6 @@ export default function SpecialOffersBanner() {
             </div>
           )}
         </div>
-        )}
       </div>
     </section>
   );

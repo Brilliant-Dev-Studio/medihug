@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, price, order, isActive, doctorIds } = body;
+    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, price, order, isActive, doctorIds, categoryId } = body;
 
     const data: Record<string, unknown> = {};
     if (imageUrl !== undefined) data.imageUrl = imageUrl;
@@ -34,6 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (price    !== undefined) data.price    = price;
     if (order    !== undefined) data.order    = order;
     if (isActive !== undefined) data.isActive = isActive;
+    if (categoryId !== undefined) data.categoryId = categoryId || null;
 
     const program = await db.$transaction(async tx => {
       const updated = await tx.healthcareProgram.update({ where: { id }, data });

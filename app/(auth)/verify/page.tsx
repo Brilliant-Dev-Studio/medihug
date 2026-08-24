@@ -14,9 +14,19 @@ export default function VerifyPage() {
   const router = useRouter();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [verified, setVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // PATIENT flow (register or sign-in) tracks the phone the real OTP was sent to —
+  // DOCTOR keeps the old client-only mock check (its session is already authenticated
+  // for real via password at /api/auth/login, this screen is just a UX step for it).
+  const getPendingPhone = () => {
+    const pendingRegister = sessionStorage.getItem('medihug_pending_register');
+    if (pendingRegister) return JSON.parse(pendingRegister).phone as string;
+    return sessionStorage.getItem('medihug_pending_phone');
+  };
 
   useEffect(() => {
     if (countdown > 0) {
@@ -50,45 +60,94 @@ export default function VerifyPage() {
     inputs.current[Math.min(pasted.length, 5)]?.focus();
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setCountdown(60);
     setCanResend(false);
     setOtp(['', '', '', '', '', '']);
     inputs.current[0]?.focus();
+
+    const role = sessionStorage.getItem('medihug_login_role');
+    if (role === 'DOCTOR') return;
+    const phone = getPendingPhone();
+    if (!phone) return;
+    try {
+      await fetch('/api/auth/otp/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      toast.success(lang === 'mm' ? 'OTP ကုဒ် ပြန်ပို့ပြီးပါပြီ' : 'OTP code resent');
+    } catch {}
   };
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const entered = otp.join('');
     if (entered.length < 6) return;
-    if (entered !== DEFAULT_OTP) {
-      toast.error(lang === 'mm' ? 'OTP ကုဒ် မှားနေသည်' : 'Incorrect OTP code');
-      setOtp(['', '', '', '', '', '']);
-      inputs.current[0]?.focus();
-      return;
-    }
+    setVerifying(true);
+    try {
+      const role = sessionStorage.getItem('medihug_login_role');
 
-    const role = sessionStorage.getItem('medihug_login_role');
-    if (role !== 'DOCTOR') {
-      const phone = sessionStorage.getItem('medihug_pending_phone');
-      if (phone) {
-        let name = phone;
-        try {
-          const res = await fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.user?.name) name = data.user.name;
+      if (role === 'DOCTOR') {
+        if (entered !== DEFAULT_OTP) {
+          toast.error(lang === 'mm' ? 'OTP ကုဒ် မှားနေသည်' : 'Incorrect OTP code');
+          setOtp(['', '', '', '', '', '']);
+          inputs.current[0]?.focus();
+          return;
+        }
+      } else {
+        const phone = getPendingPhone();
+        if (!phone) {
+          toast.error(lang === 'mm' ? 'ဖုန်းနံပါတ် ရှာမတွေ့ပါ' : 'Phone number not found');
+          return;
+        }
+
+        const verifyRes = await fetch('/api/auth/otp/verify', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, code: entered }),
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyRes.ok) {
+          toast.error(verifyData.error ?? (lang === 'mm' ? 'OTP ကုဒ် မှားနေသည်' : 'Incorrect OTP code'));
+          setOtp(['', '', '', '', '', '']);
+          inputs.current[0]?.focus();
+          return;
+        }
+
+        const pendingRegister = sessionStorage.getItem('medihug_pending_register');
+        if (pendingRegister) {
+          const payload = JSON.parse(pendingRegister);
+          const regRes = await fetch('/api/auth/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const regData = await regRes.json();
+          if (!regRes.ok) {
+            toast.error(regData.error ?? (lang === 'mm' ? 'အကောင့်ဖွင့်၍မရပါ' : 'Could not create account'));
+            return;
           }
-        } catch {}
-        localStorage.setItem('medihug_patient', JSON.stringify({ name, phone }));
-        sessionStorage.removeItem('medihug_pending_phone');
+          localStorage.setItem('medihug_patient', JSON.stringify({ name: payload.username, phone: payload.phone }));
+          sessionStorage.removeItem('medihug_pending_register');
+        } else {
+          let name = phone;
+          try {
+            const res = await fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.user?.name) name = data.user.name;
+            }
+          } catch {}
+          localStorage.setItem('medihug_patient', JSON.stringify({ name, phone }));
+          sessionStorage.removeItem('medihug_pending_phone');
+        }
       }
-    }
 
-    toast.success(lang === 'mm' ? 'အတည်ပြုပြီးပါပြီ!' : 'Verified successfully!');
-    setVerified(true);
-    const destination = role === 'DOCTOR' ? '/doctor/dashboard' : '/patient/dashboard';
-    setTimeout(() => router.push(destination), 1500);
+      toast.success(lang === 'mm' ? 'အတည်ပြုပြီးပါပြီ!' : 'Verified successfully!');
+      setVerified(true);
+      const destination = role === 'DOCTOR' ? '/doctor/dashboard' : '/patient/dashboard';
+      setTimeout(() => router.push(destination), 1500);
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const filled = otp.join('').length === 6;
@@ -227,11 +286,11 @@ export default function VerifyPage() {
 
                 <button
                   type="submit"
-                  disabled={!filled}
+                  disabled={!filled || verifying}
                   className="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition-opacity"
-                  style={{ backgroundColor: '#0d2b6e', opacity: filled ? 1 : 0.4 }}
+                  style={{ backgroundColor: '#0d2b6e', opacity: filled && !verifying ? 1 : 0.4 }}
                 >
-                  {lang === 'mm' ? 'အတည်ပြုရန်' : 'Verify'}
+                  {verifying ? (lang === 'mm' ? 'စစ်ဆေးနေသည်...' : 'Verifying...') : (lang === 'mm' ? 'အတည်ပြုရန်' : 'Verify')}
                 </button>
 
               </form>

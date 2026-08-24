@@ -53,6 +53,8 @@ export default function PartnerClinics() {
     scrollRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' });
   };
 
+  if (!loading && clinics.length === 0) return null;
+
   return (
     <section className="relative w-full py-10 overflow-hidden">
       <div className="relative z-10 max-w-6xl mx-auto px-6 flex items-center justify-between mb-8">
@@ -82,11 +84,6 @@ export default function PartnerClinics() {
       >
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-        ) : clinics.length === 0 ? (
-          <div className="w-full flex flex-col items-center justify-center py-14 text-gray-300">
-            <Image src="/9169253-removebg-preview.png" alt="No data" width={80} height={80} className="opacity-70 mb-2" />
-            <p className="text-sm text-gray-400">{mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'}</p>
-          </div>
         ) : (
           clinics.map(c => {
             const name = mm ? c.name : (c.nameEn ?? c.name);

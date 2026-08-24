@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
       ? { OR: [{ name: { contains: search, mode: 'insensitive' as const } }, { nameEn: { contains: search, mode: 'insensitive' as const } }] }
       : {};
     const [categories, total] = await Promise.all([
-      db.productCategory.findMany({ where, orderBy: { name: 'asc' }, skip, take: limit }),
-      db.productCategory.count({ where }),
+      db.programCategory.findMany({ where, orderBy: { name: 'asc' }, skip, take: limit }),
+      db.programCategory.count({ where }),
     ]);
     return NextResponse.json({ categories, total, page, totalPages: Math.ceil(total / limit) });
   } catch (e) {
@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
   try {
     const { name, nameEn, iconUrl, bgImageUrl } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
-    const existing = await db.productCategory.findUnique({ where: { name: name.trim() } });
+    const existing = await db.programCategory.findUnique({ where: { name: name.trim() } });
     if (existing) return NextResponse.json({ error: 'Category already exists.' }, { status: 409 });
-    const category = await db.productCategory.create({
+    const category = await db.programCategory.create({
       data: { name: name.trim(), nameEn: nameEn?.trim() || null, iconUrl: iconUrl || null, bgImageUrl: bgImageUrl || null },
     });
     return NextResponse.json({ category }, { status: 201 });

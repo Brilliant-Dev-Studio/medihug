@@ -531,10 +531,12 @@ model OrderItem {
 // ─────────────────────────────────────────────
 
 model ProductCategory {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  nameEn    String?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String   @unique
+  nameEn     String?
+  iconUrl    String?
+  bgImageUrl String?
+  createdAt  DateTime @default(now())
 }
 
 // ─────────────────────────────────────────────
@@ -642,25 +644,39 @@ model SpecialOffer {
 // ─────────────────────────────────────────────
 
 model HealthcareProgram {
-  id        String   @id @default(cuid())
-  imageUrl  String
-  titleMm   String
-  titleEn   String?
-  descMm    String?
-  descEn    String?
-  ctaLink   String?
-  price     Int      @default(0)
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  clinicId  String?  // set when a Partner clinic listed this program themselves; null = platform-authored
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  imageUrl   String
+  titleMm    String
+  titleEn    String?
+  descMm     String?
+  descEn     String?
+  ctaLink    String?
+  price      Int      @default(0)
+  order      Int      @default(0)
+  isActive   Boolean  @default(true)
+  clinicId   String?  // set when a Partner clinic listed this program themselves; null = platform-authored
+  categoryId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   clinic      Clinic?             @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  category    ProgramCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   doctors     ProgramDoctor[]
   enrollments ProgramEnrollment[]
 
   @@index([clinicId])
+  @@index([categoryId])
+}
+
+model ProgramCategory {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  nameEn     String?
+  iconUrl    String?
+  bgImageUrl String?
+  createdAt  DateTime @default(now())
+
+  programs HealthcareProgram[]
 }
 
 enum ProgramEnrollmentStatus {

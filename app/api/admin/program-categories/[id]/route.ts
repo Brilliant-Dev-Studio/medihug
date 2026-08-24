@@ -6,7 +6,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id }        = await params;
     const { name, nameEn, iconUrl, bgImageUrl } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
-    const category = await db.productCategory.update({
+    const category = await db.programCategory.update({
       where: { id },
       data:  { name: name.trim(), nameEn: nameEn?.trim() || null, iconUrl: iconUrl ?? null, bgImageUrl: bgImageUrl ?? null },
     });
@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await db.productCategory.delete({ where: { id } });
+    await db.programCategory.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error(e);

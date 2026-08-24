@@ -65,11 +65,21 @@ export default function SignInPage() {
       if (data.matched && data.role === 'DOCTOR') {
         sessionStorage.setItem('medihug_login_role', 'DOCTOR');
       } else {
+        const phone = form.phone.trim();
+        const otpRes = await fetch('/api/auth/otp/send', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        });
+        const otpData = await otpRes.json();
+        if (!otpRes.ok) {
+          toast.error(otpData.error ?? (mm ? 'OTP ပို့၍မရပါ' : 'Could not send OTP'));
+          return;
+        }
         sessionStorage.setItem('medihug_login_role', 'PATIENT');
-        sessionStorage.setItem('medihug_pending_phone', form.phone.trim());
+        sessionStorage.setItem('medihug_pending_phone', phone);
       }
 
-      toast.success(mm ? 'OTP ကုဒ် ပေးပို့နေသည်...' : 'Sending OTP code...');
+      toast.success(mm ? 'OTP ကုဒ် ပေးပို့ပြီးပါပြီ' : 'OTP code sent');
       router.push('/verify');
     } finally {
       setSubmitting(false);
