@@ -17,7 +17,7 @@ const navItems = [
   { href: '/partner/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/partner/appointments', icon: Calendar,        label: 'Appointments' },
   { href: '/partner/doctors',      icon: Stethoscope,     label: 'Doctors' },
-  { href: '/partner/products',     icon: ShoppingBag,     label: 'Products' },
+  { href: '/partner/products',     icon: ShoppingBag,     label: 'Product and Services' },
   { href: '/partner/programs',     icon: HeartPulse,      label: 'Programs' },
   { href: '/partner/orders',       icon: Receipt,         label: 'Orders' },
   { href: '/partner/notifications', icon: Bell,           label: 'Notifications' },

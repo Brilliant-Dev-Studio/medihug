@@ -407,7 +407,7 @@ function ProductsPageInner() {
         {/* Left */}
         <div className="flex-1 overflow-y-auto rounded-2xl bg-gray-50 flex flex-col">
           <div className="px-8 pt-8 pb-6 rounded-t-2xl shrink-0" style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
-            <h1 className="text-2xl font-bold text-white mb-4">{mm ? 'Products များ' : 'Products'}</h1>
+            <h1 className="text-2xl font-bold text-white mb-4">{mm ? 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ' : 'Product and Services'}</h1>
             <ProductSearchBox products={allProducts} value={search} onChange={setSearch} mm={mm}
               placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}
               pillClassName="flex items-center gap-2 rounded-2xl px-4 py-3 w-full bg-white/15"
@@ -484,7 +484,7 @@ function ProductsPageInner() {
       <div className="lg:hidden">
         <div className="-mt-18 pt-21 pb-5 px-4 w-full"
           style={{ background: `linear-gradient(180deg, ${PRIMARY} 0%, ${SECONDARY} 100%)`, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
-          <h1 className="text-xl font-bold text-white mb-3">{mm ? 'Products များ' : 'Products'}</h1>
+          <h1 className="text-xl font-bold text-white mb-3">{mm ? 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ' : 'Product and Services'}</h1>
           <div className="flex items-center gap-2 w-full">
             <ProductSearchBox products={allProducts} value={search} onChange={setSearch} mm={mm}
               placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}

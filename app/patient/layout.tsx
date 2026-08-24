@@ -22,7 +22,7 @@ import { useCart } from '../lib/useCart';
 const navItems = [
   { href: '/patient/dashboard',    icon: LayoutDashboard, mm: 'ပင်မ',              en: 'Dashboard' },
   { href: '/patient/doctors',      icon: Stethoscope,     mm: 'ဆရာဝန်များ',        en: 'Doctors' },
-  { href: '/patient/records',      icon: ShoppingBag,     mm: 'Products များ',      en: 'Products' },
+  { href: '/patient/records',      icon: ShoppingBag,     mm: 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ', en: 'Product and Services' },
   { href: '/patient/appointments', icon: Calendar,        mm: 'ချိန်းဆိုမှု',      en: 'Appointments' },
   { href: '/patient/settings',     icon: UserCircle,      mm: 'ပရိုဖိုင်',           en: 'Profile' },
 ];

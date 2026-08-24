@@ -115,7 +115,7 @@ export default function AdminProductsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Products</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Product and Services</h1>
           <p className="text-sm text-gray-500 mt-0.5">Total {total} products</p>
         </div>
         <button

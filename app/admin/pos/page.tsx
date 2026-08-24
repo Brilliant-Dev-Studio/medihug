@@ -15,6 +15,7 @@ interface Overview {
   totalCommission: number;
   totalProductRevenue: number;
   totalAppointmentRevenue: number;
+  ownership: { MEDIHUG: number; PARTNER: number; SHARED: number };
   series: { label: string; commission: number; productRevenue: number }[];
   bestSellingProducts: { productId: string; name: string; nameEn: string | null; imageUrl: string | null; qty: number; revenue: number }[];
   topDoctorsByBookings: { doctor: { id: string; name: string; nameEn: string | null; imageUrl: string | null } | null; bookings: number; commission: number }[];
@@ -99,6 +100,28 @@ export default function AdminPosPage() {
             <StatCard icon={Wallet} label="Platform Commission (Profit)" value={`${data.totalCommission.toLocaleString()} Ks`} color={PRIMARY} bg="#e6f7f7" />
             <StatCard icon={ShoppingBag} label="Product Sales Revenue" value={`${data.totalProductRevenue.toLocaleString()} Ks`} color="#f59e0b" bg="#fffbeb" />
             <StatCard icon={CreditCard} label="Appointment Revenue (Patient-Paid)" value={`${data.totalAppointmentRevenue.toLocaleString()} Ks`} color="#9ca3af" bg="#f9fafb" muted />
+          </div>
+
+          {/* Revenue Ownership breakdown */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-6">
+            <h2 className="font-bold text-gray-700 text-sm mb-4">Revenue Ownership</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-xl border border-gray-100 p-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">A. Medihug Revenue</p>
+                <p className="text-lg font-bold text-gray-800 mt-1">{data.ownership.MEDIHUG.toLocaleString()} Ks</p>
+                <p className="text-[11px] text-gray-400 mt-1">Doctor markup, service fee, platform fee — referral 5%</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 p-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">B. Partner Revenue</p>
+                <p className="text-lg font-bold text-gray-800 mt-1">{data.ownership.PARTNER.toLocaleString()} Ks</p>
+                <p className="text-[11px] text-gray-400 mt-1">Partner&apos;s products, services, packages — referral 0%</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 p-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">C. Shared Revenue</p>
+                <p className="text-lg font-bold text-gray-800 mt-1">{data.ownership.SHARED.toLocaleString()} Ks</p>
+                <p className="text-[11px] text-gray-400 mt-1">Co-run programs — split first, then referral per agreement</p>
+              </div>
+            </div>
           </div>
 
           {/* Commission + product revenue chart */}

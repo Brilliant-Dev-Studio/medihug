@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
+import { resolveCommission, classifyOwnership, type RevenueOwnership } from '@/lib/commission';
 
 /* ── GET /api/admin/pos/overview?range=daily|monthly ──
    Platform commission profit, product sales revenue, best-selling products,
@@ -76,6 +77,51 @@ export async function GET(req: NextRequest) {
 
     const totalProductRevenue = [...productMap.values()].reduce((sum, p) => sum + p.revenue, 0);
 
+    // Revenue Ownership breakdown — A. Medihug / B. Partner / C. Shared.
+    // Doctor consultation revenue (markup + platform fee) is inherently Medihug revenue.
+    const ownership: Record<RevenueOwnership, number> = { MEDIHUG: 0, PARTNER: 0, SHARED: 0 };
+    ownership.MEDIHUG += apptFeeAgg._sum.fee ?? 0;
+
+    const productClinicLinks = await db.clinicProduct.findMany({
+      where: { productId: { in: [...productMap.keys()] } },
+      select: { productId: true, clinicId: true },
+    });
+    const productClinicMap = new Map(productClinicLinks.map(l => [l.productId, l.clinicId]));
+    const productClinicIds = [...new Set(productClinicLinks.map(l => l.clinicId))];
+    const productPercentByClinic = new Map<string, number>();
+    await Promise.all(productClinicIds.map(async clinicId => {
+      const { percent } = await resolveCommission({ serviceType: 'PRODUCT', clinicId });
+      productPercentByClinic.set(clinicId, percent);
+    }));
+    for (const [productId, p] of productMap) {
+      const clinicId = productClinicMap.get(productId) ?? null;
+      const percent = clinicId ? (productPercentByClinic.get(clinicId) ?? 100) : 100;
+      ownership[classifyOwnership(clinicId, percent)] += p.revenue;
+    }
+
+    const approvedEnrollments = await db.programEnrollment.findMany({
+      where: { status: 'APPROVED' },
+      select: { amount: true, program: { select: { clinicId: true, doctors: { select: { id: true }, take: 1 } } } },
+    });
+    for (const en of approvedEnrollments) {
+      const clinicId = en.program.clinicId;
+      // A partner program with Medihug doctors attached is a shared/co-run offering
+      // (per admin's own example: Weight Program run jointly) — no shared doctors means
+      // it's purely the partner's own program, referral commission doesn't apply.
+      const percent = !clinicId ? 100 : en.program.doctors.length > 0 ? 50 : 0;
+      ownership[classifyOwnership(clinicId, percent)] += en.amount;
+    }
+
+    const manualRevenueEntries = await db.revenueEntry.findMany({
+      select: { amount: true, clinicId: true, platformAmount: true },
+    });
+    for (const entry of manualRevenueEntries) {
+      const percent = entry.clinicId
+        ? Math.round(((entry.platformAmount ?? entry.amount) / entry.amount) * 100)
+        : 100;
+      ownership[classifyOwnership(entry.clinicId, percent)] += entry.amount;
+    }
+
     // Top doctors by booking count
     const doctorIds = topDoctorsRaw.map(d => d.doctorId);
     const doctors = await db.doctor.findMany({
@@ -125,6 +171,7 @@ export async function GET(req: NextRequest) {
       totalCommission: commissionAgg._sum.platformFeeAmount ?? 0,
       totalProductRevenue,
       totalAppointmentRevenue: apptFeeAgg._sum.fee ?? 0,
+      ownership,
       series,
       bestSellingProducts,
       topDoctorsByBookings,

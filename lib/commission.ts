@@ -92,6 +92,22 @@ export async function resolveCommission(
   };
 }
 
+export type RevenueOwnership = 'MEDIHUG' | 'PARTNER' | 'SHARED';
+
+/**
+ * A. Medihug Revenue — no clinic attached, or the resolved commission rule gives the
+ *    platform the full cut (partner referral 0% is only meaningful when a partner is
+ *    actually involved, i.e. a co-run/shared line).
+ * B. Partner Revenue — clinic attached and the platform's cut is 0 (partner keeps it all).
+ * C. Shared Revenue — clinic attached and both sides get a slice.
+ */
+export function classifyOwnership(clinicId: string | null | undefined, platformPercent: number): RevenueOwnership {
+  if (!clinicId) return 'MEDIHUG';
+  if (platformPercent <= 0) return 'PARTNER';
+  if (platformPercent >= 100) return 'MEDIHUG';
+  return 'SHARED';
+}
+
 /** Reads the configured gateway fee for a payment method key, 0/0 if unset. */
 export async function getPaymentMethodFee(
   key: string | null | undefined

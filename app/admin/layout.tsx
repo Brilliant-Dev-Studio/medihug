@@ -58,7 +58,7 @@ const navGroups = [
   {
     label: 'Content',
     items: [
-      { href: '/admin/products',            icon: ShoppingBag, mm: 'ကုန်ပစ္စည်းများ',  en: 'Products', perm: 'dashboard.view' as Permission },
+      { href: '/admin/products',            icon: ShoppingBag, mm: 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ', en: 'Product and Services', perm: 'dashboard.view' as Permission },
       { href: '/admin/product-categories', icon: Layers,      mm: 'Category',           en: 'Categories', perm: 'dashboard.view' as Permission },
       { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs', perm: 'dashboard.view' as Permission },
       { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories', perm: 'dashboard.view' as Permission },

@@ -47,7 +47,7 @@ export default function PartnerProductsPage() {
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-gray-800">Products</h1>
+        <h1 className="text-lg font-bold text-gray-800">Product and Services</h1>
         <Link href="/partner/products/new"
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition-opacity"
           style={{ backgroundColor: '#3b5bdb' }}>
