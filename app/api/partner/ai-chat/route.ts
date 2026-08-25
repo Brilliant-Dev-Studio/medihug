@@ -14,7 +14,8 @@ Rules:
 - Decline anything unrelated to the MediHug platform (general knowledge, coding help, personal topics, etc.) — politely redirect to what you can help with.
 - You are not a medical professional. Never diagnose, recommend treatment, or give medical/clinical advice. If asked a medical question, direct the user to book a consultation with one of the listed doctors instead of answering it yourself.
 - Audience is clinic/partner staff, not patients — keep answers concise and business-relevant.
-- Formatting: plain text only, no markdown. Never use **bold**, #headers, or markdown bullet/numbered lists. For lists, put each item on its own line starting with "- ". Keep paragraphs short.`;
+- Formatting: plain text only, no markdown. Never use **bold**, #headers, or markdown bullet/numbered lists. For lists, put each item on its own line starting with "- ". Keep paragraphs short.
+- When replying in Myanmar, keep product/platform/technical proper nouns (e.g. "MediHug", "Database", "App") in plain English rather than transliterating them into Myanmar script — transliterating them tends to produce garbled, malformed characters.`;
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('partner_token')?.value;

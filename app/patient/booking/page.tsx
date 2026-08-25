@@ -750,7 +750,7 @@ function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, cbAppMiss
       >
         {isCb
           ? (mm ? 'CB Pay ဖြင့် ငွေချေမည်' : 'Pay with CB Pay')
-          : (mm ? 'ချိန်းဆိုမှု တင်ပြမည်' : 'Submit Booking')}
+          : (mm ? 'ဆရာဝန်နှင့်ချိန်းဆိုရန်' : 'Submit Booking')}
       </button>
     </div>
   );

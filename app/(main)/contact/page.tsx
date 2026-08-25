@@ -66,8 +66,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="text-white/40 text-xs mb-0.5">{lang === 'mm' ? 'ဖုန်း' : 'Phone'}</p>
-                  <p className="text-white text-sm font-medium">5588 (Ext 1)</p>
-                  <p className="text-white text-sm font-medium">09 77 999 5588</p>
+                  <p className="text-white text-sm font-medium">09684040180</p>
                 </div>
               </div>
 
@@ -77,7 +76,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="text-white/40 text-xs mb-0.5">{lang === 'mm' ? 'အီးမေးလ်' : 'Email'}</p>
-                  <p className="text-white text-sm font-medium">support@medihug.com</p>
+                  <p className="text-white text-sm font-medium">sithulynn84@gmail.com</p>
                 </div>
               </div>
 
@@ -88,9 +87,7 @@ export default function ContactPage() {
                 <div>
                   <p className="text-white/40 text-xs mb-0.5">{lang === 'mm' ? 'လိပ်စာ' : 'Address'}</p>
                   <p className="text-white text-sm font-medium leading-relaxed">
-                    {lang === 'mm'
-                      ? 'အမှတ် ၃၃၉၊ ၁၁ လွှာ၊ အခန်း ၁၁၀၃\nSakura Tower၊ ရန်ကုန်'
-                      : 'No.339, 11F, Room 1103\nSakura Tower, Yangon'}
+                    23 Kyaik Latt Street, Sanchaung, Yangon
                   </p>
                 </div>
               </div>

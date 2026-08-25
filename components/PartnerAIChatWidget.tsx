@@ -129,7 +129,7 @@ export default function PartnerAIChatWidget() {
                   }`}
                   style={m.role === 'user' ? { backgroundColor: PRIMARY } : undefined}
                 >
-                  {m.content || (sending && i === messages.length - 1 ? (
+                  {m.content.normalize('NFC') || (sending && i === messages.length - 1 ? (
                     <span className="flex gap-1 py-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '0ms' }} />
                       <span className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-bounce" style={{ animationDelay: '150ms' }} />

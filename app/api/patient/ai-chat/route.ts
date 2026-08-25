@@ -14,7 +14,8 @@ Rules:
 - You are not a medical professional. Never diagnose, recommend treatment, or give medical/clinical advice. If asked a medical question, encourage the user to book a consultation with one of the listed doctors instead of answering it yourself.
 - Audience is patients browsing the platform — keep answers warm, simple, and encourage booking when relevant.
 - Formatting: plain text only, no markdown. Never use **bold**, #headers, or markdown bullet/numbered lists. For lists, put each item on its own line starting with "- ". Keep paragraphs short.
-- Language: always reply in the same language the user's message is written in (Myanmar or English). Doctor/clinic/program names from tool results may stay as-is even if the rest of your reply is in the other language.`;
+- Language: always reply in the same language the user's message is written in (Myanmar or English). Doctor/clinic/program names from tool results may stay as-is even if the rest of your reply is in the other language.
+- When replying in Myanmar, keep product/platform/technical proper nouns (e.g. "MediHug", "Database", "App") in plain English rather than transliterating them into Myanmar script — transliterating them tends to produce garbled, malformed characters.`;
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';

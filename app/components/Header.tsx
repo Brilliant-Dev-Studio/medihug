@@ -109,12 +109,6 @@ export default function Header() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
-          <a href="tel:09779995588" className="flex items-center gap-1.5 text-base font-semibold" style={{ color: '#0d2b6e' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
-            </svg>
-            09779995588
-          </a>
           <Link
             href="/signin"
             className="relative text-base font-semibold transition-colors"
@@ -170,13 +164,6 @@ export default function Header() {
               </Link>
             );
           })}
-          <a href="tel:09779995588" className="flex items-center gap-2 text-base font-semibold py-2 border-b border-gray-100" style={{ color: '#0d2b6e' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01l-2.2 2.2z" />
-            </svg>
-            09779995588
-          </a>
-
           {/* Mobile Language Switcher */}
           <div className="py-2 border-b border-gray-100">
             <p className="text-xs text-gray-400 mb-2 flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" /> Language / ဘာသာစကား</p>
