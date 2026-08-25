@@ -81,9 +81,13 @@ export async function requestCbPayOrder(input: {
     const scheme = config.isUat ? 'cbuat' : 'cb';
     return { generateRefOrder: data.generateRefOrder, deeplink: `${scheme}://pay?keyreference=${data.generateRefOrder}` };
   } catch (e) {
+    // Node's fetch wraps the real network error in `.cause` and gives every failure the same
+    // generic "fetch failed" message — surface the cause (e.g. TLS/DNS/timeout detail) too.
     const msg = e instanceof Error ? e.message : String(e);
+    const cause = e instanceof Error && e.cause instanceof Error ? e.cause.message
+      : e instanceof Error && e.cause ? String(e.cause) : undefined;
     console.error('requestCbPayOrder failed:', e);
-    return { error: `CBPAY_REQUEST_FAILED: ${msg}` };
+    return { error: `CBPAY_REQUEST_FAILED: ${msg}${cause ? ` — ${cause}` : ''}` };
   }
 }
 
@@ -101,16 +105,25 @@ export async function checkCbPayStatus(input: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId: input.orderId, ecommerceId: config.ecommerceId, generateRefOrder: input.generateRefOrder }),
     });
-    const data = await res.json();
-    if (!res.ok || !data.transactionStatus) return { error: data.msg ?? 'CBPAY_STATUS_CHECK_FAILED' };
+    const rawText = await res.text();
+    let data: { code?: string; msg?: string; transactionStatus?: 'P' | 'S' | 'F' | 'E'; transactionId?: string; totalAmount?: number } = {};
+    try { data = JSON.parse(rawText); } catch { /* non-JSON response, rawText carries the detail below */ }
+
+    if (!res.ok || !data.transactionStatus) {
+      const detail = data.msg ?? rawText.slice(0, 300) ?? 'no response body';
+      return { error: `CBPAY_STATUS_CHECK_FAILED: ${detail} (HTTP ${res.status}${data.code ? `, code ${data.code}` : ''})` };
+    }
     return {
       transactionStatus: data.transactionStatus,
       transactionId: data.transactionId ?? undefined,
       totalAmount: typeof data.totalAmount === 'number' ? data.totalAmount : Number(data.totalAmount) || undefined,
     };
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const cause = e instanceof Error && e.cause instanceof Error ? e.cause.message
+      : e instanceof Error && e.cause ? String(e.cause) : undefined;
     console.error('checkCbPayStatus failed:', e);
-    return { error: 'CBPAY_STATUS_CHECK_FAILED' };
+    return { error: `CBPAY_STATUS_CHECK_FAILED: ${msg}${cause ? ` — ${cause}` : ''}` };
   }
 }
 
