@@ -3,7 +3,10 @@ import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { verifyCallbackSignatureBestEffort } from '@/lib/cbpay';
 
-const OK = { responseCode: '0000', responseMessage: 'Operation Success' };
+// Doc's §4.2 parameter table names this field "responseMsg"; its §4.4 JSON example shows
+// "responseMessage" instead. Send both since the spec itself is inconsistent about which
+// key CB Bank's receiver actually reads.
+const OK = { responseCode: '0000', responseMsg: 'Operation Success', responseMessage: 'Operation Success' };
 
 /* ── POST /api/payments/cbpay/callback — CB Bank's PNV05 server-to-server payment result.
  * Must be whitelisted with CB Bank support as the notifyUrl (UAT and prod separately).
