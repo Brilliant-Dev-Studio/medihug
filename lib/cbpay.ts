@@ -69,15 +69,21 @@ export async function requestCbPayOrder(input: {
         signature,
       }),
     });
-    const data = await res.json();
+    const rawText = await res.text();
+    let data: { code?: string; msg?: string; generateRefOrder?: string } = {};
+    try { data = JSON.parse(rawText); } catch { /* non-JSON response, rawText carries the detail below */ }
+
     if (!res.ok || data.code !== '0000' || !data.generateRefOrder) {
-      return { error: data.msg ?? 'CBPAY_REQUEST_FAILED' };
+      const detail = data.msg ?? rawText.slice(0, 300) ?? 'no response body';
+      console.error(`requestCbPayOrder failed: HTTP ${res.status} code=${data.code ?? 'n/a'} — ${detail}`);
+      return { error: `CBPAY_REQUEST_FAILED: ${detail} (HTTP ${res.status}${data.code ? `, code ${data.code}` : ''})` };
     }
     const scheme = config.isUat ? 'cbuat' : 'cb';
     return { generateRefOrder: data.generateRefOrder, deeplink: `${scheme}://pay?keyreference=${data.generateRefOrder}` };
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
     console.error('requestCbPayOrder failed:', e);
-    return { error: 'CBPAY_REQUEST_FAILED' };
+    return { error: `CBPAY_REQUEST_FAILED: ${msg}` };
   }
 }
 
