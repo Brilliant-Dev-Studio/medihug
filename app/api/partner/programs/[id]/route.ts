@@ -20,17 +20,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const { imageUrl, titleMm, titleEn, descMm, descEn, price, isActive } = await req.json();
+  const { imageUrl, titleMm, titleEn, descMm, descEn, price, isActive, categoryId } = await req.json();
   const program = await db.healthcareProgram.update({
     where: { id },
     data: {
-      ...(imageUrl !== undefined && { imageUrl }),
-      ...(titleMm  !== undefined && { titleMm }),
-      ...(titleEn  !== undefined && { titleEn: titleEn || null }),
-      ...(descMm   !== undefined && { descMm: descMm || null }),
-      ...(descEn   !== undefined && { descEn: descEn || null }),
-      ...(price    !== undefined && { price }),
-      ...(isActive !== undefined && { isActive }),
+      ...(imageUrl   !== undefined && { imageUrl }),
+      ...(titleMm    !== undefined && { titleMm }),
+      ...(titleEn    !== undefined && { titleEn: titleEn || null }),
+      ...(descMm     !== undefined && { descMm: descMm || null }),
+      ...(descEn     !== undefined && { descEn: descEn || null }),
+      ...(price      !== undefined && { price }),
+      ...(isActive   !== undefined && { isActive }),
+      ...(categoryId !== undefined && { categoryId: categoryId || null }),
     },
   });
   return NextResponse.json({ program });

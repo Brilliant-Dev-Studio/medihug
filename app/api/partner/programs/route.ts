@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { imageUrl, titleMm, titleEn, descMm, descEn, price, doctorIds } = body;
+    const { imageUrl, titleMm, titleEn, descMm, descEn, price, doctorIds, categoryId } = body;
 
     if (!imageUrl || !titleMm) {
       return NextResponse.json({ error: 'imageUrl, titleMm are required.' }, { status: 400 });
@@ -51,6 +51,7 @@ export async function POST(req: NextRequest) {
         descMm: descMm || null, descEn: descEn || null,
         price: price ?? 0,
         clinicId,
+        categoryId: categoryId || null,
         isActive: true,
         doctors: ownDoctorIds.length > 0 ? { create: ownDoctorIds.map(doctorId => ({ doctorId })) } : undefined,
       },

@@ -9,6 +9,7 @@ import {
   Images, Trash2, GripVertical, CalendarClock,
 } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
+import SearchableSelect from '@/components/admin/SearchableSelect';
 
 const PRIMARY   = '#2ab5ad';
 const DAYS      = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -55,9 +56,11 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
   const [newImg,       setNewImg]       = useState({ imageUrl: '', captionMm: '', captionEn: '' });
   const [error,        setError]        = useState('');
   const [defaultCommissionPercent, setDefaultCommissionPercent] = useState(0);
+  const [specialties, setSpecialties] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
     fetch('/api/admin/settings').then(r => r.json()).then(d => setDefaultCommissionPercent(d.settings?.defaultCommissionPercent ?? 0));
+    fetch('/api/admin/specialties').then(r => r.json()).then(d => setSpecialties(d.specialties ?? []));
   }, []);
 
   const fetchDoctor = useCallback(async () => {
@@ -281,7 +284,11 @@ export default function DoctorDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           <div><label className={lbl}>Specialty</label>
-            <input className={inp} value={infoForm.specialty ?? ''} onChange={e => setInfoForm(f => ({ ...f, specialty: e.target.value }))} /></div>
+            <SearchableSelect
+              options={specialties.map(s => ({ id: s.id, label: s.name }))}
+              value={infoForm.specialty ?? ''}
+              onChange={v => setInfoForm(f => ({ ...f, specialty: v }))}
+            /></div>
 
           <div className="grid grid-cols-3 gap-3">
             <div><label className={lbl}>Main Phone</label>

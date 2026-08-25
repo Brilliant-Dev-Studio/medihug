@@ -8,6 +8,7 @@ import {
   Camera, Loader2, Pencil, Check, X,
 } from 'lucide-react';
 import { compressAndUpload } from '@/components/admin/uploadImage';
+import SearchableSelect from '@/components/admin/SearchableSelect';
 
 const PRIMARY = '#2ab5ad';
 const DARK    = '#1a9990';
@@ -152,6 +153,7 @@ export default function DoctorProfilePage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [coverUploading, setCoverUploading]   = useState(false);
   const [availToggling, setAvailToggling]     = useState(false);
+  const [specialties, setSpecialties] = useState<{ id: string; name: string; nameEn: string | null }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const coverFileRef = useRef<HTMLInputElement>(null);
 
@@ -160,6 +162,7 @@ export default function DoctorProfilePage() {
       setDoctor(d.doctor ?? null);
       setLoading(false);
     });
+    fetch('/api/admin/specialties').then(r => r.json()).then(d => setSpecialties(d.specialties ?? []));
   }, []);
 
   const set = (k: keyof EditForm, v: string) => setForm(f => f ? { ...f, [k]: v } : f);
@@ -348,12 +351,16 @@ export default function DoctorProfilePage() {
                   <input className={inp} placeholder="Name (English)" value={form.nameEn} onChange={e => set('nameEn', e.target.value)} />
                 </div>
                 <div>
-                  <label className={lbl}>Specialty (Myanmar) *</label>
-                  <input className={inp} placeholder="Specialty" value={form.specialty} onChange={e => set('specialty', e.target.value)} />
-                </div>
-                <div>
-                  <label className={lbl}>Specialty (English)</label>
-                  <input className={inp} placeholder="Specialty (English)" value={form.specialtyEn} onChange={e => set('specialtyEn', e.target.value)} />
+                  <label className={lbl}>Specialty *</label>
+                  <SearchableSelect
+                    options={specialties.map(s => ({ id: s.id, label: s.name }))}
+                    value={form.specialty}
+                    onChange={v => {
+                      set('specialty', v);
+                      const match = specialties.find(s => s.name === v);
+                      set('specialtyEn', match?.nameEn ?? '');
+                    }}
+                  />
                 </div>
               </div>
             ) : (

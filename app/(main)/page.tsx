@@ -25,10 +25,6 @@ export default function Home() {
   const { tr, lang } = useLang();
   const mm = lang === 'mm';
 
-  const stats = [
-    { value: '100%', label: mm ? 'အတည်ပြုပြီးသား ဆရာဝန်များ' : 'Verified Doctors' },
-    { value: '24/7', label: mm ? 'အမြဲတမ်း ဝန်ဆောင်မှု' : 'Always Available' },
-  ];
   const specialties = mm
     ? ['အထွေထွေ', 'နှလုံးရောဂါကု', 'ကလေးရောဂါကု']
     : ['General', 'Cardiology', 'Pediatrics'];
@@ -92,19 +88,6 @@ export default function Home() {
             </motion.span>
           </motion.div>
 
-          <div className="flex items-center gap-6 sm:gap-10">
-            {stats.map((s, i) => (
-              <motion.div
-                key={s.label}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.54 + i * 0.08 }}
-              >
-                <p className="text-2xl sm:text-3xl font-extrabold text-gray-900">{s.value}</p>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1 leading-snug">{s.label}</p>
-              </motion.div>
-            ))}
-          </div>
         </div>
 
         {/* Right: image + floating cards */}

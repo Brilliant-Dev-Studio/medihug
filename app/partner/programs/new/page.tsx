@@ -12,6 +12,7 @@ const inp = 'w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 t
 const lbl = 'text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block';
 
 interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
+interface CategoryOption { id: string; name: string; nameEn: string | null; }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -24,13 +25,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function PartnerNewProgramPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ imageUrl: '', titleMm: '', titleEn: '', descMm: '', descEn: '', price: 0, doctorIds: [] as string[] });
+  const [form, setForm] = useState({ imageUrl: '', titleMm: '', titleEn: '', descMm: '', descEn: '', price: 0, categoryId: '', doctorIds: [] as string[] });
   const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
 
   useEffect(() => {
     fetch('/api/partner/doctors').then(r => r.json()).then(d => setDoctorOptions(d.doctors ?? [])).catch(() => {});
+    fetch('/api/program-categories').then(r => r.json()).then(d => setCategoryOptions(d.categories ?? [])).catch(() => {});
   }, []);
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
@@ -85,6 +88,17 @@ export default function PartnerNewProgramPage() {
           <MarkdownEditor value={form.descMm} onChange={v => set('descMm', v)} placeholder="အစီအစဉ်အကြောင်း..." /></div>
         <div><label className={lbl}>Description (English)</label>
           <MarkdownEditor value={form.descEn} onChange={v => set('descEn', v)} placeholder="About this program..." /></div>
+      </Section>
+
+      <Section title="Category">
+        <div><label className={lbl}>Program Category</label>
+          <select className={inp} value={form.categoryId} onChange={e => set('categoryId', e.target.value)}>
+            <option value="">— Uncategorized —</option>
+            {categoryOptions.map(c => (
+              <option key={c.id} value={c.id}>{c.name}{c.nameEn ? ` (${c.nameEn})` : ''}</option>
+            ))}
+          </select>
+        </div>
       </Section>
 
       <Section title="Price">
