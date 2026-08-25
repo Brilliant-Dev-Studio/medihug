@@ -240,18 +240,18 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   );
 
   return (
-    <div className="p-6 flex flex-col gap-5">
+    <div className="p-4 sm:p-6 flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/admin/products')} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500"><ArrowLeft size={18} /></button>
-          <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={() => router.push('/admin/products')} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 shrink-0"><ArrowLeft size={18} /></button>
+          <div className="flex items-center gap-3 min-w-0">
             {product.imageUrl
-              ? <img src={product.imageUrl} alt={product.name} className="h-10 w-10 rounded-xl object-cover border border-gray-100" />
-              : <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center"><Package size={18} className="text-gray-400" /></div>}
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">{product.name}</h1>
-              {product.nameEn && <p className="text-xs text-gray-400">{product.nameEn}</p>}
+              ? <img src={product.imageUrl} alt={product.name} className="h-10 w-10 rounded-xl object-cover border border-gray-100 shrink-0" />
+              : <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0"><Package size={18} className="text-gray-400" /></div>}
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800 truncate">{product.name}</h1>
+              {product.nameEn && <p className="text-xs text-gray-400 truncate">{product.nameEn}</p>}
             </div>
           </div>
         </div>
@@ -265,11 +265,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
       {error && <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</div>}
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* LEFT */}
         <div className="space-y-5">
           <Section title="Product Info">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Name (Myanmar) *</label>
                 <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} />
@@ -290,7 +290,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </Section>
 
           <Section title="Product Details">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Brand</label>
                 <input className={inp} value={form.brand} onChange={e => set('brand', e.target.value)} placeholder="e.g. Panadol" />
@@ -311,7 +311,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </Section>
 
           <Section title="Pricing & Stock">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Price (Ks)</label>
                 <input className={inp} type="number" min={0} value={form.price} onChange={e => set('price', e.target.value)} />

@@ -280,17 +280,17 @@ export default function NewProductPage() {
   };
 
   return (
-    <div className="p-6 flex flex-col gap-5">
+    <div className="p-4 sm:p-6 flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500"><ArrowLeft size={18} /></button>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Add New Product</h1>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 shrink-0"><ArrowLeft size={18} /></button>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold text-gray-800 truncate">Add New Product</h1>
             <p className="text-xs text-gray-400">Fill in all details and save</p>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="hidden sm:flex gap-3">
           <button onClick={() => router.back()} className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
           <button onClick={handleSubmit} disabled={loading}
             className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60 hover:opacity-90"
@@ -303,11 +303,11 @@ export default function NewProductPage() {
 
       {error && <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</div>}
 
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* LEFT */}
         <div className="space-y-5">
           <Section title="Product Info">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Name (Myanmar) *</label>
                 <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Product name" />
@@ -329,7 +329,7 @@ export default function NewProductPage() {
           </Section>
 
           <Section title="Product Details">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Brand</label>
                 <input className={inp} value={form.brand} onChange={e => set('brand', e.target.value)} placeholder="e.g. Panadol" />
@@ -350,7 +350,7 @@ export default function NewProductPage() {
           </Section>
 
           <Section title="Pricing & Stock">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Price (Ks)</label>
                 <input className={inp} type="number" min={0} value={form.price} onChange={e => set('price', e.target.value)} />

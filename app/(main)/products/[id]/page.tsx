@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ChevronLeft, Star, Package, Loader2 } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { ChevronLeft, Star, Package, Loader2, ShoppingCart } from 'lucide-react';
 import { useLang } from '@/app/lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
@@ -30,6 +30,7 @@ export default function PublicProductDetailPage() {
   const { id }   = useParams();
   const { lang } = useLang();
   const mm       = lang === 'mm';
+  const router   = useRouter();
 
   const [product,  setProduct]  = useState<Product | null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -41,6 +42,12 @@ export default function PublicProductDetailPage() {
       .then(d => { setProduct(d.product); setLoading(false); })
       .catch(() => { setNotFound(true); setLoading(false); });
   }, [id]);
+
+  function handleBuyNow() {
+    let isAuthed = false;
+    try { isAuthed = !!JSON.parse(localStorage.getItem('medihug_patient') ?? 'null')?.phone; } catch {}
+    router.push(isAuthed ? `/patient/records/${id}` : '/signin');
+  }
 
   if (loading) {
     return (
@@ -101,6 +108,15 @@ export default function PublicProductDetailPage() {
             <p className="text-3xl font-extrabold" style={{ color: PRIMARY }}>
               {product.price.toLocaleString()} <span className="text-base font-semibold text-gray-400">MMK</span>
             </p>
+
+            <button
+              onClick={handleBuyNow}
+              className="inline-flex items-center justify-center gap-2 text-white font-semibold px-6 py-3 rounded-xl text-sm hover:opacity-90 transition-opacity w-full sm:w-fit"
+              style={{ backgroundColor: PRIMARY }}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              {mm ? 'ယခုဝယ်ယူမည်' : 'Buy Now'}
+            </button>
 
             {product.description && <p className="text-sm text-gray-500 leading-relaxed">{product.description}</p>}
 

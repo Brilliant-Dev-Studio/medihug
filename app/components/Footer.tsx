@@ -36,8 +36,13 @@ export default function Footer() {
             <Image src="/medihug-logo.png" alt="MediHug" width={72} height={72} className="object-contain w-16 h-16" />
             <span className="text-base font-bold text-white">MediHug</span>
             <div className="flex items-center gap-2 ml-1.5">
-              <a href="#" className="relative w-8 h-8 rounded-full overflow-hidden border border-white/15 hover:border-white/30 transition-colors">
+              <a href="https://www.facebook.com/profile.php?id=61592880326160" target="_blank" rel="noopener noreferrer" className="relative w-8 h-8 rounded-full overflow-hidden border border-white/15 hover:border-white/30 transition-colors">
                 <Image src="/socials/facebook.png" alt="Facebook" fill className="object-cover" />
+              </a>
+              <a href="https://www.tiktok.com/@medihugco.ltd" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full border border-white/15 hover:border-white/30 transition-colors flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+                  <path d="M16.6 5.82c-1.01-.7-1.68-1.83-1.85-3.12h-3.06v13.32c0 1.62-1.32 2.93-2.93 2.93a2.93 2.93 0 0 1 0-5.86c.28 0 .55.04.8.11V9.94a6 6 0 0 0-.8-.05A6.02 6.02 0 0 0 2.74 16a6.02 6.02 0 0 0 6.02 6.02c3.32 0 6.02-2.7 6.02-6.02V9.03a8.96 8.96 0 0 0 4.6 1.26V7.24a5.93 5.93 0 0 1-2.78-1.42z" />
+                </svg>
               </a>
               <a href="#" className="w-8 h-8 rounded-full border border-white/15 hover:border-white/30 transition-colors flex items-center justify-center">
                 <Image src="/socials/viberd.png" alt="Viber" width={20} height={20} className="object-contain w-5 h-5" />

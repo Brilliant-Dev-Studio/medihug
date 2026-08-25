@@ -21,7 +21,7 @@ export const t = {
     noInsurance: 'ချိန်းဆိုရန်',
 
     // Health Categories
-    categoriesTitle: 'ကျန်းမာရေး အမျိုးအစားများ ရှာဖွေပါ',
+    categoriesTitle: 'ကျန်းမာရေးဝန်ဆောင်မှုများ',
     categories: {
       'Fever & Pain Relief': 'အဖျားနှင့် နာကျင်မှု သက်သာဆေး',
       'Sexual Wellness': 'လိင်ဆိုင်ရာ ကျန်းမာရေး',
