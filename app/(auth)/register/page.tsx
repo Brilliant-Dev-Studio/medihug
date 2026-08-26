@@ -53,29 +53,28 @@ export default function RegisterPage() {
     return true;
   };
 
+  // OTP verification is temporarily disabled (SMS gateway not deliverable yet) — register
+  // creates the account directly. Re-enable by restoring the /api/auth/otp/send + /verify
+  // step here (same pattern as app/(auth)/signin/page.tsx before this change).
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     const phone = form.phone.trim();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/auth/otp/send', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ username: form.username.trim(), phone, password: form.password }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? (mm ? 'OTP ပို့၍မရပါ' : 'Could not send OTP'));
+        toast.error(data.error ?? (mm ? 'အကောင့်ဖွင့်၍မရပါ' : 'Could not create account'));
         return;
       }
 
-      sessionStorage.setItem('medihug_login_role', 'PATIENT');
-      sessionStorage.setItem('medihug_pending_register', JSON.stringify({
-        username: form.username.trim(), phone, password: form.password,
-      }));
-
-      toast.success(mm ? 'OTP ကုဒ် ပေးပို့ပြီးပါပြီ' : 'OTP code sent');
-      router.push('/verify');
+      localStorage.setItem('medihug_patient', JSON.stringify({ name: form.username.trim(), phone }));
+      toast.success(mm ? 'အကောင့်ဖွင့်ပြီးပါပြီ!' : 'Account created!');
+      router.push('/patient/dashboard');
     } finally {
       setSubmitting(false);
     }

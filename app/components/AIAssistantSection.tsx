@@ -75,7 +75,7 @@ export default function AIAssistantSection() {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 mb-10">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 mb-10">
           {FEATURES.map((f, i) => {
             const t = mm ? f.mm : f.en;
             return (
@@ -85,7 +85,7 @@ export default function AIAssistantSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ duration: 0.45, delay: i * 0.06 }}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5"
+                className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 ${i >= 4 ? 'hidden sm:block' : ''}`}
               >
                 <span
                   className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"

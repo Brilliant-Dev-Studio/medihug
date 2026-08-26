@@ -192,11 +192,102 @@ function DoctorsBySpecialty({ spec, highlight, onBack }: { spec: string; highlig
   );
 }
 
+/* ── Doctors linked to a landing-page category (e.g. "Consult a Doctor") — clicking a
+ * card here opens the public doctor detail page, not the patient-portal one, so browsing
+ * stays on the landing site until the patient chooses to book. ── */
+function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack: () => void }) {
+  const { lang } = useLang();
+  const mm = lang === 'mm';
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/doctors?limit=60&categoryId=${encodeURIComponent(categoryId)}`)
+      .then(r => r.json())
+      .then(d => { setDoctors(d.doctors ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [categoryId]);
+
+  return (
+    <div className="w-full bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto px-6 py-10 sm:py-14">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors mb-4">
+          <ArrowLeft className="w-4 h-4" /> {mm ? 'အမျိုးအစားများ' : 'All Categories'}
+        </button>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{mm ? 'ဆရာဝန်နှင့် တိုင်ပင်ပြသခြင်း' : 'Consult a Doctor'}</h1>
+        <p className="text-sm text-gray-500 mt-1.5">
+          {loading ? (mm ? 'ရှာနေသည်...' : 'Loading...') : `${doctors.length} ${mm ? 'ဆရာဝန်' : doctors.length === 1 ? 'doctor' : 'doctors'}`}
+        </p>
+
+        <div className="mt-8">
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : doctors.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
+              <Stethoscope className="w-10 h-10 text-gray-200" />
+              <p className="text-sm">{mm ? 'ဆရာဝန် မတွေ့ပါ' : 'No doctors found'}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {doctors.map(d => {
+                const name = mm ? d.name : (d.nameEn ?? d.name);
+                return (
+                  <Link key={d.id} href={`/doctors/${d.id}`}
+                    className="rounded-2xl border border-gray-100 bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                    <div className="relative w-full h-48 bg-gray-50">
+                      {d.imageUrl ? (
+                        <Image src={d.imageUrl} alt={name} fill className="object-cover object-top" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-white"
+                          style={{ background: `linear-gradient(160deg, ${PRIMARY} 0%, #1a3a8f 100%)` }}>
+                          {d.name.charAt(0)}
+                        </div>
+                      )}
+                      <span className="absolute top-3 left-3 text-xs font-semibold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>
+                        {d.specialty}
+                      </span>
+                    </div>
+                    <div className="p-4 flex flex-col gap-2 flex-1">
+                      <h3 className="text-sm font-bold text-gray-800 leading-snug line-clamp-2">{name}</h3>
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span className="font-semibold text-gray-700">{d.rating.toFixed(1)}</span>
+                          {d.reviewCount > 0 && <span>({d.reviewCount})</span>}
+                        </div>
+                        <span>{d.experience} {mm ? 'နှစ်' : 'yrs'}</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
+                        <p className="text-sm font-bold" style={{ color: PRIMARY }}>{d.patientPrice.toLocaleString()} MMK</p>
+                        <span className="flex items-center gap-0.5 text-xs font-semibold" style={{ color: PRIMARY }}>
+                          {mm ? 'ကြည့်ရန်' : 'View'} <ArrowRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DoctorsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const spec = searchParams.get('spec') ?? '';
+  const category = searchParams.get('category') ?? '';
   const highlight = searchParams.get('highlight') ?? '';
+
+  if (category) {
+    return <DoctorsByCategory categoryId={category} onBack={() => router.push('/categories')} />;
+  }
 
   if (spec) {
     return (

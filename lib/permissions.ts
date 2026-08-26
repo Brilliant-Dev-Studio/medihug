@@ -24,7 +24,7 @@ const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
     'pos.manage', 'pos.delete', 'support.manage', 'video.moderate', 'dashboard.view',
   ],
   CO_ADMIN: [
-    'partners.manage', 'pos.manage', 'pos.delete', 'support.manage', 'video.moderate', 'dashboard.view',
+    'partners.manage', 'pos.manage', 'support.manage', 'video.moderate', 'dashboard.view',
   ],
   PARTNER_MANAGER: ['partners.manage'],
   POS_ADMIN: ['pos.manage'],
@@ -32,8 +32,10 @@ const ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
   MODERATOR: ['video.moderate'],
 };
 
-/** Roles allowed to review/approve POS/Finance deletion requests. */
-export const DELETION_APPROVER_ROLES: AdminRole[] = ['SUPER_ADMIN', 'CO_ADMIN'];
+/** Roles allowed to review/approve POS/Finance deletion requests — must match whoever
+ * actually holds the 'pos.delete' permission above, or approvers get notified but 403
+ * when they try to act. */
+export const DELETION_APPROVER_ROLES: AdminRole[] = ['SUPER_ADMIN'];
 
 export function hasPermission(role: string, perm: Permission): boolean {
   if (!isAdminRole(role)) return false;

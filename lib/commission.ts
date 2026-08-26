@@ -25,7 +25,7 @@ export async function getPlatformSettings() {
 }
 
 type ResolveCommissionParams = {
-  serviceType: 'CONSULTATION' | 'PRODUCT';
+  serviceType: 'CONSULTATION' | 'PRODUCT' | 'PROGRAM';
   doctorId?: string | null;
   clinicId?: string | null;
   paymentMethod?: string | null;

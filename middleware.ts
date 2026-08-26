@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminToken, verifyDoctorToken, verifyPartnerToken } from '@/lib/jwt';
+import { isAdminRole } from '@/lib/permissions';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -14,7 +15,7 @@ export async function middleware(req: NextRequest) {
 
     const payload = await verifyAdminToken(token);
 
-    if (!payload || payload.role !== 'SUPER_ADMIN') {
+    if (!payload || !isAdminRole(payload.role)) {
       const res = NextResponse.redirect(new URL('/admin/login', req.url));
       res.cookies.set('admin_token', '', { maxAge: 0, path: '/' });
       return res;

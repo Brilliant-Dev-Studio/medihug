@@ -1,14 +1,51 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import Image from 'next/image';
+import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search, Stethoscope } from 'lucide-react';
 import ImageUploadSlot from '@/components/admin/ImageUploadSlot';
 
 const PRIMARY = '#2ab5ad';
 
-interface Category { id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; createdAt: string; }
+interface Category {
+  id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; createdAt: string;
+  doctors?: { doctorId: string }[];
+}
+interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
 
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
+
+function DoctorChecklist({ doctorOptions, selected, onToggle }: {
+  doctorOptions: DoctorOption[]; selected: string[]; onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[11px] font-semibold text-gray-500">Assigned Doctors (optional — link this category to doctors instead of products)</p>
+      {doctorOptions.length === 0 ? (
+        <p className="text-xs text-gray-400">No doctors available.</p>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded-xl p-2">
+          {doctorOptions.map(d => {
+            const checked = selected.includes(d.id);
+            return (
+              <label key={d.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" checked={checked} onChange={() => onToggle(d.id)} className="accent-teal-500 shrink-0" />
+                <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+                  {d.imageUrl ? (
+                    <Image src={d.imageUrl} alt={d.name} width={24} height={24} className="object-cover w-full h-full" />
+                  ) : (
+                    <Stethoscope className="w-3 h-3 text-gray-300" />
+                  )}
+                </div>
+                <span className="text-xs text-gray-700 truncate">{d.nameEn ?? d.name}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProductCategoriesPage() {
   const [categories,   setCategories]   = useState<Category[]>([]);
@@ -24,6 +61,7 @@ export default function ProductCategoriesPage() {
   const [newNameEn,   setNewNameEn]   = useState('');
   const [newIconUrl,  setNewIconUrl]  = useState<string | null>(null);
   const [newBgUrl,    setNewBgUrl]    = useState<string | null>(null);
+  const [newDoctorIds, setNewDoctorIds] = useState<string[]>([]);
   const [createError, setCreateError] = useState('');
   const [savingNew,   setSavingNew]   = useState(false);
 
@@ -32,9 +70,19 @@ export default function ProductCategoriesPage() {
   const [editNameEn, setEditNameEn] = useState('');
   const [editIconUrl, setEditIconUrl] = useState<string | null>(null);
   const [editBgUrl,   setEditBgUrl]   = useState<string | null>(null);
+  const [editDoctorIds, setEditDoctorIds] = useState<string[]>([]);
+
+  const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+
+  useEffect(() => {
+    fetch('/api/admin/doctors?pageSize=500&isActive=true')
+      .then(r => r.json())
+      .then(d => setDoctorOptions(d.doctors ?? []))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async (p = page) => {
     setLoading(true);
@@ -62,24 +110,28 @@ export default function ProductCategoriesPage() {
     setSavingNew(true); setCreateError('');
     const res  = await fetch('/api/admin/product-categories', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), nameEn: newNameEn.trim(), iconUrl: newIconUrl, bgImageUrl: newBgUrl }),
+      body: JSON.stringify({ name: newName.trim(), nameEn: newNameEn.trim(), iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds }),
     });
     const data = await res.json();
     if (!res.ok) { setCreateError(data.error); setSavingNew(false); return; }
-    setNewName(''); setNewNameEn(''); setNewIconUrl(null); setNewBgUrl(null); setCreating(false); setSavingNew(false);
+    setNewName(''); setNewNameEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setCreating(false); setSavingNew(false);
     load(1);
   };
+
+  const toggleNewDoctor = (id: string) => setNewDoctorIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+  const toggleEditDoctor = (id: string) => setEditDoctorIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
 
   const startEdit = (c: Category) => {
     setEditId(c.id); setEditName(c.name); setEditNameEn(c.nameEn ?? '');
     setEditIconUrl(c.iconUrl); setEditBgUrl(c.bgImageUrl);
+    setEditDoctorIds(c.doctors?.map(d => d.doctorId) ?? []);
   };
 
   const handleEdit = async (id: string) => {
     if (!editName.trim()) return;
     const res = await fetch(`/api/admin/product-categories/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName.trim(), nameEn: editNameEn.trim(), iconUrl: editIconUrl, bgImageUrl: editBgUrl }),
+      body: JSON.stringify({ name: editName.trim(), nameEn: editNameEn.trim(), iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds }),
     });
     if (res.ok) { setEditId(null); load(page); }
   };
@@ -160,6 +212,7 @@ export default function ProductCategoriesPage() {
             <ImageUploadSlot label="Icon" url={newIconUrl} onChange={setNewIconUrl} />
             <ImageUploadSlot label="Background" url={newBgUrl} onChange={setNewBgUrl} />
           </div>
+          <DoctorChecklist doctorOptions={doctorOptions} selected={newDoctorIds} onToggle={toggleNewDoctor} />
           <div className="flex gap-2">
             <button
               onClick={handleCreate} disabled={savingNew}
@@ -236,6 +289,7 @@ export default function ProductCategoriesPage() {
                             <ImageUploadSlot label="Icon" url={editIconUrl} onChange={setEditIconUrl} />
                             <ImageUploadSlot label="Background" url={editBgUrl} onChange={setEditBgUrl} />
                           </div>
+                          <DoctorChecklist doctorOptions={doctorOptions} selected={editDoctorIds} onToggle={toggleEditDoctor} />
                         </div>
                       </td>
                     </>

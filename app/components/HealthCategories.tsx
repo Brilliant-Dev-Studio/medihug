@@ -14,6 +14,7 @@ interface Category {
   nameEn: string | null;
   iconUrl: string | null;
   bgImageUrl: string | null;
+  doctorCount?: number;
 }
 
 const ICON_MAP: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
@@ -72,11 +73,14 @@ export default function HealthCategories() {
               const style = ICON_MAP[cat.nameEn ?? ''] ?? DEFAULT_STYLE;
               const Icon = style.icon;
               const label = mm ? cat.name : (cat.nameEn ?? cat.name);
+              const href = (cat.doctorCount ?? 0) > 0
+                ? `/doctors?category=${cat.id}`
+                : `/products?category=${encodeURIComponent(cat.name)}`;
 
               return (
                 <Link
                   key={cat.id}
-                  href={`/products?category=${encodeURIComponent(cat.name)}`}
+                  href={href}
                   className="group relative flex flex-col items-center justify-center gap-2 sm:gap-3 rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 py-4 sm:py-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border border-black/3"
                   style={{
                     ...(cat.bgImageUrl ? {} : { backgroundColor: style.bg }),

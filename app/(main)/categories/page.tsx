@@ -10,7 +10,7 @@ import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
 
-interface Category { id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; }
+interface Category { id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; doctorCount?: number; }
 
 const PRODUCT_ICON_MAP: Record<string, { icon: LucideIcon; color: string }> = {
   'Medicine':               { icon: Pill,        color: '#ef4444' },
@@ -37,10 +37,9 @@ function NoData({ label }: { label: string }) {
 }
 
 function CategoryList({
-  categories, hrefBase,
+  categories,
 }: {
   categories: Category[];
-  hrefBase: string;
 }) {
   const { lang } = useLang();
   const mm = lang === 'mm';
@@ -51,10 +50,15 @@ function CategoryList({
         const label = mm ? cat.name : (cat.nameEn ?? cat.name);
         const style = PRODUCT_ICON_MAP[cat.nameEn ?? ''] ?? PRODUCT_DEFAULT_ICON;
         const Icon = style.icon;
+        // Categories with doctors linked (e.g. "Consult a Doctor") route to the doctor
+        // list instead of the product list — see admin's per-category "Assigned Doctors".
+        const href = (cat.doctorCount ?? 0) > 0
+          ? `/doctors?category=${cat.id}`
+          : `/products?category=${encodeURIComponent(cat.name)}`;
         return (
           <Link
             key={cat.id}
-            href={`${hrefBase}${encodeURIComponent(cat.name)}`}
+            href={href}
             className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-4 text-left font-bold text-gray-800 transition-colors hover:border-teal-300 hover:text-teal-600"
           >
             <div
@@ -186,7 +190,7 @@ export default function AllCategoriesPage() {
               <NoData label={mm ? 'ဒေတာ မရှိသေးပါ' : 'No data yet'} />
             </div>
           ) : (
-            <CategoryList categories={productCategories} hrefBase="/products?category=" />
+            <CategoryList categories={productCategories} />
           )}
         </section>
 

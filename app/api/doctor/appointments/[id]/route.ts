@@ -3,6 +3,7 @@ import { verifyDoctorToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
 import { generateReferralCode } from '@/lib/referral';
 import { notify } from '@/lib/notify';
+import { recordRevenueLedger } from '@/lib/revenueLedger';
 
 async function requireDoctorId(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get('doctor_token')?.value;
@@ -44,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const existing = await db.appointment.findUnique({
     where: { id },
-    select: { doctorId: true, status: true, userId: true, referredDoctorId: true, referredClinicId: true },
+    select: { doctorId: true, status: true, userId: true, referredDoctorId: true, referredClinicId: true, fee: true, paymentMethod: true },
   });
   if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -113,6 +114,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const appointment = await db.appointment.update({ where: { id }, data });
+
+  if (data.status === 'COMPLETED' && existing.status !== 'COMPLETED' && existing.fee != null) {
+    recordRevenueLedger({
+      sourceType: 'CONSULTATION', sourceId: id, patientPaid: existing.fee,
+      clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: existing.paymentMethod,
+    });
+  }
 
   // Keep the referral QR/verification code in sync with the referred clinic — a new/changed
   // clinic gets a fresh code (invalidating any previously issued QR), an unchanged clinic

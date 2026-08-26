@@ -27,6 +27,7 @@ const navGroups = [
       { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports', perm: 'dashboard.view' as Permission },
       { href: '/admin/pos',      icon: Store,           mm: 'POS',              en: 'POS', perm: 'pos.manage' as Permission,
         children: [
+          { href: '/admin/finance/revenue-ledger',  icon: Layers,     mm: 'ဝင်ငွေ Ledger',       en: 'Revenue Ledger' },
           { href: '/admin/finance/pnl',             icon: PieChart,   mm: 'အမြတ်/အရှုံး',        en: 'P&L' },
           { href: '/admin/finance/rules',           icon: Percent,    mm: 'ကော်မရှင်စည်းမျဉ်း',   en: 'Commission Rules' },
           { href: '/admin/finance/payment-methods', icon: CreditCard, mm: 'ငွေပေးချေမှုနည်းလမ်း', en: 'Payment Methods' },

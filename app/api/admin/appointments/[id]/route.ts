@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
 import { logAudit } from '@/lib/audit';
 import { notify } from '@/lib/notify';
+import { recordRevenueLedger } from '@/lib/revenueLedger';
 
 /* ── GET /api/admin/appointments/[id] ── */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -60,6 +61,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       admin, action: 'UPDATE', entityType: 'Appointment', entityId: id,
       before: { status: before?.status }, after: { status: appointment.status, cancelReason: appointment.cancelReason },
     });
+
+    // Consultations are always Medihug-owned revenue (a doctor isn't "owned" by a clinic) —
+    // clinicId stays null; a referring clinic (if any) only earns a referral fee, not ownership.
+    if (status === 'COMPLETED' && before?.status !== 'COMPLETED' && appointment.fee != null) {
+      recordRevenueLedger({
+        sourceType: 'CONSULTATION', sourceId: id, patientPaid: appointment.fee,
+        clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: appointment.paymentMethod,
+      });
+    }
 
     // Notify the doctor only on the PENDING → CONFIRMED transition (admin approval).
     if (status === 'CONFIRMED' && before?.status !== 'CONFIRMED' && appointment.doctor.userId) {

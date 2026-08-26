@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
 import { logAudit } from '@/lib/audit';
 import { notify } from '@/lib/notify';
+import { recordRevenueLedger } from '@/lib/revenueLedger';
 
 const INCLUDE = {
   user:  { select: { id: true, name: true, phone: true } },
@@ -65,6 +66,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       admin, action: 'UPDATE', entityType: 'Order', entityId: id,
       before: { status: before.status }, after: { status: order.status, cancelReason: order.cancelReason },
     });
+
+    if (status === 'COMPLETED' && before.status !== 'COMPLETED') {
+      // An order's items could in principle span products from different clinics (or mix
+      // platform + partner products) — no multi-vendor cart UI actually produces that today,
+      // so best-effort attribute the whole order to the first clinic-linked product found;
+      // an order with only platform products (the common case) stays clinicId=null.
+      const productIds = order.items.map(i => i.productId);
+      const clinicLink = productIds.length > 0
+        ? await db.clinicProduct.findFirst({ where: { productId: { in: productIds } }, select: { clinicId: true } })
+        : null;
+      recordRevenueLedger({
+        sourceType: 'PRODUCT', sourceId: id, patientPaid: order.totalAmount,
+        clinicId: clinicLink?.clinicId ?? null, paymentMethod: order.paymentMethod,
+      });
+    }
 
     if (status === 'CONFIRMED' && before.status !== 'CONFIRMED') {
       notify({

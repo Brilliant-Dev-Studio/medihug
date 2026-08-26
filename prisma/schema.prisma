@@ -158,6 +158,7 @@ model Doctor {
   issuedReferrals    ClinicReferral[]
   clinicDoctors      ClinicDoctor[]
   programs           ProgramDoctor[]
+  categories         DoctorCategory[]
   slots              DoctorSlot[]
   gallery            DoctorGallery[]
   favoritedBy        FavoriteDoctor[]
@@ -260,6 +261,8 @@ model Clinic {
   commissionRules CommissionRule[]
   revenueEntries  RevenueEntry[]
   programs        HealthcareProgram[]
+  revenueLedgerEntries   RevenueLedger[] @relation("RevenueLedgerClinic")
+  revenueLedgerReferrals RevenueLedger[] @relation("RevenueLedgerReferralClinic")
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -537,6 +540,20 @@ model ProductCategory {
   iconUrl    String?
   bgImageUrl String?
   createdAt  DateTime @default(now())
+
+  doctors DoctorCategory[]
+}
+
+model DoctorCategory {
+  id         String   @id @default(cuid())
+  categoryId String
+  doctorId   String
+  createdAt  DateTime @default(now())
+
+  category ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  doctor   Doctor          @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, doctorId])
 }
 
 // ─────────────────────────────────────────────
@@ -1074,6 +1091,63 @@ model RevenueEntry {
 
   @@index([date])
   @@index([serviceType])
+}
+
+// ─────────────────────────────────────────────
+// Revenue Ledger — automatic per-transaction breakdown:
+// Patient Paid → Revenue Ownership → Medihug Share → Partner Referral Fee → Net Medihug Revenue.
+// Core rule: partner referral fee is only ever computed against Medihug-attributable (MEDIHUG-owned)
+// revenue — never against partner-owned or shared/pass-through revenue. See lib/revenueLedger.ts.
+// ─────────────────────────────────────────────
+
+enum RevenueSourceType {
+  CONSULTATION
+  PROGRAM
+  PRODUCT
+  HOME_SERVICE     // reserved — no HomeService model/flow exists yet
+  PARTNER_SERVICE  // reserved — no distinct PartnerService model exists yet (covered by PRODUCT/PROGRAM + clinicId today)
+}
+
+enum RevenueOwnershipType {
+  MEDIHUG
+  PARTNER
+  SHARED
+}
+
+enum LedgerSettlementStatus {
+  PENDING
+  SETTLED
+  HELD
+}
+
+model RevenueLedger {
+  id                        String   @id @default(cuid())
+  sourceType                RevenueSourceType
+  sourceId                  String   // Appointment.id / ProgramEnrollment.id / Order.id
+
+  patientPaid               Int      // gross amount the patient paid
+  ownershipType              RevenueOwnershipType
+  clinicId                  String?  // owning/shared clinic — null when ownershipType is MEDIHUG
+  medihugSharePercent       Int      // % of patientPaid attributable to Medihug, before referral fee
+  medihugShareAmount        Int
+
+  referralClinicId          String?  // clinic that referred the patient (consultations only, for now)
+  partnerReferralFeePercent Int      @default(0)
+  partnerReferralFeeAmount  Int      @default(0)
+
+  netMedihugRevenue         Int      // medihugShareAmount - partnerReferralFeeAmount
+
+  settlementStatus          LedgerSettlementStatus @default(PENDING)
+  settledAt                 DateTime?
+  createdAt                 DateTime @default(now())
+
+  clinic         Clinic? @relation("RevenueLedgerClinic", fields: [clinicId], references: [id], onDelete: SetNull)
+  referralClinic Clinic? @relation("RevenueLedgerReferralClinic", fields: [referralClinicId], references: [id], onDelete: SetNull)
+
+  @@unique([sourceType, sourceId])
+  @@index([clinicId])
+  @@index([ownershipType])
+  @@index([settlementStatus])
 }
 
 model AuditLog {

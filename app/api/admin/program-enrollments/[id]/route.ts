@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
+import { recordRevenueLedger } from '@/lib/revenueLedger';
 
 const INCLUDE = {
   user: { select: { id: true, name: true, phone: true, profileImage: true } },
   program: {
     select: {
-      id: true, titleMm: true, titleEn: true, imageUrl: true, price: true,
+      id: true, titleMm: true, titleEn: true, imageUrl: true, price: true, clinicId: true,
       doctors: { select: { doctor: { select: { id: true, userId: true, name: true, nameEn: true, specialty: true, imageUrl: true } } } },
     },
   },
@@ -45,6 +46,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     });
 
     if (status === 'APPROVED' && before.status !== 'APPROVED') {
+      // Platform program → fully Medihug's. Partner program with Medihug doctors attached →
+      // shared/co-run (matches the POS ownership breakdown's existing 50/50 convention).
+      // Partner program with no Medihug doctors → the partner's own, Medihug takes nothing.
+      const clinicId = enrollment.program.clinicId;
+      const medihugSharePercent = !clinicId ? 100 : enrollment.program.doctors.length > 0 ? 50 : 0;
+      recordRevenueLedger({
+        sourceType: 'PROGRAM', sourceId: id, patientPaid: enrollment.amount,
+        clinicId, medihugSharePercent,
+      });
+
       for (const { doctor } of enrollment.program.doctors) {
         if (!doctor.userId) continue;
         notify({
