@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Loader2, AlertTriangle, Share2, FileText, NotebookPen, MessageCircle } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Loader2, AlertTriangle, Share2, FileText, NotebookPen, MessageCircle, CheckCircle2 } from 'lucide-react';
 import type { IAgoraRTCClient, IMicrophoneAudioTrack, ICameraVideoTrack, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import type { Appointment } from '@/app/admin/appointments/shared';
 import PatientRecordPanel from '@/components/PatientRecordPanel';
@@ -52,6 +52,7 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
   const [recordOpen, setRecordOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [ending, setEnding] = useState(false);
 
   const localVideoRef  = useRef<HTMLDivElement>(null);
   const remoteVideoRef = useRef<HTMLDivElement>(null);
@@ -183,6 +184,22 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
   const endCall = () => {
     router.push(backHref);
   };
+  const endConsultation = async () => {
+    if (ending) return;
+    setEnding(true);
+    try {
+      const res = await fetch(`/api/doctor/appointments/${appointmentId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'COMPLETED' }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success('Consultation ended');
+      router.push(backHref);
+    } catch {
+      toast.error('Could not end consultation — try again');
+      setEnding(false);
+    }
+  };
   const shareLink = async () => {
     const url = `${window.location.origin}/call/${appointmentId}`;
     try {
@@ -294,6 +311,14 @@ export default function VideoCallRoom({ appointmentId, role, phone, displayName,
             className="w-14 h-14 rounded-full flex items-center justify-center transition-colors"
             style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
             <MessageCircle className="w-5 h-5 text-white" />
+          </button>
+        )}
+        {role === 'doctor' && patientRecord && (
+          <button onClick={endConsultation} disabled={ending}
+            className="h-14 px-5 rounded-full flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
+            style={{ backgroundColor: '#059669' }}>
+            {ending ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <CheckCircle2 className="w-5 h-5 text-white" />}
+            <span className="text-white text-sm font-bold whitespace-nowrap">End Consultation</span>
           </button>
         )}
       </div>

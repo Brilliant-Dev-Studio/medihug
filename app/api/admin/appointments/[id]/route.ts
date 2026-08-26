@@ -68,6 +68,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       recordRevenueLedger({
         sourceType: 'CONSULTATION', sourceId: id, patientPaid: appointment.fee,
         clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: appointment.paymentMethod,
+        providerShareAmount: appointment.doctorPayoutAmount ?? 0,
       });
     }
 

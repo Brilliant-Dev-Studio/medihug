@@ -36,7 +36,10 @@ export async function GET(req: NextRequest) {
       db.revenueLedger.count({ where }),
       db.revenueLedger.aggregate({
         where,
-        _sum: { patientPaid: true, medihugShareAmount: true, partnerReferralFeeAmount: true, netMedihugRevenue: true },
+        _sum: {
+          patientPaid: true, medihugShareAmount: true, partnerShareAmount: true, partnerReferralFeeAmount: true,
+          gatewayFeeAmount: true, providerShareAmount: true, netMedihugRevenue: true,
+        },
       }),
     ]);
 
@@ -45,7 +48,10 @@ export async function GET(req: NextRequest) {
       totals: {
         patientPaid: totals._sum.patientPaid ?? 0,
         medihugShareAmount: totals._sum.medihugShareAmount ?? 0,
+        partnerShareAmount: totals._sum.partnerShareAmount ?? 0,
         partnerReferralFeeAmount: totals._sum.partnerReferralFeeAmount ?? 0,
+        gatewayFeeAmount: totals._sum.gatewayFeeAmount ?? 0,
+        providerShareAmount: totals._sum.providerShareAmount ?? 0,
         netMedihugRevenue: totals._sum.netMedihugRevenue ?? 0,
       },
     });

@@ -41,11 +41,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!doctorId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const { status, doctorApproved, callRinging, callDeclined, doctorNote, referredDoctorId, referredClinicId } = await req.json();
+  const { status, doctorApproved, callRinging, callDeclined, doctorNote, referredDoctorId, referredClinicId, notifyNote } = await req.json();
 
   const existing = await db.appointment.findUnique({
     where: { id },
-    select: { doctorId: true, status: true, userId: true, referredDoctorId: true, referredClinicId: true, fee: true, paymentMethod: true },
+    select: { doctorId: true, status: true, userId: true, referredDoctorId: true, referredClinicId: true, fee: true, paymentMethod: true, doctorPayoutAmount: true, doctor: { select: { name: true, nameEn: true, imageUrl: true } } },
   });
   if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -119,6 +119,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     recordRevenueLedger({
       sourceType: 'CONSULTATION', sourceId: id, patientPaid: existing.fee,
       clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: existing.paymentMethod,
+      providerShareAmount: existing.doctorPayoutAmount ?? 0,
     });
   }
 
@@ -168,6 +169,36 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         actionUrl: `/patient/appointments/${id}/form`,
         actorName: doctorDisplayName,
         actorAvatar: referringDoctor?.imageUrl,
+      });
+    }
+  }
+
+  // "Send & Share": doctor explicitly shared the clinical note (as opposed to a background
+  // save) — reach both the patient and every admin, mirroring the prescription send flow.
+  if (notifyNote === true && data.doctorNote) {
+    const doctorDisplayName = existing.doctor.nameEn ?? existing.doctor.name;
+    notify({
+      userId: existing.userId,
+      type: 'appointment-note-shared',
+      title: `Dr. ${doctorDisplayName}`,
+      body: 'shared a clinical note with you.',
+      actionUrl: `/patient/appointments/${id}/form`,
+      actorName: doctorDisplayName,
+      actorAvatar: existing.doctor.imageUrl,
+    });
+    const admins = await db.user.findMany({
+      where:  { role: 'SUPER_ADMIN', isActive: true },
+      select: { id: true },
+    });
+    for (const admin of admins) {
+      notify({
+        userId: admin.id,
+        type: 'appointment-note-shared',
+        title: `Dr. ${doctorDisplayName}`,
+        body: 'shared a clinical note.',
+        actionUrl: `/admin/appointments/${id}`,
+        actorName: doctorDisplayName,
+        actorAvatar: existing.doctor.imageUrl,
       });
     }
   }

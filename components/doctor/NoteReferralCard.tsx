@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { marked } from 'marked';
 import TurndownService from 'turndown';
 import {
-  NotebookPen, Share2, Search, X, Building2, Save, Loader2, ChevronDown,
+  NotebookPen, Share2, Search, X, Building2, Eye, Send, Loader2, ChevronDown, ArrowLeft, CheckCircle2,
 } from 'lucide-react';
 import { PRIMARY, t, type Appointment } from '@/app/admin/appointments/shared';
 import ReferralQRCard from '@/components/doctor/ReferralQRCard';
@@ -125,6 +125,8 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
   const [referralCode, setReferralCode] = useState<string | null>(appt.clinicReferral?.code ?? null);
   const [referralVerifiedAt, setReferralVerifiedAt] = useState<string | null>(appt.clinicReferral?.verifiedAt ?? null);
   const [panelOpen, setPanelOpen] = useState(!!appt.doctorNote);
+  const [view, setView] = useState<'edit' | 'preview'>('edit');
+  const [shared, setShared] = useState(false);
 
   useEffect(() => {
     fetch('/api/doctor/me').then(r => r.json()).then(d => setOwnDoctorId(d.doctor?.id ?? null)).catch(() => {});
@@ -141,7 +143,7 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
     return data.clinics ?? [];
   };
 
-  async function save() {
+  async function save(notifyNote = false): Promise<boolean> {
     setSaving(true);
     const plain = html.replace(/<[^>]+>/g, '').trim();
     const markdown = plain ? turndown.turndown(html) : null;
@@ -149,6 +151,7 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
       doctorNote: markdown,
       referredDoctorId: referredDoctor?.id ?? null,
       referredClinicId: referredClinic?.id ?? null,
+      notifyNote,
     };
     const res = await fetch(`/api/doctor/appointments/${appt.id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -164,10 +167,24 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
         setReferralVerifiedAt(null);
       }
       onSaved({ doctorNote: body.doctorNote, referredDoctorId: body.referredDoctorId, referredClinicId: body.referredClinicId, referredDoctor, referredClinic });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (!notifyNote) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
     }
     setSaving(false);
+    return res.ok;
+  }
+
+  async function goPreview() {
+    if (!(await save(false))) return;
+    setView('preview');
+  }
+
+  async function sendAndShare() {
+    if (!(await save(true))) return;
+    setShared(true);
+    setTimeout(() => setShared(false), 2500);
   }
 
   return (
@@ -186,7 +203,7 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
         <ChevronDown className={`w-4 h-4 text-gray-300 shrink-0 transition-transform ${panelOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {panelOpen && (
+      {panelOpen && view === 'edit' && (
       <div className="p-4 flex flex-col gap-4">
         {/* Note */}
         <div>
@@ -239,16 +256,78 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
         )}
 
         <div className="flex items-center gap-3 pt-1">
-          <button onClick={save} disabled={saving}
+          <button onClick={goPreview} disabled={saving}
             className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity hover:opacity-90"
             style={{ backgroundColor: PRIMARY }}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {t(mm, { mm: 'သိမ်းမည်', en: 'Save' })}
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
+            {t(mm, { mm: 'အစမ်းကြည့်မည်', en: 'Preview' })}
           </button>
           {saved && (
             <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               {t(mm, { mm: 'သိမ်းပြီးပါပြီ', en: 'Saved' })}
+            </span>
+          )}
+        </div>
+      </div>
+      )}
+
+      {panelOpen && view === 'preview' && (
+      <div className="p-4 flex flex-col gap-4">
+        <div>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{t(mm, { mm: 'ဆေးမှတ်တမ်း အစမ်းကြည့်ခြင်း', en: 'Clinical Note Preview' })}</p>
+          <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+            {html.replace(/<[^>]+>/g, '').trim() ? (
+              <div className="prose prose-sm max-w-none prose-headings:font-bold" dangerouslySetInnerHTML={{ __html: html }} />
+            ) : (
+              <p className="text-sm text-gray-400 italic">{t(mm, { mm: 'ဆေးမှတ်တမ်း မရေးရသေးပါ', en: 'No note written yet.' })}</p>
+            )}
+          </div>
+        </div>
+
+        {(referredDoctor || referredClinic) && (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {referredDoctor && (
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50">
+                <Share2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t(mm, { mm: 'ညွှန်းပို့ထားသော ဆရာဝန်', en: 'Referred to Doctor' })}</p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">{mm ? referredDoctor.name : (referredDoctor.nameEn ?? referredDoctor.name)}</p>
+                </div>
+              </div>
+            )}
+            {referredClinic && (
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50">
+                <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t(mm, { mm: 'ညွှန်းပို့ထားသော ဆေးခန်း', en: 'Referred to Clinic' })}</p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">{mm ? referredClinic.name : (referredClinic.nameEn ?? referredClinic.name)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {referredClinic && referralCode && (
+          <ReferralQRCard code={referralCode} verifiedAt={referralVerifiedAt} mm={mm} />
+        )}
+
+        <div className="flex items-center gap-3 pt-1">
+          <button onClick={() => setView('edit')} disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold border-2 disabled:opacity-60"
+            style={{ borderColor: PRIMARY, color: PRIMARY }}>
+            <ArrowLeft className="w-4 h-4" /> {t(mm, { mm: 'ပြန်ပြင်မည်', en: 'Edit' })}
+          </button>
+          <button onClick={sendAndShare} disabled={saving}
+            className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-opacity hover:opacity-90"
+            style={{ backgroundColor: PRIMARY }}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {t(mm, { mm: 'ပို့မည်', en: 'Send & Share' })}
+          </button>
+          {shared && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {t(mm, { mm: 'ပို့ပြီးပါပြီ', en: 'Shared' })}
             </span>
           )}
         </div>

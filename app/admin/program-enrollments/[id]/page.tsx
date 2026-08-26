@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   ArrowLeft, Loader2, User, FileText, Stethoscope, AlertTriangle,
-  CheckCircle2, XCircle, Receipt, ZoomIn, CreditCard,
+  CheckCircle2, XCircle, Receipt, ZoomIn, CreditCard, Building2,
 } from 'lucide-react';
 import {
   PRIMARY, MED_LABELS, MED_MEDS, CATEGORIES, DYN_SINGLE, DYN_MULTI,
@@ -30,7 +30,10 @@ interface Enrollment {
     id: string; titleMm: string; titleEn: string | null; imageUrl: string; price: number;
     doctors: { doctor: { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null } }[];
   };
+  referredClinic: { id: string; name: string; nameEn: string | null } | null;
 }
+
+interface ClinicOption { id: string; name: string; nameEn: string | null }
 
 export default function ProgramEnrollmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -41,6 +44,8 @@ export default function ProgramEnrollmentDetailPage({ params }: { params: Promis
   const [rejectNote, setRejectNote] = useState('');
   const [showReject, setShowReject] = useState(false);
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const [clinics, setClinics] = useState<ClinicOption[]>([]);
+  const [savingReferral, setSavingReferral] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,6 +56,9 @@ export default function ProgramEnrollmentDetailPage({ params }: { params: Promis
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    fetch('/api/admin/clinics?pageSize=500&isActive=true').then(r => r.json()).then(d => setClinics(d.clinics ?? []));
+  }, []);
 
   async function updateStatus(status: 'APPROVED' | 'REJECTED', reviewNote?: string) {
     setSaving(true);
@@ -60,6 +68,16 @@ export default function ProgramEnrollmentDetailPage({ params }: { params: Promis
     });
     setSaving(false);
     setShowReject(false);
+    load();
+  }
+
+  async function updateReferral(referredClinicId: string) {
+    setSavingReferral(true);
+    await fetch(`/api/admin/program-enrollments/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referredClinicId }),
+    });
+    setSavingReferral(false);
     load();
   }
 
@@ -141,6 +159,23 @@ export default function ProgramEnrollmentDetailPage({ params }: { params: Promis
           <span className="font-bold">Rejection reason: </span>{enrollment.reviewNote}
         </div>
       )}
+
+      {/* Referral — which partner clinic referred this patient in, for revenue ledger commission */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+          <Building2 size={13} /> Referring Partner Clinic
+        </p>
+        <select
+          value={enrollment.referredClinic?.id ?? ''}
+          disabled={savingReferral}
+          onChange={e => updateReferral(e.target.value)}
+          className="w-full text-sm border border-gray-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-gray-300 disabled:opacity-60"
+        >
+          <option value="">No referral</option>
+          {clinics.map(c => <option key={c.id} value={c.id}>{c.nameEn ?? c.name}</option>)}
+        </select>
+        <p className="text-[11px] text-gray-400 mt-1.5">Only applies if this clinic didn&apos;t already co-run the program — must be set before Approve to affect the revenue ledger.</p>
+      </div>
 
       {/* Payment */}
       <ViewSection icon={CreditCard} title="Payment" rows={[

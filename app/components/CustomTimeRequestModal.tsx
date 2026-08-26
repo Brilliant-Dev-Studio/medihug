@@ -78,7 +78,7 @@ export default function CustomTimeRequestModal({ mm, defaultDateIso, onClose, on
               <span className="text-gray-400 font-bold">:</span>
               <select value={minute} onChange={e => setMinute(e.target.value)} className={selectCls}>
                 <option value="" disabled>{mm ? 'မိနစ်' : 'Min'}</option>
-                {['00', '15', '30', '45'].map(m => (
+                {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(m => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>

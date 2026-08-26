@@ -1,0 +1,3 @@
+ALTER TABLE "RevenueLedger" ADD COLUMN "gatewayFeePercent" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "RevenueLedger" ADD COLUMN "gatewayFeeAmount" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "RevenueLedger" ADD COLUMN "providerShareAmount" INTEGER NOT NULL DEFAULT 0;

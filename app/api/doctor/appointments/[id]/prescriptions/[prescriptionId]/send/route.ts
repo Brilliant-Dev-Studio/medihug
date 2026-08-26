@@ -46,5 +46,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     actorAvatar: appointment.doctor.imageUrl,
   });
 
+  const admins = await db.user.findMany({
+    where:  { role: 'SUPER_ADMIN', isActive: true },
+    select: { id: true },
+  });
+  for (const admin of admins) {
+    notify({
+      userId: admin.id,
+      type: 'appointment-prescription',
+      title: `Dr. ${doctorName}`,
+      body: 'sent a prescription.',
+      actionUrl: `/admin/appointments/${id}`,
+      actorName: doctorName,
+      actorAvatar: appointment.doctor.imageUrl,
+    });
+  }
+
   return NextResponse.json({ prescription });
 }

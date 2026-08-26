@@ -98,18 +98,18 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  appointments        Appointment[]
-  doctor              Doctor?
-  partnerClinic       Clinic?
-  supportConversation SupportConversation?
-  favoriteDoctors     FavoriteDoctor[]
-  favoriteProducts    FavoriteProduct[]
-  customTimeRequests  CustomTimeRequest[]
-  orders              Order[]
-  clinicReferrals     ClinicReferral[]
-  notifications       Notification[]
-  deletionRequestsMade     DeletionRequest[] @relation("DeletionRequester")
-  deletionRequestsReviewed DeletionRequest[] @relation("DeletionReviewer")
+  appointments             Appointment[]
+  doctor                   Doctor?
+  partnerClinic            Clinic?
+  supportConversation      SupportConversation?
+  favoriteDoctors          FavoriteDoctor[]
+  favoriteProducts         FavoriteProduct[]
+  customTimeRequests       CustomTimeRequest[]
+  orders                   Order[]
+  clinicReferrals          ClinicReferral[]
+  notifications            Notification[]
+  deletionRequestsMade     DeletionRequest[]    @relation("DeletionRequester")
+  deletionRequestsReviewed DeletionRequest[]    @relation("DeletionReviewer")
   healthLogs               HealthLog[]
   programEnrollments       ProgramEnrollment[]
 }
@@ -119,52 +119,52 @@ model User {
 // ─────────────────────────────────────────────
 
 model Doctor {
-  id             String   @id @default(cuid())
-  userId         String?  @unique
-  name           String
-  nameEn         String?
-  specialty      String
-  specialtyEn    String?
-  bio            String?
-  phone          String?
-  phoneSecondary String?
-  viber          String?
-  imageUrl       String?
-  coverUrl       String?
-  experience     Int      @default(0)
-  rating         Float    @default(0)
-  reviewCount    Int      @default(0)
-  price          Int      @default(0)
-  commissionPercent Int?  // null = inherit PlatformSettings.defaultCommissionPercent
-  isAvailable    Boolean  @default(true)
-  isActive       Boolean  @default(true)
-  isSuggested    Boolean  @default(false)
-  allowsCustomTimeRequests Boolean @default(true)
-  qualifications String?
-  careerMm       String?
-  careerEn       String?
-  clinicNote     String?
-  clinicNoteEn   String?
-  clinicTypesMm  String[]
-  clinicTypesEn  String[]
-  languages      String[]
-  location       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                       String   @id @default(cuid())
+  userId                   String?  @unique
+  name                     String
+  nameEn                   String?
+  specialty                String
+  specialtyEn              String?
+  bio                      String?
+  phone                    String?
+  phoneSecondary           String?
+  viber                    String?
+  imageUrl                 String?
+  coverUrl                 String?
+  experience               Int      @default(0)
+  rating                   Float    @default(0)
+  reviewCount              Int      @default(0)
+  price                    Int      @default(0)
+  commissionPercent        Int? // null = inherit PlatformSettings.defaultCommissionPercent
+  isAvailable              Boolean  @default(true)
+  isActive                 Boolean  @default(true)
+  isSuggested              Boolean  @default(false)
+  allowsCustomTimeRequests Boolean  @default(true)
+  qualifications           String?
+  careerMm                 String?
+  careerEn                 String?
+  clinicNote               String?
+  clinicNoteEn             String?
+  clinicTypesMm            String[]
+  clinicTypesEn            String[]
+  languages                String[]
+  location                 String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  user               User?               @relation(fields: [userId], references: [id])
-  appointments       Appointment[]
-  referredAppointments Appointment[]     @relation("AppointmentReferralDoctor")
-  issuedReferrals    ClinicReferral[]
-  clinicDoctors      ClinicDoctor[]
-  programs           ProgramDoctor[]
-  categories         DoctorCategory[]
-  slots              DoctorSlot[]
-  gallery            DoctorGallery[]
-  favoritedBy        FavoriteDoctor[]
-  blogs              Blog[]
-  customTimeRequests CustomTimeRequest[]
-  commissionRules    CommissionRule[]
+  user                 User?               @relation(fields: [userId], references: [id])
+  appointments         Appointment[]
+  referredAppointments Appointment[]       @relation("AppointmentReferralDoctor")
+  issuedReferrals      ClinicReferral[]
+  clinicDoctors        ClinicDoctor[]
+  programs             ProgramDoctor[]
+  categories           DoctorCategory[]
+  slots                DoctorSlot[]
+  gallery              DoctorGallery[]
+  favoritedBy          FavoriteDoctor[]
+  blogs                Blog[]
+  customTimeRequests   CustomTimeRequest[]
+  commissionRules      CommissionRule[]
 }
 
 // ─────────────────────────────────────────────
@@ -192,9 +192,9 @@ model DoctorGallery {
 model DoctorSlot {
   id         String   @id @default(cuid())
   doctorId   String
-  dayOfWeek  Int      // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
-  startTime  String   // "09:00"
-  endTime    String   // "12:00"
+  dayOfWeek  Int // 0=Sun 1=Mon 2=Tue 3=Wed 4=Thu 5=Fri 6=Sat
+  startTime  String // "09:00"
+  endTime    String // "12:00"
   duration   Int      @default(30) // minutes per appointment
   maxPerSlot Int      @default(1)
   isActive   Boolean  @default(true)
@@ -217,10 +217,10 @@ model PartnerType {
 }
 
 model Clinic {
-  id          String     @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   nameEn      String?
-  type        String     @default("Clinic")
+  type        String   @default("Clinic")
   address     String?
   addressEn   String?
   state       String?
@@ -240,29 +240,30 @@ model Clinic {
   aboutEn     String?
   tagsMm      String[]
   tagsEn      String[]
-  verified    Boolean    @default(false)
-  rating      Float      @default(0)
-  reviewCount Int        @default(0)
-  isActive    Boolean    @default(true)
-  isPartner   Boolean    @default(true)
-  ownerId     String?    @unique
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  verified    Boolean  @default(false)
+  rating      Float    @default(0)
+  reviewCount Int      @default(0)
+  isActive    Boolean  @default(true)
+  isPartner   Boolean  @default(true)
+  ownerId     String?  @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  owner        User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  doctors      ClinicDoctor[]
-  appointments Appointment[]
-  referredAppointments Appointment[] @relation("AppointmentReferralClinic")
-  referrals    ClinicReferral[]
-  products     ClinicProduct[]
-  gallery      ClinicGallery[]
-  branches     ClinicBranch[]
-  loginLogs    ClinicLoginLog[]
-  commissionRules CommissionRule[]
-  revenueEntries  RevenueEntry[]
-  programs        HealthcareProgram[]
-  revenueLedgerEntries   RevenueLedger[] @relation("RevenueLedgerClinic")
-  revenueLedgerReferrals RevenueLedger[] @relation("RevenueLedgerReferralClinic")
+  owner                      User?               @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  doctors                    ClinicDoctor[]
+  appointments               Appointment[]
+  referredAppointments       Appointment[]       @relation("AppointmentReferralClinic")
+  referrals                  ClinicReferral[]
+  products                   ClinicProduct[]
+  gallery                    ClinicGallery[]
+  branches                   ClinicBranch[]
+  loginLogs                  ClinicLoginLog[]
+  commissionRules            CommissionRule[]
+  revenueEntries             RevenueEntry[]
+  programs                   HealthcareProgram[]
+  revenueLedgerEntries       RevenueLedger[]     @relation("RevenueLedgerClinic")
+  revenueLedgerReferrals     RevenueLedger[]     @relation("RevenueLedgerReferralClinic")
+  referredProgramEnrollments ProgramEnrollment[] @relation("ProgramEnrollmentReferralClinic")
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -339,48 +340,48 @@ model ClinicProduct {
 // ─────────────────────────────────────────────
 
 model Appointment {
-  id            String            @id @default(cuid())
-  userId        String
-  doctorId      String
-  clinicId      String?
-  date          DateTime
-  time          String?
-  reason        String?
-  note          String?
-  paymentMethod String?
-  fee           Int?    // full patient-paid total (base × sessions, marked up by commission %)
-  platformFeeAmount  Int? // platform's cut, snapshotted at booking time
-  doctorPayoutAmount Int? // what the doctor receives, snapshotted at booking time
-  receiptUrl    String?
-  cbPayStatus          CbPayStatus @default(NONE)
+  id                   String            @id @default(cuid())
+  userId               String
+  doctorId             String
+  clinicId             String?
+  date                 DateTime
+  time                 String?
+  reason               String?
+  note                 String?
+  paymentMethod        String?
+  fee                  Int? // full patient-paid total (base × sessions, marked up by commission %)
+  platformFeeAmount    Int? // platform's cut, snapshotted at booking time
+  doctorPayoutAmount   Int? // what the doctor receives, snapshotted at booking time
+  receiptUrl           String?
+  cbPayStatus          CbPayStatus       @default(NONE)
   cbPayRefOrder        String?
   cbPayTransactionId   String?
   cbPayAmountConfirmed Int?
   cbPayPaidAt          DateTime?
-  intake        Json?
-  aiSummary     String?
-  doctorNote    String? // doctor-written clinical note for this consultation, Markdown source
-  referredDoctorId String? // referral to another doctor on the platform
-  referredClinicId String? // referral to a partner clinic on the platform
-  status        AppointmentStatus @default(PENDING)
-  doctorApproved Boolean          @default(false)
-  callRinging   Boolean           @default(false)
-  callDeclined  Boolean           @default(false)
-  callActive    Boolean           @default(false) // true while doctor+patient are both actually in the video call — drives the admin "Join" button
-  unreadDoctorChat  Boolean   @default(false) // new patient message doctor hasn't seen
-  unreadPatientChat Boolean   @default(false) // new doctor message patient hasn't seen
-  lastChatMessageAt DateTime?
-  cancelReason  String?
-  cancelledAt   DateTime?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  intake               Json?
+  aiSummary            String?
+  doctorNote           String? // doctor-written clinical note for this consultation, Markdown source
+  referredDoctorId     String? // referral to another doctor on the platform
+  referredClinicId     String? // referral to a partner clinic on the platform
+  status               AppointmentStatus @default(PENDING)
+  doctorApproved       Boolean           @default(false)
+  callRinging          Boolean           @default(false)
+  callDeclined         Boolean           @default(false)
+  callActive           Boolean           @default(false) // true while doctor+patient are both actually in the video call — drives the admin "Join" button
+  unreadDoctorChat     Boolean           @default(false) // new patient message doctor hasn't seen
+  unreadPatientChat    Boolean           @default(false) // new doctor message patient hasn't seen
+  lastChatMessageAt    DateTime?
+  cancelReason         String?
+  cancelledAt          DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctor Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
   clinic Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
 
-  referredDoctor Doctor? @relation("AppointmentReferralDoctor", fields: [referredDoctorId], references: [id], onDelete: SetNull)
-  referredClinic Clinic? @relation("AppointmentReferralClinic", fields: [referredClinicId], references: [id], onDelete: SetNull)
+  referredDoctor Doctor?              @relation("AppointmentReferralDoctor", fields: [referredDoctorId], references: [id], onDelete: SetNull)
+  referredClinic Clinic?              @relation("AppointmentReferralClinic", fields: [referredClinicId], references: [id], onDelete: SetNull)
   clinicReferral ClinicReferral?
   messages       AppointmentMessage[]
   refunds        Refund[]
@@ -399,33 +400,33 @@ model Appointment {
 // ─────────────────────────────────────────────
 
 model Prescription {
-  id                  String              @id @default(cuid())
-  appointmentId       String
-  diagnosis           String?
-  advice              String?
-  referredSpecialist  Boolean             @default(false)
-  followUpDate        DateTime?
-  followUpTime        String?
-  comeAfterDays       Int?
-  status              PrescriptionStatus  @default(DRAFT)
-  sentAt              DateTime?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  id                 String             @id @default(cuid())
+  appointmentId      String
+  diagnosis          String?
+  advice             String?
+  referredSpecialist Boolean            @default(false)
+  followUpDate       DateTime?
+  followUpTime       String?
+  comeAfterDays      Int?
+  status             PrescriptionStatus @default(DRAFT)
+  sentAt             DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
-  appointment Appointment          @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointment Appointment            @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   medicines   PrescriptionMedicine[]
 
   @@index([appointmentId])
 }
 
 model PrescriptionMedicine {
-  id             String       @id @default(cuid())
+  id             String  @id @default(cuid())
   prescriptionId String
   name           String
   dosage         String?
   frequency      String?
   duration       String?
-  order          Int          @default(0)
+  order          Int     @default(0)
 
   prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
 
@@ -437,15 +438,15 @@ model PrescriptionMedicine {
 // ─────────────────────────────────────────────
 
 model CustomTimeRequest {
-  id            String                   @id @default(cuid())
+  id            String                  @id @default(cuid())
   userId        String
   doctorId      String
   requestedDate DateTime
   requestedTime String
   note          String?
-  status        CustomTimeRequestStatus  @default(PENDING)
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
+  status        CustomTimeRequestStatus @default(PENDING)
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
@@ -490,22 +491,22 @@ model Product {
 // ─────────────────────────────────────────────
 
 model Order {
-  id            String      @id @default(cuid())
-  userId        String
-  status        OrderStatus @default(PENDING)
-  paymentMethod String?
-  receiptUrl    String?
+  id                   String      @id @default(cuid())
+  userId               String
+  status               OrderStatus @default(PENDING)
+  paymentMethod        String?
+  receiptUrl           String?
   cbPayStatus          CbPayStatus @default(NONE)
   cbPayRefOrder        String?
   cbPayTransactionId   String?
   cbPayAmountConfirmed Int?
   cbPayPaidAt          DateTime?
-  totalAmount   Int
-  note          String?
-  cancelReason  String?
-  cancelledAt   DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  totalAmount          Int
+  note                 String?
+  cancelReason         String?
+  cancelledAt          DateTime?
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
   user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   items   OrderItem[]
@@ -671,7 +672,7 @@ model HealthcareProgram {
   price      Int      @default(0)
   order      Int      @default(0)
   isActive   Boolean  @default(true)
-  clinicId   String?  // set when a Partner clinic listed this program themselves; null = platform-authored
+  clinicId   String? // set when a Partner clinic listed this program themselves; null = platform-authored
   categoryId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -716,30 +717,33 @@ model ProgramDoctor {
 }
 
 model ProgramEnrollment {
-  id            String @id @default(cuid())
-  programId     String
-  userId        String
-  paymentMethod String?
-  receiptUrl    String?
-  cbPayStatus          CbPayStatus @default(NONE)
+  id                   String                  @id @default(cuid())
+  programId            String
+  userId               String
+  paymentMethod        String?
+  receiptUrl           String?
+  cbPayStatus          CbPayStatus             @default(NONE)
   cbPayRefOrder        String?
   cbPayTransactionId   String?
   cbPayAmountConfirmed Int?
   cbPayPaidAt          DateTime?
-  amount        Int
-  intake        Json?
-  status        ProgramEnrollmentStatus @default(PENDING_REVIEW)
-  reviewNote    String?
-  reviewedAt    DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  amount               Int
+  intake               Json?
+  status               ProgramEnrollmentStatus @default(PENDING_REVIEW)
+  reviewNote           String?
+  reviewedAt           DateTime?
+  referredClinicId     String? // partner clinic that referred this patient into the program (shared-revenue referral commission)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
-  program HealthcareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
-  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program        HealthcareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referredClinic Clinic?           @relation("ProgramEnrollmentReferralClinic", fields: [referredClinicId], references: [id], onDelete: SetNull)
 
   @@index([programId])
   @@index([userId])
   @@index([cbPayRefOrder])
+  @@index([referredClinicId])
 }
 
 // ─────────────────────────────────────────────
@@ -893,13 +897,13 @@ model Notification {
 // ─────────────────────────────────────────────
 
 model HealthLog {
-  id       String        @id @default(cuid())
-  userId   String
-  type     HealthLogType
-  loggedAt DateTime      @default(now())
-  data     Json
-  note     String?
-  createdAt DateTime     @default(now())
+  id        String        @id @default(cuid())
+  userId    String
+  type      HealthLogType
+  loggedAt  DateTime      @default(now())
+  data      Json
+  note      String?
+  createdAt DateTime      @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -912,16 +916,16 @@ model HealthLog {
 // ─────────────────────────────────────────────
 
 model DeletionRequest {
-  id          String                 @id @default(cuid())
+  id          String                @id @default(cuid())
   entityType  String
   entityId    String
   entityLabel String?
   requestedBy String
   reason      String?
-  status      DeletionRequestStatus  @default(PENDING)
+  status      DeletionRequestStatus @default(PENDING)
   reviewedBy  String?
   reviewedAt  DateTime?
-  createdAt   DateTime               @default(now())
+  createdAt   DateTime              @default(now())
 
   requester User  @relation("DeletionRequester", fields: [requestedBy], references: [id])
   reviewer  User? @relation("DeletionReviewer", fields: [reviewedBy], references: [id])
@@ -1104,8 +1108,8 @@ enum RevenueSourceType {
   CONSULTATION
   PROGRAM
   PRODUCT
-  HOME_SERVICE     // reserved — no HomeService model/flow exists yet
-  PARTNER_SERVICE  // reserved — no distinct PartnerService model exists yet (covered by PRODUCT/PROGRAM + clinicId today)
+  HOME_SERVICE // reserved — no HomeService model/flow exists yet
+  PARTNER_SERVICE // reserved — no distinct PartnerService model exists yet (covered by PRODUCT/PROGRAM + clinicId today)
 }
 
 enum RevenueOwnershipType {
@@ -1116,30 +1120,38 @@ enum RevenueOwnershipType {
 
 enum LedgerSettlementStatus {
   PENDING
+  APPROVED
   SETTLED
   HELD
 }
 
 model RevenueLedger {
-  id                        String   @id @default(cuid())
-  sourceType                RevenueSourceType
-  sourceId                  String   // Appointment.id / ProgramEnrollment.id / Order.id
+  id         String            @id @default(cuid())
+  sourceType RevenueSourceType
+  sourceId   String // Appointment.id / ProgramEnrollment.id / Order.id
 
-  patientPaid               Int      // gross amount the patient paid
-  ownershipType              RevenueOwnershipType
-  clinicId                  String?  // owning/shared clinic — null when ownershipType is MEDIHUG
-  medihugSharePercent       Int      // % of patientPaid attributable to Medihug, before referral fee
-  medihugShareAmount        Int
+  patientPaid         Int // gross amount the patient paid
+  ownershipType       RevenueOwnershipType
+  clinicId            String? // owning/shared clinic — null when ownershipType is MEDIHUG
+  medihugSharePercent Int // % of patientPaid attributable to Medihug, before referral fee
+  medihugShareAmount  Int
 
-  referralClinicId          String?  // clinic that referred the patient (consultations only, for now)
-  partnerReferralFeePercent Int      @default(0)
-  partnerReferralFeeAmount  Int      @default(0)
+  partnerShareAmount Int @default(0) // patientPaid - medihugShareAmount, when clinicId is set (0 for pure Medihug rows)
 
-  netMedihugRevenue         Int      // medihugShareAmount - partnerReferralFeeAmount
+  referralClinicId          String? // clinic that referred the patient (consultations only, for now)
+  partnerReferralFeePercent Int     @default(0)
+  partnerReferralFeeAmount  Int     @default(0)
 
-  settlementStatus          LedgerSettlementStatus @default(PENDING)
-  settledAt                 DateTime?
-  createdAt                 DateTime @default(now())
+  gatewayFeePercent   Int @default(0) // PaymentMethodConfig fee % for this transaction's paymentMethod
+  gatewayFeeAmount    Int @default(0)
+  providerShareAmount Int @default(0) // doctor payout (consultations) — a real cost, not Medihug revenue
+
+  netMedihugRevenue Int // medihugShareAmount - partnerReferralFeeAmount - providerShareAmount - gatewayFeeAmount
+
+  settlementStatus LedgerSettlementStatus @default(PENDING)
+  settledAt        DateTime?
+  paymentReference String? // external payout reference/transaction id, set when marking SETTLED
+  createdAt        DateTime               @default(now())
 
   clinic         Clinic? @relation("RevenueLedgerClinic", fields: [clinicId], references: [id], onDelete: SetNull)
   referralClinic Clinic? @relation("RevenueLedgerReferralClinic", fields: [referralClinicId], references: [id], onDelete: SetNull)

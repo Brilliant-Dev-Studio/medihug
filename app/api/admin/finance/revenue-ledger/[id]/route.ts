@@ -12,25 +12,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   try {
     const { id } = await params;
-    const { settlementStatus } = await req.json();
-    if (!['PENDING', 'SETTLED', 'HELD'].includes(settlementStatus)) {
+    const { settlementStatus, paymentReference } = await req.json();
+    if (settlementStatus !== undefined && !['PENDING', 'APPROVED', 'SETTLED', 'HELD'].includes(settlementStatus)) {
       return NextResponse.json({ error: 'Invalid settlementStatus.' }, { status: 400 });
     }
+    if (settlementStatus === undefined && paymentReference === undefined) {
+      return NextResponse.json({ error: 'Nothing to update.' }, { status: 400 });
+    }
 
-    const before = await db.revenueLedger.findUnique({ where: { id }, select: { settlementStatus: true } });
+    const before = await db.revenueLedger.findUnique({ where: { id }, select: { settlementStatus: true, paymentReference: true } });
     if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    const entry = await db.revenueLedger.update({
-      where: { id },
-      data: {
-        settlementStatus,
-        settledAt: settlementStatus === 'SETTLED' ? new Date() : null,
-      },
-    });
+    const data: Record<string, unknown> = {};
+    if (settlementStatus !== undefined) {
+      data.settlementStatus = settlementStatus;
+      data.settledAt = settlementStatus === 'SETTLED' ? new Date() : null;
+    }
+    if (paymentReference !== undefined) {
+      data.paymentReference = paymentReference || null;
+    }
+
+    const entry = await db.revenueLedger.update({ where: { id }, data });
 
     logAudit({
       admin, action: 'UPDATE', entityType: 'RevenueLedger', entityId: id,
-      before: { settlementStatus: before.settlementStatus }, after: { settlementStatus: entry.settlementStatus },
+      before, after: { settlementStatus: entry.settlementStatus, paymentReference: entry.paymentReference },
     });
 
     return NextResponse.json({ entry });
