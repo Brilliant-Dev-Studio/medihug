@@ -13,6 +13,8 @@ import { useLang } from '../../lib/LanguageContext';
 import { useCart } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
+import PaymentMethodTileIcon from '@/components/PaymentMethodTileIcon';
+import BankTransferCard from '@/components/BankTransferCard';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
@@ -24,6 +26,7 @@ const PAYMENT_METHOD_IMG: Record<string, string> = {
 };
 const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
   mmqr: 'Scan to pay', cb: 'Pay with PIN',
+  banktransfer: 'Manual transfer',
 };
 const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
   id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
@@ -314,7 +317,9 @@ function CheckoutContent() {
                         className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all"
                         style={{ backgroundColor: active ? `${PRIMARY}10` : '#fafafa', borderColor: active ? PRIMARY : '#e5e7eb', boxShadow: active ? `0 0 0 1px ${PRIMARY}` : 'none' }}>
                         <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                          <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
+                          {pm.img
+                            ? <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
+                            : <PaymentMethodTileIcon />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold" style={{ color: active ? PRIMARY : '#374151' }}>{pm.label}</p>
@@ -331,7 +336,7 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              {selected.id !== 'cb' ? (
+              {selected.id === 'mmqr' && (
                 <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
                   <p className="text-xs font-bold" style={{ color: PRIMARY }}>MMQR</p>
                   <button type="button" onClick={() => setZoomQr(true)}
@@ -342,7 +347,8 @@ function CheckoutContent() {
                     {mm ? 'ပုံကို နှိပ်ပြီး ချဲ့ကြည့်နိုင်ပါသည် · MMQR ကို စကင်ဖတ်ပြီး ငွေလွှဲပေးပါ' : 'Tap image to zoom · Scan the MMQR to pay'}
                   </p>
                 </div>
-              ) : (
+              )}
+              {selected.id === 'cb' && (
                 <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2 text-center" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
                   <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
                     <Image src={selected.img} alt={selected.label} width={40} height={40} className="object-contain w-full h-full" />
@@ -367,6 +373,7 @@ function CheckoutContent() {
                   )}
                 </div>
               )}
+              <BankTransferCard mm={mm} />
 
               {!isCb && (
               <div>

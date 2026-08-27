@@ -761,6 +761,21 @@ model Ad {
   updatedAt DateTime @updatedAt
 }
 
+model Testimonial {
+  id        String   @id @default(cuid())
+  name      String
+  roleMm    String
+  roleEn    String?
+  reviewMm  String
+  reviewEn  String?
+  rating    Int      @default(5)
+  imageUrl  String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ─────────────────────────────────────────────
 // Customer Support Chat (patient ↔ super admin)
 // ─────────────────────────────────────────────

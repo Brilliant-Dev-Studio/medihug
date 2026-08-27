@@ -10,7 +10,7 @@ import {
   ShieldCheck, Menu, X, ChevronRight, ChevronDown, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
   Bell, CalendarClock, Headset, HeartPulse, Store, ClipboardCheck,
   Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
-  ArrowLeftRight, History, Trash2, ClipboardList,
+  ArrowLeftRight, History, Trash2, ClipboardList, MessageSquareQuote,
 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
@@ -67,6 +67,7 @@ const navGroups = [
       { href: '/admin/program-categories', icon: Layers,      mm: 'Program Category',   en: 'Program Categories', perm: 'dashboard.view' as Permission },
       { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers', perm: 'dashboard.view' as Permission },
       { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads', perm: 'dashboard.view' as Permission },
+      { href: '/admin/testimonials',       icon: MessageSquareQuote, mm: 'သုံးသပ်ချက်များ', en: 'Testimonials', perm: 'settings.manage' as Permission },
       { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records', perm: 'dashboard.view' as Permission },
     ],
   },

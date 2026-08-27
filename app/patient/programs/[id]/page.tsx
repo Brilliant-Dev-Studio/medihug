@@ -13,6 +13,8 @@ import { useLang } from '../../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from '../../booking/IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
+import PaymentMethodTileIcon from '@/components/PaymentMethodTileIcon';
+import BankTransferCard from '@/components/BankTransferCard';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
@@ -24,6 +26,7 @@ const PAYMENT_METHOD_IMG: Record<string, string> = {
 };
 const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
   mmqr: 'Scan to pay', cb: 'Pay with PIN',
+  banktransfer: 'Manual transfer',
 };
 const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
   id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
@@ -337,7 +340,9 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
                     className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all"
                     style={{ backgroundColor: active ? `${PRIMARY}10` : '#fafafa', borderColor: active ? PRIMARY : '#e5e7eb', boxShadow: active ? `0 0 0 1px ${PRIMARY}` : 'none' }}>
                     <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                      <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
+                      {pm.img
+                        ? <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
+                        : <PaymentMethodTileIcon />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold" style={{ color: active ? PRIMARY : '#374151' }}>{pm.label}</p>
@@ -356,6 +361,9 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
 
           {(() => {
             const selected = PAYMENT_METHODS.find(p => p.id === payMethod)!;
+            if (selected.id !== 'cb' && selected.id !== 'mmqr') {
+              return null;
+            }
             if (selected.id !== 'cb') {
               return (
                 <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
@@ -379,6 +387,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
               </div>
             );
           })()}
+          <BankTransferCard mm={mm} />
 
           {payMethod !== 'cb' && (
             <div>

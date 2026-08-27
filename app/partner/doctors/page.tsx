@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
-import { Stethoscope, Star } from 'lucide-react';
+import { Stethoscope, Star, Plus } from 'lucide-react';
 
 const PRIMARY = '#3b5bdb';
 
@@ -46,14 +47,26 @@ export default function PartnerDoctorsPage() {
 
   return (
     <div className="p-4 lg:p-6 max-w-5xl mx-auto flex flex-col gap-4">
-      <h1 className="text-lg font-bold text-gray-800">Doctors</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold text-gray-800">Doctors</h1>
+        <Link href="/partner/doctors/create"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
+          style={{ backgroundColor: PRIMARY }}>
+          <Plus className="w-4 h-4" /> Create Doctor
+        </Link>
+      </div>
 
       {loading ? (
         <DoctorsSkeleton />
       ) : doctors.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-          <Stethoscope className="w-8 h-8 mx-auto text-gray-200 mb-2" />
+        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center flex flex-col items-center gap-3">
+          <Stethoscope className="w-8 h-8 text-gray-200" />
           <p className="text-sm text-gray-400">No doctors linked to this clinic yet.</p>
+          <Link href="/partner/doctors/create"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-white"
+            style={{ backgroundColor: PRIMARY }}>
+            <Plus className="w-4 h-4" /> Create Doctor
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

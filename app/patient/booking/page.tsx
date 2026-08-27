@@ -13,6 +13,8 @@ import { useLang } from '../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from './IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
+import PaymentMethodTileIcon from '@/components/PaymentMethodTileIcon';
+import BankTransferCard from '@/components/BankTransferCard';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
@@ -25,6 +27,7 @@ const PAYMENT_METHOD_IMG: Record<string, string> = {
 };
 const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
   mmqr: 'Scan to pay', cb: 'Pay with PIN',
+  banktransfer: 'Manual transfer',
 };
 const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
   id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
@@ -562,7 +565,9 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
                 }}
               >
                 <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                  <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
+                  {pm.img
+                    ? <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
+                    : <PaymentMethodTileIcon />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold" style={{ color: active ? PRIMARY : '#374151' }}>{pm.label}</p>
@@ -582,6 +587,9 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
       {/* QR / account info for selected method */}
       {(() => {
         const selected = PAYMENT_METHODS.find(p => p.id === payMethod)!;
+        if (selected.id !== 'cb' && selected.id !== 'mmqr') {
+          return null;
+        }
         if (selected.id !== 'cb') {
           return (
             <div
@@ -629,6 +637,7 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
           </div>
         );
       })()}
+      <BankTransferCard mm={mm} />
 
       {/* Receipt upload */}
       {payMethod !== 'cb' && (
