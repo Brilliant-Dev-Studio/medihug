@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 export async function GET() {
   try {
     const categories = await db.productCategory.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: [{ order: 'asc' }, { name: 'asc' }],
       include: { _count: { select: { doctors: true } } },
     });
     const withDoctorCount = categories.map(({ _count, ...c }) => ({ ...c, doctorCount: _count.doctors }));

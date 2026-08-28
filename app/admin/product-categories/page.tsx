@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search, Stethoscope } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search, Stethoscope, ArrowUp, ArrowDown } from 'lucide-react';
 import ImageUploadSlot from '@/components/admin/ImageUploadSlot';
 
 const PRIMARY = '#2ab5ad';
 
 interface Category {
-  id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; createdAt: string;
+  id: string; name: string; nameEn: string | null;
+  descriptionMm: string | null; descriptionEn: string | null;
+  iconUrl: string | null; bgImageUrl: string | null; order: number; createdAt: string;
   doctors?: { doctorId: string }[];
 }
 interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
@@ -59,6 +61,8 @@ export default function ProductCategoriesPage() {
   const [creating,    setCreating]    = useState(false);
   const [newName,     setNewName]     = useState('');
   const [newNameEn,   setNewNameEn]   = useState('');
+  const [newDescMm,   setNewDescMm]   = useState('');
+  const [newDescEn,   setNewDescEn]   = useState('');
   const [newIconUrl,  setNewIconUrl]  = useState<string | null>(null);
   const [newBgUrl,    setNewBgUrl]    = useState<string | null>(null);
   const [newDoctorIds, setNewDoctorIds] = useState<string[]>([]);
@@ -68,6 +72,8 @@ export default function ProductCategoriesPage() {
   const [editId,     setEditId]     = useState<string | null>(null);
   const [editName,   setEditName]   = useState('');
   const [editNameEn, setEditNameEn] = useState('');
+  const [editDescMm, setEditDescMm] = useState('');
+  const [editDescEn, setEditDescEn] = useState('');
   const [editIconUrl, setEditIconUrl] = useState<string | null>(null);
   const [editBgUrl,   setEditBgUrl]   = useState<string | null>(null);
   const [editDoctorIds, setEditDoctorIds] = useState<string[]>([]);
@@ -76,6 +82,7 @@ export default function ProductCategoriesPage() {
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/doctors?pageSize=500&isActive=true')
@@ -110,11 +117,15 @@ export default function ProductCategoriesPage() {
     setSavingNew(true); setCreateError('');
     const res  = await fetch('/api/admin/product-categories', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), nameEn: newNameEn.trim(), iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds }),
+      body: JSON.stringify({
+        name: newName.trim(), nameEn: newNameEn.trim(),
+        descriptionMm: newDescMm.trim(), descriptionEn: newDescEn.trim(),
+        iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds, order: categories.length,
+      }),
     });
     const data = await res.json();
     if (!res.ok) { setCreateError(data.error); setSavingNew(false); return; }
-    setNewName(''); setNewNameEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setCreating(false); setSavingNew(false);
+    setNewName(''); setNewNameEn(''); setNewDescMm(''); setNewDescEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setCreating(false); setSavingNew(false);
     load(1);
   };
 
@@ -123,6 +134,7 @@ export default function ProductCategoriesPage() {
 
   const startEdit = (c: Category) => {
     setEditId(c.id); setEditName(c.name); setEditNameEn(c.nameEn ?? '');
+    setEditDescMm(c.descriptionMm ?? ''); setEditDescEn(c.descriptionEn ?? '');
     setEditIconUrl(c.iconUrl); setEditBgUrl(c.bgImageUrl);
     setEditDoctorIds(c.doctors?.map(d => d.doctorId) ?? []);
   };
@@ -131,7 +143,11 @@ export default function ProductCategoriesPage() {
     if (!editName.trim()) return;
     const res = await fetch(`/api/admin/product-categories/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName.trim(), nameEn: editNameEn.trim(), iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds }),
+      body: JSON.stringify({
+        name: editName.trim(), nameEn: editNameEn.trim(),
+        descriptionMm: editDescMm.trim(), descriptionEn: editDescEn.trim(),
+        iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds,
+      }),
     });
     if (res.ok) { setEditId(null); load(page); }
   };
@@ -142,6 +158,19 @@ export default function ProductCategoriesPage() {
     await fetch(`/api/admin/product-categories/${deleteTarget.id}`, { method: 'DELETE' });
     setDeletingId(null);
     setDeleteTarget(null);
+    load(page);
+  };
+
+  const move = async (c: Category, dir: -1 | 1) => {
+    const idx = categories.findIndex(x => x.id === c.id);
+    const swapWith = categories[idx + dir];
+    if (!swapWith) return;
+    setMovingId(c.id);
+    await Promise.all([
+      fetch(`/api/admin/product-categories/${c.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: swapWith.order }) }),
+      fetch(`/api/admin/product-categories/${swapWith.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: c.order }) }),
+    ]);
+    setMovingId(null);
     load(page);
   };
 
@@ -208,6 +237,22 @@ export default function ProductCategoriesPage() {
               className={inp}
             />
           </div>
+          <div className="flex gap-2">
+            <textarea
+              value={newDescMm}
+              onChange={e => setNewDescMm(e.target.value)}
+              placeholder="Short description (Myanmar) — shown on landing page card"
+              rows={2}
+              className={inp + ' resize-none'}
+            />
+            <textarea
+              value={newDescEn}
+              onChange={e => setNewDescEn(e.target.value)}
+              placeholder="Short description (English)"
+              rows={2}
+              className={inp + ' resize-none'}
+            />
+          </div>
           <div className="flex gap-4">
             <ImageUploadSlot label="Icon" url={newIconUrl} onChange={setNewIconUrl} />
             <ImageUploadSlot label="Background" url={newBgUrl} onChange={setNewBgUrl} />
@@ -237,7 +282,7 @@ export default function ProductCategoriesPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest w-8">#</th>
+                <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest w-14">Order</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Myanmar Name</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">English Name</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Created</th>
@@ -256,7 +301,20 @@ export default function ProductCategoriesPage() {
                 </td></tr>
               ) : categories.map((c, i) => (
                 <tr key={c.id} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-5 py-3.5 text-xs text-gray-400">{(page - 1) * 15 + i + 1}</td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-0.5">
+                      <button onClick={() => move(c, -1)} disabled={i === 0 || movingId !== null || !!search}
+                        title={search ? 'Clear search to reorder' : undefined}
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-20">
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => move(c, 1)} disabled={i === categories.length - 1 || movingId !== null || !!search}
+                        title={search ? 'Clear search to reorder' : undefined}
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-20">
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </td>
 
                   {editId === c.id ? (
                     <>
@@ -284,6 +342,22 @@ export default function ProductCategoriesPage() {
                             <button onClick={() => setEditId(null)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 shrink-0">
                               <X className="w-3.5 h-3.5" />
                             </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <textarea
+                              value={editDescMm}
+                              onChange={e => setEditDescMm(e.target.value)}
+                              placeholder="Short description (Myanmar) — shown on landing page card"
+                              rows={2}
+                              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-teal-400 resize-none"
+                            />
+                            <textarea
+                              value={editDescEn}
+                              onChange={e => setEditDescEn(e.target.value)}
+                              placeholder="Short description (English)"
+                              rows={2}
+                              className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-teal-400 resize-none"
+                            />
                           </div>
                           <div className="flex gap-4">
                             <ImageUploadSlot label="Icon" url={editIconUrl} onChange={setEditIconUrl} />

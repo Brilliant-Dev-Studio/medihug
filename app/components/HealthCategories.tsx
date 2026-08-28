@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
-  Thermometer, Salad, Stethoscope, Baby, Sun, Pill, type LucideIcon,
+  Stethoscope, Salad, Pill, Scale, Accessibility, MessageCircle, Syringe, Thermometer,
+  Globe, Activity, HeartHandshake, LifeBuoy, Sun, Bone, House, HeartPulse, Dumbbell,
+  type LucideIcon,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 
@@ -12,24 +14,51 @@ interface Category {
   id: string;
   name: string;
   nameEn: string | null;
+  descriptionMm: string | null;
+  descriptionEn: string | null;
   iconUrl: string | null;
   bgImageUrl: string | null;
   doctorCount?: number;
 }
 
-const ICON_MAP: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
-  'Medicine':               { icon: Pill,        color: '#ef4444', bg: '#fef2f2' },
-  'Supplements & Vitamins':  { icon: Thermometer, color: '#22c55e', bg: '#f0fdf4' },
-  'Health Food':             { icon: Salad,       color: '#f97316', bg: '#fff7ed' },
-  'Medical Devices':         { icon: Stethoscope, color: '#0891b2', bg: '#ecfeff' },
-  'Mother & Baby':           { icon: Baby,        color: '#a855f7', bg: '#faf5ff' },
-  'Skincare':                { icon: Sun,         color: '#f59e0b', bg: '#fffbeb' },
+const ICON_MAP: Record<string, LucideIcon> = {
+  'Medical Checkup':                        Stethoscope,
+  'Nutrition Meal Service':                 Salad,
+  'Supplements & Vitamins':                 Pill,
+  'Comprehensive Weight Management Program': Scale,
+  'Prosthesis':                             Accessibility,
+  'Consultantation with Doctors':           MessageCircle,
+  'Medical Devices':                        Syringe,
+  'Medicine':                               Thermometer,
+  'International Healthcare Service':       Globe,
+  'Stroke Rehabilitation Program':          Activity,
+  'Special Needs Healthcare Service':       HeartHandshake,
+  'Aids and Appliance':                     LifeBuoy,
+  'Skincare':                               Sun,
+  'Orthosis':                               Bone,
+  'Home Medical Checkup':                   House,
+  'Home Healthcare Service':                HeartPulse,
+  'Home Physiotherapy Service':             Dumbbell,
+  'Home Special Needs Healthcare Service':  HeartHandshake,
 };
-const DEFAULT_STYLE = { icon: Pill, color: '#6b7280', bg: '#f9fafb' };
+const DEFAULT_ICON = Pill;
+
+/** Soft pastel gradient tints, cycled per card by index — matches the reference design's
+ * distinct-color-per-card look without needing per-category color config. */
+const GRADIENTS = [
+  'linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%)',
+  'linear-gradient(135deg, #fce7f3 0%, #fdf2f8 100%)',
+  'linear-gradient(135deg, #fef9c3 0%, #fefce8 100%)',
+  'linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%)',
+  'linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%)',
+  'linear-gradient(135deg, #e0e7ff 0%, #eef2ff 100%)',
+];
+const ICON_COLORS = ['#0284c7', '#db2777', '#ca8a04', '#16a34a', '#7c3aed', '#4f46e5'];
+
 const LIMIT = 6;
 
 function SkeletonTile() {
-  return <div className="rounded-2xl sm:rounded-3xl bg-gray-100 animate-pulse h-28 sm:h-40" />;
+  return <div className="rounded-2xl sm:rounded-3xl bg-gray-100 animate-pulse h-32 sm:h-40" />;
 }
 
 export default function HealthCategories() {
@@ -53,7 +82,7 @@ export default function HealthCategories() {
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse at top left, rgba(13,43,110,0.06) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(245,158,11,0.08) 0%, transparent 55%)' }}
       />
-      <div className="relative z-10 max-w-6xl mx-auto">
+      <div className="relative z-10 max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
             {tr.categoriesTitle}
@@ -65,14 +94,16 @@ export default function HealthCategories() {
           )}
         </div>
 
-        <div className="grid grid-cols-3 md:grid-cols-6 auto-rows-fr gap-2 sm:gap-4">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
           {loading ? (
             Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
           ) : (
-            categories.slice(0, LIMIT).map(cat => {
-              const style = ICON_MAP[cat.nameEn ?? ''] ?? DEFAULT_STYLE;
-              const Icon = style.icon;
+            categories.slice(0, LIMIT).map((cat, i) => {
+              const Icon = ICON_MAP[cat.nameEn ?? ''] ?? DEFAULT_ICON;
+              const gradient = GRADIENTS[i % GRADIENTS.length];
+              const iconColor = ICON_COLORS[i % ICON_COLORS.length];
               const label = mm ? cat.name : (cat.nameEn ?? cat.name);
+              const desc = mm ? cat.descriptionMm : (cat.descriptionEn ?? cat.descriptionMm);
               const href = (cat.doctorCount ?? 0) > 0
                 ? `/doctors?category=${cat.id}`
                 : `/products?category=${encodeURIComponent(cat.name)}`;
@@ -81,32 +112,32 @@ export default function HealthCategories() {
                 <Link
                   key={cat.id}
                   href={href}
-                  className="group relative flex flex-col items-center justify-center gap-2 sm:gap-3 rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 py-4 sm:py-6 text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border border-black/3"
-                  style={{
-                    ...(cat.bgImageUrl ? {} : { backgroundColor: style.bg }),
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                  }}
+                  className="group relative flex flex-col rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg overflow-hidden min-w-0"
+                  style={{ background: cat.bgImageUrl ? undefined : gradient, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
                 >
                   {cat.bgImageUrl && (
-                    <div className="absolute inset-0 rounded-2xl sm:rounded-3xl overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 pointer-events-none">
                       <div className="absolute inset-0" style={{ backgroundImage: `url(${cat.bgImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                       <div className="absolute inset-0 bg-white/55 group-hover:bg-white/45 transition-colors" />
                     </div>
                   )}
-                  <div
-                    className="relative shrink-0 flex items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110 w-12 h-12 sm:w-16 sm:h-16 overflow-hidden"
-                    style={cat.iconUrl ? undefined : { backgroundColor: `${style.color}1f` }}
-                  >
+
+                  <div className="relative shrink-0 mb-2.5 sm:mb-3.5 flex items-center justify-center w-9 h-9 sm:w-12 sm:h-12 transition-transform duration-300 group-hover:scale-110">
                     {cat.iconUrl ? (
-                      <Image src={cat.iconUrl} alt={label} width={64} height={64} className="w-full h-full object-cover" />
+                      <Image src={cat.iconUrl} alt={label} width={48} height={48} className="w-full h-full object-contain" />
                     ) : (
-                      <Icon style={{ color: style.color }} className="w-6 h-6 sm:w-9 sm:h-9" strokeWidth={2.2} />
+                      <Icon style={{ color: iconColor }} className="w-full h-full" strokeWidth={1.75} />
                     )}
                   </div>
 
-                  <span className="relative text-[11px] sm:text-base font-bold text-gray-900 leading-snug w-full wrap-break-word">
+                  <span className="relative block w-full text-xs sm:text-base font-bold leading-tight truncate" style={{ color: '#0d2b6e' }}>
                     {label}
                   </span>
+                  {desc && (
+                    <span className="relative block w-full text-[11px] sm:text-sm text-gray-500 mt-1 truncate">
+                      {desc}
+                    </span>
+                  )}
                 </Link>
               );
             })

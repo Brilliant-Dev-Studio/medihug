@@ -5,16 +5,12 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Star, CheckCircle2 } from 'lucide-react';
 import BlurText from '../components/BlurText';
-import AIAssistantSection from '../components/AIAssistantSection';
 import AdSlider from '../components/AdSlider';
 import HealthCategories from '../components/HealthCategories';
 import TopSellingProducts from '../components/TopSellingProducts';
 import Testimonials from '../components/Testimonials';
-import OurDoctors from '../components/OurDoctors';
-import DoctorSpecialties from '../components/DoctorSpecialties';
 import HealthcarePrograms from '../components/HealthcarePrograms';
 import PartnerClinics from '../components/PartnerClinics';
-import PartnerCategories from '../components/PartnerCategories';
 import BlogArticles from '../components/BlogArticles';
 import SpecialOffersBanner from '../components/SpecialOffersBanner';
 import { useLang } from '../lib/LanguageContext';
@@ -219,14 +215,10 @@ export default function Home() {
       <AdSlider />
       <HealthCategories />
     </div>
-    <DoctorSpecialties />
-    <AIAssistantSection />
-    <OurDoctors />
     <HealthcarePrograms />
     <TopSellingProducts />
     <Testimonials />
     <SpecialOffersBanner />
-    <PartnerCategories />
     <PartnerClinics />
     <BlogArticles />
     </>

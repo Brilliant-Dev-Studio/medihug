@@ -535,12 +535,15 @@ model OrderItem {
 // ─────────────────────────────────────────────
 
 model ProductCategory {
-  id         String   @id @default(cuid())
-  name       String   @unique
-  nameEn     String?
-  iconUrl    String?
-  bgImageUrl String?
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String   @unique
+  nameEn        String?
+  descriptionMm String?
+  descriptionEn String?
+  iconUrl       String?
+  bgImageUrl    String?
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
 
   doctors DoctorCategory[]
 }
