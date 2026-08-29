@@ -286,7 +286,7 @@ function DoctorsPageInner() {
   const highlight = searchParams.get('highlight') ?? '';
 
   if (category) {
-    return <DoctorsByCategory categoryId={category} onBack={() => router.push('/categories')} />;
+    return <DoctorsByCategory categoryId={category} onBack={() => router.push('/')} />;
   }
 
   if (spec) {

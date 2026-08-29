@@ -12,25 +12,12 @@ import {
 import { useLang } from '../../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from '../../booking/IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
-import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
-import PaymentMethodTileIcon from '@/components/PaymentMethodTileIcon';
-import BankTransferCard from '@/components/BankTransferCard';
+import PaymentMethodPicker from '@/components/PaymentMethodPicker';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
-
-const PAYMENT_METHOD_IMG: Record<string, string> = {
-  mmqr: '/MMQRLOGO.jpg', cb: '/payment/cbPay.jpg',
-};
-const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
-  mmqr: 'Scan to pay', cb: 'Pay with PIN',
-  banktransfer: 'Manual transfer',
-};
-const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
-  id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
-}));
 
 interface Program {
   id: string; imageUrl: string; titleMm: string; titleEn: string | null;
@@ -54,7 +41,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
       .finally(() => setLoading(false));
   }, [programId]);
 
-  const [payMethod, setPayMethod] = useState('mmqr');
+  const [payMethod, setPayMethod] = useState('');
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
@@ -148,6 +135,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
   }
 
   function handleSubmit() {
+    if (!payMethod) return;
     if (payMethod === 'cb') { startCbPayment(); return; }
     if (!receipt) return;
     setStep('intake');
@@ -330,66 +318,12 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
             <p className="text-sm font-bold" style={{ color: PRIMARY }}>{mm ? 'ငွေပေးချေမှု' : 'Payment'}</p>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">{mm ? 'ငွေပေးချေနည်း ရွေးပါ' : 'Select payment method'}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {PAYMENT_METHODS.map(pm => {
-                const active = payMethod === pm.id;
-                return (
-                  <button key={pm.id} onClick={() => setPayMethod(pm.id)}
-                    className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all"
-                    style={{ backgroundColor: active ? `${PRIMARY}10` : '#fafafa', borderColor: active ? PRIMARY : '#e5e7eb', boxShadow: active ? `0 0 0 1px ${PRIMARY}` : 'none' }}>
-                    <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                      {pm.img
-                        ? <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
-                        : <PaymentMethodTileIcon />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold" style={{ color: active ? PRIMARY : '#374151' }}>{pm.label}</p>
-                      <p className="text-[10px] text-gray-400 truncate">{pm.number}</p>
-                    </div>
-                    {active && (
-                      <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: PRIMARY }}>
-                        <CheckCircle2 className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <PaymentMethodPicker
+            mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
+            cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
+          />
 
-          {(() => {
-            const selected = PAYMENT_METHODS.find(p => p.id === payMethod)!;
-            if (selected.id !== 'cb' && selected.id !== 'mmqr') {
-              return null;
-            }
-            if (selected.id !== 'cb') {
-              return (
-                <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
-                  <p className="text-xs font-bold" style={{ color: PRIMARY }}>MMQR</p>
-                  <div className="w-40 h-40 rounded-xl overflow-hidden border border-gray-100 bg-white flex items-center justify-center">
-                    <Image src="/payment/mmqr.jpg" alt="MMQR" width={160} height={160} className="object-contain w-full h-full" />
-                  </div>
-                  <p className="text-xs text-gray-500 text-center">{mm ? 'MMQR ကို စကင်ဖတ်ပြီး ငွေလွှဲပေးပါ' : 'Scan the MMQR to pay'}</p>
-                </div>
-              );
-            }
-            return (
-              <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2 text-center" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
-                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                  <Image src={selected.img} alt={selected.label} width={40} height={40} className="object-contain w-full h-full" />
-                </div>
-                <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
-                <p className="text-xs text-gray-500">
-                  {mm ? 'ငွေချေမှု အောင်မြင်မှ ဆေးမှတ်တမ်း ဖြည့်ရပါမည်' : "You'll pay first, then fill in the medical form once payment succeeds."}
-                </p>
-              </div>
-            );
-          })()}
-          <BankTransferCard mm={mm} />
-
-          {payMethod !== 'cb' && (
+          {!!payMethod && payMethod !== 'cb' && (
             <div>
               <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">{mm ? 'ငွေလွှဲပြေစာ တင်ပါ' : 'Upload payment receipt'}</p>
               {receipt ? (
@@ -448,16 +382,19 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
             {payMethod === 'cb' && cbPhase === 'failed' && (
               <p className="text-center text-xs text-red-500 font-semibold">{mm ? '⚠ ငွေချေမှု မအောင်မြင်ပါ။ ထပ်စမ်းကြည့်ပါ' : '⚠ Payment was not successful. Please try again.'}</p>
             )}
-            {payMethod !== 'cb' && !receipt && (
+            {!payMethod && (
+              <p className="text-center text-xs text-amber-500 font-semibold">{mm ? '⚠ ငွေပေးချေနည်း ရွေးရန် လိုအပ်သည်' : '⚠ Please select a payment method to continue'}</p>
+            )}
+            {!!payMethod && payMethod !== 'cb' && !receipt && (
               <p className="text-center text-xs text-amber-500 font-semibold">{mm ? '⚠ ငွေပေးချေပြေစာ တင်ရန် လိုအပ်သည်' : '⚠ Please upload payment receipt to continue'}</p>
             )}
             <button
               onClick={handleSubmit}
-              disabled={payMethod === 'cb' ? false : !receipt}
+              disabled={!payMethod || (payMethod === 'cb' ? false : !receipt)}
               className="w-full py-4 rounded-2xl text-sm font-bold text-white transition-all"
               style={{
-                background: (payMethod === 'cb' || receipt) ? `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` : '#d1d5db',
-                cursor: (payMethod === 'cb' || receipt) ? 'pointer' : 'not-allowed',
+                background: (!!payMethod && (payMethod === 'cb' || receipt)) ? `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` : '#d1d5db',
+                cursor: (!!payMethod && (payMethod === 'cb' || receipt)) ? 'pointer' : 'not-allowed',
               }}
             >
               {payMethod === 'cb' ? (mm ? 'CB Pay ဖြင့် ငွေချေမည်' : 'Pay with CB Pay') : (mm ? 'ဝယ်ယူရန်' : 'Enroll Now')}

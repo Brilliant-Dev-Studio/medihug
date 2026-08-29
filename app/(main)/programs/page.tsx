@@ -37,16 +37,21 @@ function ProgramsListPageInner() {
   const [filterCat, setFilterCat] = useState(() => searchParams.get('category') ?? 'all');
   const [loading, setLoading]   = useState(true);
 
+  // pcat scopes to a landing-page Product/Service category (CategoryProgram) — distinct
+  // from the ProgramCategory pill-filter above, which still applies within that scope.
+  const pcat = searchParams.get('pcat') ?? '';
+
   useEffect(() => {
+    const programsUrl = pcat ? `/api/healthcare-programs?categoryId=${encodeURIComponent(pcat)}` : '/api/healthcare-programs';
     Promise.all([
-      fetch('/api/healthcare-programs').then(r => r.json()),
+      fetch(programsUrl).then(r => r.json()),
       fetch('/api/program-categories').then(r => r.json()),
     ]).then(([pd, cd]) => {
       setPrograms(pd.programs ?? []);
       setCategories(cd.categories ?? []);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  }, [pcat]);
 
   const filteredPrograms = filterCat === 'all' ? programs : programs.filter(p => p.category?.id === filterCat);
 

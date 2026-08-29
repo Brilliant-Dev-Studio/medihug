@@ -54,13 +54,15 @@ export default function AdSlider() {
             transition={{ duration: 0.5 }}
           >
             {ad.link ? (
-              <a href={ad.link}>
+              <a href={ad.link} className="block text-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={ad.imageUrl} alt={ad.alt ?? 'Advertisement'} className="w-full h-auto block" />
+                <img src={ad.imageUrl} alt={ad.alt ?? 'Advertisement'} className="w-full h-auto inline-block lg:w-auto lg:max-h-95" />
               </a>
             ) : (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img src={ad.imageUrl} alt={ad.alt ?? 'Advertisement'} className="w-full h-auto block" />
+              <div className="text-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ad.imageUrl} alt={ad.alt ?? 'Advertisement'} className="w-full h-auto inline-block lg:w-auto lg:max-h-95" />
+              </div>
             )}
           </motion.div>
         </AnimatePresence>

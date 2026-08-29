@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Star, Stethoscope, Loader2, Calendar, Briefcase, Languages, MapPin } from 'lucide-react';
 import { useLang } from '@/app/lib/LanguageContext';
@@ -65,9 +64,9 @@ export default function PublicDoctorDetailPage() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-center px-6">
         <Stethoscope className="w-12 h-12 text-gray-200" />
         <p className="text-gray-400">{mm ? 'ဆရာဝန် မတွေ့ပါ' : 'Doctor not found'}</p>
-        <Link href="/doctors" className="text-sm font-semibold" style={{ color: PRIMARY }}>
+        <button onClick={() => router.back()} className="text-sm font-semibold" style={{ color: PRIMARY }}>
           ← {mm ? 'ပြန်သွားမည်' : 'Back to doctors'}
-        </Link>
+        </button>
       </div>
     );
   }
@@ -79,9 +78,9 @@ export default function PublicDoctorDetailPage() {
   return (
     <div className="w-full bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <Link href="/doctors" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6">
+        <button onClick={() => router.back()} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors mb-6">
           <ChevronLeft className="w-4 h-4" /> {mm ? 'ဆရာဝန်များသို့' : 'Back to Doctors'}
-        </Link>
+        </button>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Image */}

@@ -12,25 +12,12 @@ import {
 import { useLang } from '../../lib/LanguageContext';
 import { useCart } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
-import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
-import PaymentMethodTileIcon from '@/components/PaymentMethodTileIcon';
-import BankTransferCard from '@/components/BankTransferCard';
+import PaymentMethodPicker from '@/components/PaymentMethodPicker';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
-
-const PAYMENT_METHOD_IMG: Record<string, string> = {
-  mmqr: '/MMQRLOGO.jpg', cb: '/payment/cbPay.jpg',
-};
-const PAYMENT_METHOD_SUBTITLE: Record<string, string> = {
-  mmqr: 'Scan to pay', cb: 'Pay with PIN',
-  banktransfer: 'Manual transfer',
-};
-const PAYMENT_METHODS = PAYMENT_METHOD_KEYS.map(m => ({
-  id: m.id, label: m.label, img: PAYMENT_METHOD_IMG[m.id], number: PAYMENT_METHOD_SUBTITLE[m.id],
-}));
 
 interface Product { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; packSize: string | null; }
 
@@ -64,7 +51,7 @@ function CheckoutContent() {
   const [name,  setName]  = useState(patient?.name  ?? '');
   const [phone, setPhone] = useState(patient?.phone ?? '');
 
-  const [payMethod, setPayMethod] = useState('mmqr');
+  const [payMethod, setPayMethod] = useState('');
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
   const [note,      setNote]      = useState('');
@@ -73,7 +60,6 @@ function CheckoutContent() {
   const [done,       setDone]       = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{ id: string; total: number } | null>(null);
   const [copied,     setCopied]     = useState(false);
-  const [zoomQr,     setZoomQr]     = useState(false);
   const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
   const [cbAppMissing, setCbAppMissing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -107,7 +93,7 @@ function CheckoutContent() {
 
   async function handleSubmit() {
     const isCb = payMethod === 'cb';
-    if (!name.trim() || !phone.trim() || (!isCb && !receipt)) return;
+    if (!payMethod || !name.trim() || !phone.trim() || (!isCb && !receipt)) return;
     setSubmitting(true); setError('');
     try {
       const receiptUrl = isCb ? null : await compressAndUpload(receipt!.file, () => {}, '/api/patient/upload');
@@ -234,9 +220,8 @@ function CheckoutContent() {
     );
   }
 
-  const selected = PAYMENT_METHODS.find(p => p.id === payMethod)!;
   const isCb = payMethod === 'cb';
-  const canSubmit = !!name.trim() && !!phone.trim() && !submitting && (isCb || !!receipt);
+  const canSubmit = !!payMethod && !!name.trim() && !!phone.trim() && !submitting && (isCb || !!receipt);
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -307,75 +292,13 @@ function CheckoutContent() {
                 <span className="text-xl font-bold" style={{ color: PRIMARY }}>{total.toLocaleString()} <span className="text-xs font-semibold text-gray-400">MMK</span></span>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">{mm ? 'ငွေပေးချေနည်း ရွေးပါ' : 'Select payment method'}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {PAYMENT_METHODS.map(pm => {
-                    const active = payMethod === pm.id;
-                    return (
-                      <button key={pm.id} onClick={() => setPayMethod(pm.id)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all"
-                        style={{ backgroundColor: active ? `${PRIMARY}10` : '#fafafa', borderColor: active ? PRIMARY : '#e5e7eb', boxShadow: active ? `0 0 0 1px ${PRIMARY}` : 'none' }}>
-                        <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                          {pm.img
-                            ? <Image src={pm.img} alt={pm.label} width={36} height={36} className="object-contain w-full h-full" />
-                            : <PaymentMethodTileIcon />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold" style={{ color: active ? PRIMARY : '#374151' }}>{pm.label}</p>
-                          <p className="text-[10px] text-gray-400 truncate">{pm.number}</p>
-                        </div>
-                        {active && (
-                          <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: PRIMARY }}>
-                            <CheckCircle2 className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <PaymentMethodPicker
+                mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
+                cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing}
+                onRetryDeeplink={() => { setCbAppMissing(false); tryOpenDeeplink(cbDeeplink!, () => setCbAppMissing(true)); }}
+              />
 
-              {selected.id === 'mmqr' && (
-                <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
-                  <p className="text-xs font-bold" style={{ color: PRIMARY }}>MMQR</p>
-                  <button type="button" onClick={() => setZoomQr(true)}
-                    className="w-40 h-40 rounded-xl overflow-hidden border border-gray-100 bg-white flex items-center justify-center active:scale-95 transition-transform">
-                    <Image src="/payment/mmqr.jpg" alt="MMQR" width={160} height={160} className="object-contain w-full h-full" />
-                  </button>
-                  <p className="text-xs text-gray-500 text-center">
-                    {mm ? 'ပုံကို နှိပ်ပြီး ချဲ့ကြည့်နိုင်ပါသည် · MMQR ကို စကင်ဖတ်ပြီး ငွေလွှဲပေးပါ' : 'Tap image to zoom · Scan the MMQR to pay'}
-                  </p>
-                </div>
-              )}
-              {selected.id === 'cb' && (
-                <div className="px-4 py-4 rounded-xl flex flex-col items-center gap-2 text-center" style={{ backgroundColor: '#f8faff', border: `1px dashed ${PRIMARY}40` }}>
-                  <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center">
-                    <Image src={selected.img} alt={selected.label} width={40} height={40} className="object-contain w-full h-full" />
-                  </div>
-                  <p className="text-xs font-bold" style={{ color: PRIMARY }}>{selected.label}</p>
-                  <p className="text-xs text-gray-500">
-                    {mm ? 'အော်ဒါတင်ပြီးရင် CBPay app ဖွင့်ပြီး PIN နှိပ်ပြီး ငွေချေရပါမည်' : "You'll be redirected to the CBPay app to approve payment with your PIN."}
-                  </p>
-                  {cbDeeplink && cbAppMissing && (
-                    <p className="text-[11px] text-red-500 mt-1 font-semibold">
-                      {mm ? 'ဤစက်ပေါ်တွင် CBPay app ကို ရှာမတွေ့ပါ။ Mobile ဖုန်းပေါ်တွင် CBPay app ထည့်သွင်းပြီး ပြန်စမ်းကြည့်ပါ' : "CBPay app not found on this device. Please install the CBPay app on your phone and try again."}
-                    </p>
-                  )}
-                  {cbDeeplink && (
-                    <button
-                      type="button"
-                      onClick={() => { setCbAppMissing(false); tryOpenDeeplink(cbDeeplink, () => setCbAppMissing(true)); }}
-                      className="text-[11px] text-amber-600 underline font-semibold mt-1"
-                    >
-                      {mm ? 'ထပ်ကြိုးစားရန်' : 'Try again'}
-                    </button>
-                  )}
-                </div>
-              )}
-              <BankTransferCard mm={mm} />
-
-              {!isCb && (
+              {!!payMethod && !isCb && (
               <div>
                 <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">{mm ? 'ငွေလွှဲပြေစာ တင်ပါ' : 'Upload payment receipt'}</p>
                 {receipt ? (
@@ -414,7 +337,12 @@ function CheckoutContent() {
             {error && <p className="text-center text-xs text-red-500 font-semibold">{error}</p>}
 
             <div className="flex flex-col gap-2">
-              {!isCb && !receipt && (
+              {!payMethod && (
+                <p className="text-center text-xs text-amber-500 font-semibold">
+                  {mm ? '⚠ ငွေပေးချေနည်း ရွေးရန် လိုအပ်သည်' : '⚠ Please select a payment method to continue'}
+                </p>
+              )}
+              {!!payMethod && !isCb && !receipt && (
                 <p className="text-center text-xs text-amber-500 font-semibold">
                   {mm ? '⚠ ငွေပေးချေပြေစာ တင်ရန် လိုအပ်သည်' : '⚠ Please upload payment receipt to continue'}
                 </p>
@@ -431,22 +359,6 @@ function CheckoutContent() {
           </>
         )}
       </div>
-
-      {zoomQr && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6"
-          onClick={() => setZoomQr(false)}
-        >
-          <button onClick={() => setZoomQr(false)}
-            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
-            <X className="w-5 h-5 text-white" />
-          </button>
-          <div className="bg-white rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/payment/mmqr.jpg" alt="MMQR" className="block w-auto h-auto max-w-[92vw] max-h-[88vh]" />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

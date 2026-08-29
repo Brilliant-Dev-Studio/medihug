@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Check, X, Loader2, Percent, Trash2, Ban, Search } from 'lucide-react';
 import { useAdminRole, requestDeletion } from '@/lib/useAdminRole';
-import { PAYMENT_METHOD_KEYS } from '@/lib/paymentMethods';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
@@ -25,6 +24,7 @@ interface Rule {
 }
 
 interface Hit { id: string; name: string; specialty: string; imageUrl: string | null }
+interface PaymentMethodOption { key: string; label: string }
 
 export default function CommissionRulesPage() {
   const { role } = useAdminRole();
@@ -41,6 +41,11 @@ export default function CommissionRulesPage() {
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [doctorName, setDoctorName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethodOptions, setPaymentMethodOptions] = useState<PaymentMethodOption[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin/finance/payment-methods').then(r => r.json()).then(d => setPaymentMethodOptions(d.methods ?? [])).catch(() => {});
+  }, []);
   const [doctorFocused, setDoctorFocused] = useState(false);
   const [doctorPage, setDoctorPage] = useState(0);
   const [doctorHasMore, setDoctorHasMore] = useState(true);
@@ -176,7 +181,7 @@ export default function CommissionRulesPage() {
             </select>
             <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className={inp}>
               <option value="">Any payment method</option>
-              {PAYMENT_METHOD_KEYS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              {paymentMethodOptions.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
             </select>
           </div>
 
@@ -271,7 +276,7 @@ export default function CommissionRulesPage() {
                 <tr key={r.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-5 py-3.5 text-sm text-gray-700">{r.serviceType === 'CONSULTATION' ? 'Consultation' : 'Product'}</td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{r.doctor?.name ?? r.clinic?.name ?? 'All'}</td>
-                  <td className="px-5 py-3.5 text-sm text-gray-500">{PAYMENT_METHOD_KEYS.find(m => m.id === r.paymentMethod)?.label ?? 'Any'}</td>
+                  <td className="px-5 py-3.5 text-sm text-gray-500">{paymentMethodOptions.find(m => m.key === r.paymentMethod)?.label ?? (r.paymentMethod ?? 'Any')}</td>
                   <td className="px-5 py-3.5 text-sm font-semibold text-gray-700">{r.percent}%</td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{r.fixedFee.toLocaleString()} MMK</td>
                   <td className="px-5 py-3.5">

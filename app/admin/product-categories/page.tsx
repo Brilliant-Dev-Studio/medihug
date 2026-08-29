@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search, Stethoscope, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search, Stethoscope, ArrowUp, ArrowDown, HeartPulse } from 'lucide-react';
 import ImageUploadSlot from '@/components/admin/ImageUploadSlot';
 
 const PRIMARY = '#2ab5ad';
@@ -12,8 +12,10 @@ interface Category {
   descriptionMm: string | null; descriptionEn: string | null;
   iconUrl: string | null; bgImageUrl: string | null; order: number; createdAt: string;
   doctors?: { doctorId: string }[];
+  programs?: { programId: string }[];
 }
 interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
+interface ProgramOption { id: string; titleMm: string; titleEn: string | null; imageUrl: string; }
 
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
@@ -49,6 +51,38 @@ function DoctorChecklist({ doctorOptions, selected, onToggle }: {
   );
 }
 
+function ProgramChecklist({ programOptions, selected, onToggle }: {
+  programOptions: ProgramOption[]; selected: string[]; onToggle: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[11px] font-semibold text-gray-500">Assigned Programs (optional — link this category to healthcare programs instead of products)</p>
+      {programOptions.length === 0 ? (
+        <p className="text-xs text-gray-400">No programs available.</p>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded-xl p-2">
+          {programOptions.map(p => {
+            const checked = selected.includes(p.id);
+            return (
+              <label key={p.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" checked={checked} onChange={() => onToggle(p.id)} className="accent-teal-500 shrink-0" />
+                <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+                  {p.imageUrl ? (
+                    <Image src={p.imageUrl} alt={p.titleMm} width={24} height={24} className="object-cover w-full h-full" />
+                  ) : (
+                    <HeartPulse className="w-3 h-3 text-gray-300" />
+                  )}
+                </div>
+                <span className="text-xs text-gray-700 truncate">{p.titleEn ?? p.titleMm}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductCategoriesPage() {
   const [categories,   setCategories]   = useState<Category[]>([]);
   const [loading,      setLoading]      = useState(true);
@@ -66,6 +100,7 @@ export default function ProductCategoriesPage() {
   const [newIconUrl,  setNewIconUrl]  = useState<string | null>(null);
   const [newBgUrl,    setNewBgUrl]    = useState<string | null>(null);
   const [newDoctorIds, setNewDoctorIds] = useState<string[]>([]);
+  const [newProgramIds, setNewProgramIds] = useState<string[]>([]);
   const [createError, setCreateError] = useState('');
   const [savingNew,   setSavingNew]   = useState(false);
 
@@ -77,8 +112,10 @@ export default function ProductCategoriesPage() {
   const [editIconUrl, setEditIconUrl] = useState<string | null>(null);
   const [editBgUrl,   setEditBgUrl]   = useState<string | null>(null);
   const [editDoctorIds, setEditDoctorIds] = useState<string[]>([]);
+  const [editProgramIds, setEditProgramIds] = useState<string[]>([]);
 
   const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
+  const [programOptions, setProgramOptions] = useState<ProgramOption[]>([]);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
@@ -88,6 +125,10 @@ export default function ProductCategoriesPage() {
     fetch('/api/admin/doctors?pageSize=500&isActive=true')
       .then(r => r.json())
       .then(d => setDoctorOptions(d.doctors ?? []))
+      .catch(() => {});
+    fetch('/api/admin/healthcare-programs')
+      .then(r => r.json())
+      .then(d => setProgramOptions(d.programs ?? []))
       .catch(() => {});
   }, []);
 
@@ -120,23 +161,26 @@ export default function ProductCategoriesPage() {
       body: JSON.stringify({
         name: newName.trim(), nameEn: newNameEn.trim(),
         descriptionMm: newDescMm.trim(), descriptionEn: newDescEn.trim(),
-        iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds, order: categories.length,
+        iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds, programIds: newProgramIds, order: categories.length,
       }),
     });
     const data = await res.json();
     if (!res.ok) { setCreateError(data.error); setSavingNew(false); return; }
-    setNewName(''); setNewNameEn(''); setNewDescMm(''); setNewDescEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setCreating(false); setSavingNew(false);
+    setNewName(''); setNewNameEn(''); setNewDescMm(''); setNewDescEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setNewProgramIds([]); setCreating(false); setSavingNew(false);
     load(1);
   };
 
   const toggleNewDoctor = (id: string) => setNewDoctorIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
   const toggleEditDoctor = (id: string) => setEditDoctorIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+  const toggleNewProgram = (id: string) => setNewProgramIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+  const toggleEditProgram = (id: string) => setEditProgramIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
 
   const startEdit = (c: Category) => {
     setEditId(c.id); setEditName(c.name); setEditNameEn(c.nameEn ?? '');
     setEditDescMm(c.descriptionMm ?? ''); setEditDescEn(c.descriptionEn ?? '');
     setEditIconUrl(c.iconUrl); setEditBgUrl(c.bgImageUrl);
     setEditDoctorIds(c.doctors?.map(d => d.doctorId) ?? []);
+    setEditProgramIds(c.programs?.map(p => p.programId) ?? []);
   };
 
   const handleEdit = async (id: string) => {
@@ -146,7 +190,7 @@ export default function ProductCategoriesPage() {
       body: JSON.stringify({
         name: editName.trim(), nameEn: editNameEn.trim(),
         descriptionMm: editDescMm.trim(), descriptionEn: editDescEn.trim(),
-        iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds,
+        iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds, programIds: editProgramIds,
       }),
     });
     if (res.ok) { setEditId(null); load(page); }
@@ -258,6 +302,7 @@ export default function ProductCategoriesPage() {
             <ImageUploadSlot label="Background" url={newBgUrl} onChange={setNewBgUrl} />
           </div>
           <DoctorChecklist doctorOptions={doctorOptions} selected={newDoctorIds} onToggle={toggleNewDoctor} />
+          <ProgramChecklist programOptions={programOptions} selected={newProgramIds} onToggle={toggleNewProgram} />
           <div className="flex gap-2">
             <button
               onClick={handleCreate} disabled={savingNew}
@@ -364,6 +409,7 @@ export default function ProductCategoriesPage() {
                             <ImageUploadSlot label="Background" url={editBgUrl} onChange={setEditBgUrl} />
                           </div>
                           <DoctorChecklist doctorOptions={doctorOptions} selected={editDoctorIds} onToggle={toggleEditDoctor} />
+                          <ProgramChecklist programOptions={programOptions} selected={editProgramIds} onToggle={toggleEditProgram} />
                         </div>
                       </td>
                     </>

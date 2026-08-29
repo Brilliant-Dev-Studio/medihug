@@ -545,13 +545,28 @@ model ProductCategory {
   order         Int      @default(0)
   createdAt     DateTime @default(now())
 
-  doctors DoctorCategory[]
+  doctors  DoctorCategory[]
+  programs CategoryProgram[]
+}
+
+model CategoryProgram {
+  id         String   @id @default(cuid())
+  categoryId String
+  programId  String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  category ProductCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  program  HealthcareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, programId])
 }
 
 model DoctorCategory {
   id         String   @id @default(cuid())
   categoryId String
   doctorId   String
+  order      Int      @default(0)
   createdAt  DateTime @default(now())
 
   category ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -680,10 +695,11 @@ model HealthcareProgram {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  clinic      Clinic?             @relation(fields: [clinicId], references: [id], onDelete: SetNull)
-  category    ProgramCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  doctors     ProgramDoctor[]
-  enrollments ProgramEnrollment[]
+  clinic          Clinic?             @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  category        ProgramCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  doctors         ProgramDoctor[]
+  enrollments     ProgramEnrollment[]
+  categoryLinks   CategoryProgram[]
 
   @@index([clinicId])
   @@index([categoryId])
@@ -1001,15 +1017,24 @@ model CommissionRule {
   @@index([serviceType, doctorId, clinicId, paymentMethod])
 }
 
+enum PaymentMethodKind {
+  WALLET        // KPay, Wave Pay, AYA Pay, etc — patient pays in their own app, uploads a receipt
+  BANK_TRANSFER // manual bank transfer — shows account number/name, patient uploads a receipt
+}
+
 model PaymentMethodConfig {
-  id         String   @id @default(cuid())
-  key        String   @unique
-  label      String
-  feePercent Int      @default(0)
-  feeFixed   Int      @default(0)
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String            @id @default(cuid())
+  key           String            @unique
+  label         String
+  kind          PaymentMethodKind @default(WALLET)
+  accountNumber String?           // BANK_TRANSFER only
+  accountName   String?           // BANK_TRANSFER only
+  feePercent    Int               @default(0)
+  feeFixed      Int               @default(0)
+  order         Int               @default(0)
+  active        Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 }
 
 model ExpenseCategory {

@@ -16,23 +16,31 @@ export async function GET(req: NextRequest) {
 
     if (suggested === 'true') where.isSuggested = true;
     if (specialty) where.specialty = { contains: specialty, mode: 'insensitive' };
-    if (categoryId) where.categories = { some: { categoryId } };
     if (search)    where.OR = [
       { name:   { contains: search, mode: 'insensitive' } },
       { nameEn: { contains: search, mode: 'insensitive' } },
       { specialty: { contains: search, mode: 'insensitive' } },
     ];
 
-    const [doctors, settings] = await Promise.all([
-      db.doctor.findMany({
-        where,
-        include: { slots: { orderBy: { dayOfWeek: 'asc' } } },
-        orderBy: { createdAt: 'asc' },
-        skip,
-        take: limit,
-      }),
-      getPlatformSettings(),
-    ]);
+    // Ordered by this category's own DoctorCategory.order when scoped to a category — a
+    // doctor's position there is specific to that category, not a global doctor-list order.
+    const fetchDoctors = categoryId
+      ? db.doctorCategory.findMany({
+          where: { categoryId, doctor: where },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: { doctor: { include: { slots: { orderBy: { dayOfWeek: 'asc' } } } } },
+          skip,
+          take: limit,
+        }).then(links => links.map(l => l.doctor))
+      : db.doctor.findMany({
+          where,
+          include: { slots: { orderBy: { dayOfWeek: 'asc' } } },
+          orderBy: { createdAt: 'asc' },
+          skip,
+          take: limit,
+        });
+
+    const [doctors, settings] = await Promise.all([fetchDoctors, getPlatformSettings()]);
 
     const withPatientPrice = doctors.map(d => ({
       ...d,

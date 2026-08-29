@@ -10,7 +10,7 @@ import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
 
-interface Category { id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; doctorCount?: number; }
+interface Category { id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; doctorCount?: number; programCount?: number; }
 
 const PRODUCT_ICON_MAP: Record<string, { icon: LucideIcon; color: string }> = {
   'Medicine':               { icon: Pill,        color: '#ef4444' },
@@ -45,15 +45,18 @@ function CategoryList({
   const mm = lang === 'mm';
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
       {categories.map(cat => {
         const label = mm ? cat.name : (cat.nameEn ?? cat.name);
         const style = PRODUCT_ICON_MAP[cat.nameEn ?? ''] ?? PRODUCT_DEFAULT_ICON;
         const Icon = style.icon;
         // Categories with doctors linked (e.g. "Consult a Doctor") route to the doctor
-        // list instead of the product list — see admin's per-category "Assigned Doctors".
+        // list, and ones with programs linked route to the programs list — see admin's
+        // per-category "Assigned Doctors" / "Assigned Programs".
         const href = (cat.doctorCount ?? 0) > 0
           ? `/doctors?category=${cat.id}`
+          : (cat.programCount ?? 0) > 0
+          ? `/programs?pcat=${cat.id}`
           : `/products?category=${encodeURIComponent(cat.name)}`;
         return (
           <Link
@@ -178,11 +181,11 @@ export default function AllCategoriesPage() {
           <div className="flex items-center gap-3 mb-7">
             <div className="w-1 h-7 rounded-full" style={{ backgroundColor: PRIMARY }} />
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              {mm ? 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှု အမျိုးအစားများ' : 'Product and Service Categories'}
+              {mm ? 'ဝန်ဆောင်မှု အမျိုးအစားများ' : 'Service Categories'}
             </h2>
           </div>
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)}
             </div>
           ) : productCategories.length === 0 ? (

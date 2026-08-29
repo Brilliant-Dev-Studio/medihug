@@ -19,6 +19,7 @@ interface Category {
   iconUrl: string | null;
   bgImageUrl: string | null;
   doctorCount?: number;
+  programCount?: number;
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -106,6 +107,8 @@ export default function HealthCategories() {
               const desc = mm ? cat.descriptionMm : (cat.descriptionEn ?? cat.descriptionMm);
               const href = (cat.doctorCount ?? 0) > 0
                 ? `/doctors?category=${cat.id}`
+                : (cat.programCount ?? 0) > 0
+                ? `/programs?pcat=${cat.id}`
                 : `/products?category=${encodeURIComponent(cat.name)}`;
 
               return (
