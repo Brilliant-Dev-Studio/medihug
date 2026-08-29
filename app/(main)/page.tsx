@@ -7,6 +7,7 @@ import { Star, CheckCircle2 } from 'lucide-react';
 import BlurText from '../components/BlurText';
 import AdSlider from '../components/AdSlider';
 import HealthCategories from '../components/HealthCategories';
+import AIAssistantSection from '../components/AIAssistantSection';
 import TopSellingProducts from '../components/TopSellingProducts';
 import Testimonials from '../components/Testimonials';
 import HealthcarePrograms from '../components/HealthcarePrograms';
@@ -215,6 +216,7 @@ export default function Home() {
       <AdSlider />
       <HealthCategories />
     </div>
+    <AIAssistantSection />
     <HealthcarePrograms />
     <TopSellingProducts />
     <Testimonials />
