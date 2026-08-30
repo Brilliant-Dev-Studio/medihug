@@ -61,8 +61,12 @@ export default function PaymentMethodPicker({
   const TOP_RAIL_KEYS = ['mmqr', 'cb'];
   const COMING_SOON_KEYS = ['cb'];
 
+  // Sub-list is every active wallet the admin has configured — the same set Commission Rules
+  // offers — minus 'mmqr' itself, which can't answer its own question. CB Pay stays in here
+  // even though its own top-level rail is "coming soon", since an MMQR scan can already settle
+  // through CB Pay today; only CB's dedicated app-initiated flow is what's paused.
   const wallets    = methods.filter(m => m.kind === 'WALLET' && TOP_RAIL_KEYS.includes(m.key));
-  const subMethods = methods.filter(m => m.kind === 'WALLET' && !TOP_RAIL_KEYS.includes(m.key));
+  const subMethods = methods.filter(m => m.kind === 'WALLET' && m.key !== 'mmqr');
   const banks      = methods.filter(m => m.kind === 'BANK_TRANSFER');
   const mmqrSelected = subMethods.some(s => s.key === payMethod);
 
