@@ -112,6 +112,7 @@ model User {
   deletionRequestsReviewed DeletionRequest[]    @relation("DeletionReviewer")
   healthLogs               HealthLog[]
   programEnrollments       ProgramEnrollment[]
+  pointsLedgerEntries      PointsLedger[]
 }
 
 // ─────────────────────────────────────────────
@@ -352,6 +353,8 @@ model Appointment {
   fee                  Int? // full patient-paid total (base × sessions, marked up by commission %)
   platformFeeAmount    Int? // platform's cut, snapshotted at booking time
   doctorPayoutAmount   Int? // what the doctor receives, snapshotted at booking time
+  pointsRedeemed       Int               @default(0)
+  pointsDiscountAmount Int               @default(0)
   receiptUrl           String?
   cbPayStatus          CbPayStatus       @default(NONE)
   cbPayRefOrder        String?
@@ -502,6 +505,8 @@ model Order {
   cbPayAmountConfirmed Int?
   cbPayPaidAt          DateTime?
   totalAmount          Int
+  pointsRedeemed       Int         @default(0)
+  pointsDiscountAmount Int         @default(0)
   note                 String?
   cancelReason         String?
   cancelledAt          DateTime?
@@ -747,6 +752,8 @@ model ProgramEnrollment {
   cbPayAmountConfirmed Int?
   cbPayPaidAt          DateTime?
   amount               Int
+  pointsRedeemed       Int                     @default(0)
+  pointsDiscountAmount Int                     @default(0)
   intake               Json?
   status               ProgramEnrollmentStatus @default(PENDING_REVIEW)
   reviewNote           String?
@@ -850,6 +857,42 @@ model PlatformSettings {
   id                       String   @id @default("singleton")
   defaultCommissionPercent Int      @default(0)
   updatedAt                DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Points / Loyalty Rewards — patients earn points on completed purchases
+// (Product/Consultation/Program), redeemable as a discount on a future one.
+// See lib/pointsLedger.ts.
+// ─────────────────────────────────────────────
+
+enum PointsTransactionType {
+  EARNED
+  REDEEMED
+}
+
+model PointsSettings {
+  id                 String   @id @default("singleton")
+  kyatPerPointEarn   Int      @default(1000)
+  kyatPerPointRedeem Int      @default(1000)
+  isActive           Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
+}
+
+model PointsLedger {
+  id         String                @id @default(cuid())
+  userId     String
+  type       PointsTransactionType
+  points     Int // signed: positive EARNED, negative REDEEMED
+  sourceType RevenueSourceType // reuse RevenueLedger's enum — no new taxonomy
+  sourceId   String // Order.id / Appointment.id / ProgramEnrollment.id
+  amountKs   Int // EARNED: net Ks it was computed from. REDEEMED: Ks discount granted.
+  createdAt  DateTime              @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, type])
+  @@index([userId])
+  @@index([userId, createdAt])
 }
 
 // ─────────────────────────────────────────────

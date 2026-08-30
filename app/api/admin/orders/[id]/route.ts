@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/adminAuth';
 import { logAudit } from '@/lib/audit';
 import { notify } from '@/lib/notify';
 import { recordRevenueLedger } from '@/lib/revenueLedger';
+import { awardPoints } from '@/lib/pointsLedger';
 
 const INCLUDE = {
   user:  { select: { id: true, name: true, phone: true } },
@@ -80,6 +81,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         sourceType: 'PRODUCT', sourceId: id, patientPaid: order.totalAmount,
         clinicId: clinicLink?.clinicId ?? null, paymentMethod: order.paymentMethod,
       });
+      awardPoints({ userId: order.userId, sourceType: 'PRODUCT', sourceId: id, netAmountKs: order.totalAmount });
     }
 
     if (status === 'CONFIRMED' && before.status !== 'CONFIRMED') {

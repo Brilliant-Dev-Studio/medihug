@@ -5,6 +5,7 @@ import { parseSlotTimes, maxPerSlotFor, dayBounds } from '@/lib/timeSlots';
 import { computePatientPrice, computePlatformCut, resolveCommission } from '@/lib/commission';
 import { notify } from '@/lib/notify';
 import { checkCbPayStatus } from '@/lib/cbpay';
+import { redeemPoints } from '@/lib/pointsLedger';
 
 /* ── POST /api/patient/bookings ── */
 export async function POST(req: NextRequest) {
@@ -13,11 +14,14 @@ export async function POST(req: NextRequest) {
     const {
       name, phone, doctorId, date, time, reason, note,
       paymentMethod, receiptUrl, intake,
-      cbPayOrderId, cbPayGenerateRefOrder,
+      cbPayOrderId, cbPayGenerateRefOrder, pointsToRedeem,
     } = body;
 
     if (!name || !phone || !doctorId || !date) {
       return NextResponse.json({ error: 'name, phone, doctorId, date are required.' }, { status: 400 });
+    }
+    if (pointsToRedeem !== undefined && (!Number.isInteger(pointsToRedeem) || pointsToRedeem < 0)) {
+      return NextResponse.json({ error: 'pointsToRedeem must be a non-negative integer.' }, { status: 400 });
     }
 
     // CB Pay bookings are only created once payment already succeeded (patient pays first,
@@ -89,7 +93,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return tx.appointment.create({
+      const created = await tx.appointment.create({
         data: {
           userId:        user.id,
           doctorId,
@@ -112,6 +116,20 @@ export async function POST(req: NextRequest) {
             status: 'CONFIRMED' as const,
           } : {}),
         },
+      });
+
+      // CB Pay pays *before* the appointment exists (verified above against what was
+      // actually charged) — the fee here must stay exactly what was already paid, so points
+      // can only discount the fee for the manual-receipt payment methods.
+      if (cbPayVerified) return tx.appointment.findUniqueOrThrow({ where: { id: created.id }, include: { doctor: true, user: true } });
+
+      const { pointsRedeemed, discountAmount } = await redeemPoints(
+        tx, { userId: user.id, sourceType: 'CONSULTATION', sourceId: created.id, pointsToRedeem: pointsToRedeem ?? 0 }, fee,
+      );
+
+      return tx.appointment.update({
+        where: { id: created.id },
+        data: { fee: fee - discountAmount, pointsRedeemed, pointsDiscountAmount: discountAmount },
         include: { doctor: true, user: true },
       });
     });

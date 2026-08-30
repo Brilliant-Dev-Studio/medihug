@@ -10,7 +10,7 @@ import {
   Search, Stethoscope, Calendar, FileText, Pill,
   Heart, Activity, AlertCircle, Brain, Baby, Eye,
   ChevronRight, ChevronUp, Star, Clock, LayoutGrid, MapPin,
-  Bone, Droplets, Microscope, Syringe, Wind, Thermometer, HeartPulse,
+  Bone, Droplets, Microscope, Syringe, Wind, Thermometer, HeartPulse, Coins,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import emptyLottie from '../../../public/lottie-empty.json';
@@ -230,6 +230,7 @@ export default function PatientDashboard() {
   const [upcomingAppointments, setUpcomingAppointments] = useState<UpcomingAppointment[]>([]);
   const [apptsLoading, setApptsLoading] = useState(true);
   const [patientName, setPatientName] = useState('');
+  const [pointsBalance, setPointsBalance] = useState(0);
   const [pastPrescriptions, setPastPrescriptions] = useState<PastPrescription[]>([]);
   const [rxCardOpen, setRxCardOpen] = useState(true);
   const [rxShowAll, setRxShowAll] = useState(false);
@@ -254,6 +255,11 @@ export default function PatientDashboard() {
       fetch(`/api/patient/favorites/doctors?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
       fetch(`/api/patient/favorites/products?phone=${encodeURIComponent(phone)}`).then(r => r.json()),
     ]).then(([d, p]) => setFavCount((d.ids?.length ?? 0) + (p.ids?.length ?? 0))).catch(() => {});
+
+    fetch(`/api/patient/points?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPointsBalance(d.balance ?? 0); })
+      .catch(() => {});
 
     fetch(`/api/patient/appointments?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
@@ -324,6 +330,22 @@ export default function PatientDashboard() {
 
         {/* ── Left content (overlaps hero bottom) ── */}
         <div className="px-4 lg:px-8 pb-8 flex flex-col gap-4 lg:gap-5 -mt-11">
+
+          {/* Points Balance */}
+          <Link
+            href="/patient/points"
+            className="flex items-center gap-3 px-4 py-3.5 lg:px-6 lg:py-4"
+            style={{ position: 'relative', zIndex: 10, borderRadius: 20, background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', border: '1px solid #fde68a' }}
+          >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#fde68a' }}>
+              <Coins className="w-5 h-5" style={{ color: '#d97706' }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-bold leading-tight" style={{ color: '#b45309' }}>{pointsBalance.toLocaleString()} Points</p>
+              <p className="text-xs mt-0.5" style={{ color: '#d97706' }}>{mm ? 'ဝယ်ယူမှုတွင် လျှော့စျေးအဖြစ် သုံးနိုင်သည်' : 'Use as a discount on your next purchase'}</p>
+            </div>
+            <ChevronRight className="w-4 h-4 shrink-0" style={{ color: '#d97706' }} />
+          </Link>
 
           {/* Ad Banner */}
           <div
@@ -602,7 +624,7 @@ export default function PatientDashboard() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label_mm: 'ချိန်းဆိုမှု', label_en: 'Appointments',  value: '0', color: PRIMARY,   bg: '#eff6ff', href: '/patient/appointments' },
-                { label_mm: 'မှတ်တမ်း',      label_en: 'Records',       value: '0', color: '#8b5cf6', bg: '#f5f3ff', href: null },
+                { label_mm: 'ပွိုင့်',       label_en: 'Points',        value: pointsBalance.toLocaleString(), color: '#d97706', bg: '#fffbeb', href: '/patient/points' },
                 { label_mm: 'ဆေးညွှန်း',     label_en: 'Prescriptions', value: String(pastPrescriptions.length), color: '#f59e0b', bg: '#fffbeb', href: null },
                 { label_mm: 'ကြိုက်သော',     label_en: 'Favourites',    value: String(favCount), color: '#ec4899', bg: '#fdf2f8', href: '/patient/favourites' },
               ].map(s => {

@@ -13,12 +13,20 @@ import { useLang } from '../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from './IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
+import PointsRedeemBox from '@/components/PointsRedeemBox';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 const ACCENT    = 'var(--color-accent)';
+
+/** Best-effort phone for a returning patient — only used to show their points balance
+ * before the intake form (later in this flow) collects the real phone for this booking. */
+function getStoredPatientPhone(): string {
+  if (typeof window === 'undefined') return '';
+  try { return JSON.parse(localStorage.getItem('medihug_patient') ?? 'null')?.phone ?? ''; } catch { return ''; }
+}
 
 export default function BookingPage() {
   return (
@@ -52,6 +60,7 @@ function BookingContent() {
 
   /* ── local state ── */
   const [payMethod,  setPayMethod]  = useState<string>('');
+  const [pointsRedeem, setPointsRedeem] = useState({ pointsToRedeem: 0, discountAmount: 0 });
   const [receipt,    setReceipt]    = useState<{ file: File; url: string } | null>(null);
   const [dragOver,   setDragOver]   = useState(false);
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
@@ -179,6 +188,7 @@ function BookingContent() {
           note,
           paymentMethod: payMethod,
           fee: basePrice * sessions,
+          pointsToRedeem: pointsRedeem.pointsToRedeem,
           receiptUrl,
           intake,
           ...(isCb && cbProof ? { cbPayOrderId: cbProof.orderId, cbPayGenerateRefOrder: cbProof.generateRefOrder } : {}),
@@ -348,7 +358,8 @@ function BookingContent() {
               receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
               setDragOver={setDragOver} fileRef={fileRef} handleFile={handleFile}
               handleDrop={handleDrop} fee={fee}
-              cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink} />
+              cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
+              purchaseAmount={basePrice * sessions} pointsRedeem={pointsRedeem} onPointsChange={setPointsRedeem} />
           </div>
 
           {/* Submit bar */}
@@ -395,7 +406,8 @@ function BookingContent() {
             receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
             setDragOver={setDragOver} fileRef={fileRef} handleFile={handleFile}
             handleDrop={handleDrop} fee={fee}
-            cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink} />
+            cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
+            purchaseAmount={basePrice * sessions} pointsRedeem={pointsRedeem} onPointsChange={setPointsRedeem} />
         </div>
 
         {/* Fixed bottom submit */}
@@ -507,7 +519,8 @@ function NoteCard({ mm, note, setNote }: { mm: boolean; note: string; setNote: (
 }
 
 function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOver, setDragOver,
-  fileRef, handleFile, handleDrop, fee, cbDeeplink, cbAppMissing, onRetryDeeplink }: {
+  fileRef, handleFile, handleDrop, fee, cbDeeplink, cbAppMissing, onRetryDeeplink,
+  purchaseAmount, pointsRedeem, onPointsChange }: {
   mm: boolean; payMethod: string; setPayMethod: (v: string) => void;
   receipt: { file: File; url: string } | null; setReceipt: (v: null) => void;
   dragOver: boolean; setDragOver: (v: boolean) => void;
@@ -515,7 +528,12 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
   handleFile: (f: File) => void; handleDrop: (e: React.DragEvent) => void;
   fee: string;
   cbDeeplink: string | null; cbAppMissing: boolean; onRetryDeeplink: () => void;
+  purchaseAmount: number;
+  pointsRedeem: { pointsToRedeem: number; discountAmount: number };
+  onPointsChange: (state: { pointsToRedeem: number; discountAmount: number }) => void;
 }) {
+  const patientPhone = getStoredPatientPhone();
+  const finalAmount = Math.max(0, purchaseAmount - pointsRedeem.discountAmount);
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
       {/* Section title */}
@@ -528,12 +546,24 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
 
       {/* Amount reminder */}
       <div
-        className="flex items-center justify-between px-4 py-3 rounded-xl"
+        className="flex flex-col gap-1 px-4 py-3 rounded-xl"
         style={{ background: `linear-gradient(135deg, ${PRIMARY}08 0%, ${SECONDARY}12 100%)`, border: `1px solid ${PRIMARY}15` }}
       >
-        <span className="text-xs text-gray-500">{mm ? 'ပေးရမည့်ငွေ' : 'Amount to pay'}</span>
-        <span className="text-xl font-bold" style={{ color: PRIMARY }}>{fee} <span className="text-xs font-semibold text-gray-400">MMK</span></span>
+        {pointsRedeem.discountAmount > 0 && (
+          <div className="flex items-center justify-between text-xs text-amber-600">
+            <span>{mm ? 'Points လျှော့ငွေ' : 'Points discount'}</span>
+            <span>-{pointsRedeem.discountAmount.toLocaleString()} Ks</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-500">{mm ? 'ပေးရမည့်ငွေ' : 'Amount to pay'}</span>
+          <span className="text-xl font-bold" style={{ color: PRIMARY }}>
+            {pointsRedeem.discountAmount > 0 ? finalAmount.toLocaleString() : fee} <span className="text-xs font-semibold text-gray-400">MMK</span>
+          </span>
+        </div>
       </div>
+
+      <PointsRedeemBox mm={mm} phone={patientPhone} purchaseAmount={purchaseAmount} onChange={onPointsChange} />
 
       <PaymentMethodPicker
         mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}

@@ -13,8 +13,16 @@ import { useLang } from '../../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from '../../booking/IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
+import PointsRedeemBox from '@/components/PointsRedeemBox';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
+
+/** Best-effort phone for a returning patient — only used to show their points balance
+ * before the intake form (later in this flow) collects the real phone for this enrollment. */
+function getStoredPatientPhone(): string {
+  if (typeof window === 'undefined') return '';
+  try { return JSON.parse(localStorage.getItem('medihug_patient') ?? 'null')?.phone ?? ''; } catch { return ''; }
+}
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -42,6 +50,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
   }, [programId]);
 
   const [payMethod, setPayMethod] = useState('');
+  const [pointsRedeem, setPointsRedeem] = useState({ pointsToRedeem: 0, discountAmount: 0 });
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
@@ -156,6 +165,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
           name: intake.name,
           phone: intake.phone,
           paymentMethod: payMethod,
+          pointsToRedeem: pointsRedeem.pointsToRedeem,
           receiptUrl,
           intake,
           ...(isCb && cbProof ? { cbPayOrderId: cbProof.orderId, cbPayGenerateRefOrder: cbProof.generateRefOrder } : {}),
@@ -303,10 +313,20 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
               </div>
             )}
 
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl mt-1"
+            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl mt-1"
               style={{ background: `linear-gradient(135deg, ${PRIMARY}08 0%, ${SECONDARY}12 100%)`, border: `1px solid ${PRIMARY}15` }}>
-              <span className="text-xs text-gray-500">{mm ? 'စျေးနှုန်း' : 'Price'}</span>
-              <span className="text-xl font-bold" style={{ color: PRIMARY }}>{program.price.toLocaleString()} <span className="text-xs font-semibold text-gray-400">MMK</span></span>
+              {pointsRedeem.discountAmount > 0 && (
+                <div className="flex items-center justify-between text-xs text-amber-600">
+                  <span>{mm ? 'Points လျှော့ငွေ' : 'Points discount'}</span>
+                  <span>-{pointsRedeem.discountAmount.toLocaleString()} Ks</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">{mm ? 'စျေးနှုန်း' : 'Price'}</span>
+                <span className="text-xl font-bold" style={{ color: PRIMARY }}>
+                  {Math.max(0, program.price - pointsRedeem.discountAmount).toLocaleString()} <span className="text-xs font-semibold text-gray-400">MMK</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -317,6 +337,8 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
             <CreditCard className="w-4 h-4" style={{ color: SECONDARY }} />
             <p className="text-sm font-bold" style={{ color: PRIMARY }}>{mm ? 'ငွေပေးချေမှု' : 'Payment'}</p>
           </div>
+
+          <PointsRedeemBox mm={mm} phone={getStoredPatientPhone()} purchaseAmount={program.price} onChange={setPointsRedeem} />
 
           <PaymentMethodPicker
             mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}

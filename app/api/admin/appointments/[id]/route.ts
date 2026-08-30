@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/adminAuth';
 import { logAudit } from '@/lib/audit';
 import { notify } from '@/lib/notify';
 import { recordRevenueLedger } from '@/lib/revenueLedger';
+import { awardPoints } from '@/lib/pointsLedger';
 
 /* ── GET /api/admin/appointments/[id] ── */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: appointment.paymentMethod,
         providerShareAmount: appointment.doctorPayoutAmount ?? 0,
       });
+      awardPoints({ userId: appointment.userId, sourceType: 'CONSULTATION', sourceId: id, netAmountKs: appointment.fee });
     }
 
     // Notify the doctor only on the PENDING → CONFIRMED transition (admin approval).

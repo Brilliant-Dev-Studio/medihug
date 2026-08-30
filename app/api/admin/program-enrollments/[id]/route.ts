@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { recordRevenueLedger } from '@/lib/revenueLedger';
+import { awardPoints } from '@/lib/pointsLedger';
 
 const INCLUDE = {
   user: { select: { id: true, name: true, phone: true, profileImage: true } },
@@ -69,6 +70,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         clinicId, medihugSharePercent, paymentMethod: enrollment.paymentMethod,
         referralClinicId: enrollment.referredClinicId,
       });
+      awardPoints({ userId: enrollment.userId, sourceType: 'PROGRAM', sourceId: id, netAmountKs: enrollment.amount });
 
       for (const { doctor } of enrollment.program.doctors) {
         if (!doctor.userId) continue;

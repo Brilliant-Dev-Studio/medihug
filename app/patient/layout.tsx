@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard, Calendar, Stethoscope, ShoppingBag, LogOut,
-  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper, ShoppingCart, ChevronUp, HeartPulse,
+  PanelLeftClose, PanelLeftOpen, UserCircle, Newspaper, ShoppingCart, ChevronUp, HeartPulse, Coins,
 } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { ThemeProvider } from '../lib/ThemeContext';
@@ -31,6 +31,7 @@ const navItems = [
 const desktopOnlyNavItems = [
   { href: '/patient/programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်', en: 'Programs' },
   { href: '/patient/blog', icon: Newspaper, mm: 'ဆောင်းပါးများ', en: 'Blog' },
+  { href: '/patient/points', icon: Coins, mm: 'ပွိုင့်များ', en: 'Points' },
 ];
 
 const PRIMARY = 'var(--color-primary)';
@@ -51,6 +52,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const [avatarLoading, setAvatarLoading] = useState(true);
   const [patientName, setPatientName] = useState('');
   const [patientPhone, setPatientPhone] = useState('');
+  const [pointsBalance, setPointsBalance] = useState(0);
   const [authChecked, setAuthChecked] = useState(false);
   const [portalBlocked, setPortalBlocked] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -66,6 +68,10 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     setPatientPhone(phone);
     if (name) setPatientName(name);
     setAuthChecked(true);
+    fetch(`/api/patient/points?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setPointsBalance(d.balance ?? 0); })
+      .catch(() => {});
     fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`)
       .then(r => r.json())
       .then(d => {
@@ -275,6 +281,15 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               />
             </Link>
             <div className="flex items-center gap-2">
+              <Link href="/patient/points" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300"
+                style={{ backgroundColor: (scrolled && !isDetailPage) ? '#f3f4f6' : 'rgba(255,255,255,0.2)', color: (scrolled && !isDetailPage) ? '#d97706' : '#fff' }}>
+                <Coins className="w-4.5 h-4.5" />
+                {pointsBalance > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: '#d97706' }}>
+                    {pointsBalance > 999 ? '999+' : pointsBalance}
+                  </span>
+                )}
+              </Link>
               <Link href="/patient/cart" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300"
                 style={{ backgroundColor: (scrolled && !isDetailPage) ? '#f3f4f6' : 'rgba(255,255,255,0.2)', color: (scrolled && !isDetailPage) ? PRIMARY : '#fff' }}>
                 <ShoppingCart className="w-4.5 h-4.5" />
@@ -364,6 +379,14 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
               );
             })()}
 
+            <Link href="/patient/points" className="relative w-9 h-9 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 flex items-center justify-center transition-colors" style={{ color: '#d97706' }}>
+              <Coins className="w-4 h-4" />
+              {pointsBalance > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-4.5 h-4.5 px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center" style={{ backgroundColor: '#d97706' }}>
+                  {pointsBalance > 999 ? '999+' : pointsBalance}
+                </span>
+              )}
+            </Link>
             <Link href="/patient/cart" className="relative w-9 h-9 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 flex items-center justify-center text-gray-500 transition-colors">
               <ShoppingCart className="w-4 h-4" />
               {cartCount > 0 && (

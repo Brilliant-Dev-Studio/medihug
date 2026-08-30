@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
+import { redeemPoints } from '@/lib/pointsLedger';
 
 /* ── POST /api/patient/orders ── */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, items, paymentMethod, receiptUrl, note } = body;
+    const { name, phone, items, paymentMethod, receiptUrl, note, pointsToRedeem } = body;
 
     if (!name || !phone || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'name, phone, items are required.' }, { status: 400 });
+    }
+    if (pointsToRedeem !== undefined && (!Number.isInteger(pointsToRedeem) || pointsToRedeem < 0)) {
+      return NextResponse.json({ error: 'pointsToRedeem must be a non-negative integer.' }, { status: 400 });
     }
 
     const order = await db.$transaction(async (tx) => {
@@ -37,7 +41,7 @@ export async function POST(req: NextRequest) {
         itemsData.map(i => tx.product.update({ where: { id: i.productId }, data: { stock: { decrement: i.quantity } } }))
       );
 
-      return tx.order.create({
+      const created = await tx.order.create({
         data: {
           userId: user.id,
           totalAmount,
@@ -46,6 +50,15 @@ export async function POST(req: NextRequest) {
           note: note ?? null,
           items: { create: itemsData },
         },
+      });
+
+      const { pointsRedeemed, discountAmount } = await redeemPoints(
+        tx, { userId: user.id, sourceType: 'PRODUCT', sourceId: created.id, pointsToRedeem: pointsToRedeem ?? 0 }, totalAmount,
+      );
+
+      return tx.order.update({
+        where: { id: created.id },
+        data: { totalAmount: totalAmount - discountAmount, pointsRedeemed, pointsDiscountAmount: discountAmount },
         include: { items: { include: { product: true } }, user: true },
       });
     }, { maxWait: 15000, timeout: 15000 });

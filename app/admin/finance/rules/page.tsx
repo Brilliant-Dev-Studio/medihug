@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { Plus, Check, X, Loader2, Percent, Trash2, Ban, Search } from 'lucide-react';
 import { useAdminRole, requestDeletion } from '@/lib/useAdminRole';
 
@@ -44,7 +45,14 @@ export default function CommissionRulesPage() {
   const [paymentMethodOptions, setPaymentMethodOptions] = useState<PaymentMethodOption[]>([]);
 
   useEffect(() => {
-    fetch('/api/admin/finance/payment-methods').then(r => r.json()).then(d => setPaymentMethodOptions(d.methods ?? [])).catch(() => {});
+    // 'mmqr' is excluded here on purpose — MMQR is a shared QR any wallet app can scan, not a
+    // gateway of its own. The checkout picker always resolves it down to the real app the
+    // patient picked (KPay/Wave Pay/AYA Pay/UAB Pay) before submitting, so `paymentMethod` on
+    // an actual purchase is never the literal string 'mmqr' — a rule scoped to it could never
+    // match anything real. Keep rules scoped to the real underlying app instead.
+    fetch('/api/admin/finance/payment-methods').then(r => r.json())
+      .then(d => setPaymentMethodOptions((d.methods ?? []).filter((m: PaymentMethodOption) => m.key !== 'mmqr')))
+      .catch(() => {});
   }, []);
   const [doctorFocused, setDoctorFocused] = useState(false);
   const [doctorPage, setDoctorPage] = useState(0);
@@ -183,6 +191,10 @@ export default function CommissionRulesPage() {
               <option value="">Any payment method</option>
               {paymentMethodOptions.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
             </select>
+          </div>
+          <div className="flex items-center justify-between -mt-1.5">
+            <p className="text-[11px] text-gray-400">Which app did you pay with? — same list patients pick from at checkout.</p>
+            <Link href="/admin/finance/payment-methods" className="text-[11px] font-semibold shrink-0" style={{ color: PRIMARY }}>+ Add new payment method</Link>
           </div>
 
           {serviceType === 'CONSULTATION' && (

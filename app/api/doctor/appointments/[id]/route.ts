@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { generateReferralCode } from '@/lib/referral';
 import { notify } from '@/lib/notify';
 import { recordRevenueLedger } from '@/lib/revenueLedger';
+import { awardPoints } from '@/lib/pointsLedger';
 
 async function requireDoctorId(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get('doctor_token')?.value;
@@ -121,6 +122,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: existing.paymentMethod,
       providerShareAmount: existing.doctorPayoutAmount ?? 0,
     });
+    awardPoints({ userId: existing.userId, sourceType: 'CONSULTATION', sourceId: id, netAmountKs: existing.fee });
   }
 
   // Keep the referral QR/verification code in sync with the referred clinic — a new/changed
