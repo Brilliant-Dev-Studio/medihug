@@ -95,7 +95,7 @@ export default function HealthCategories() {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+        <div className="grid grid-cols-3 auto-rows-fr gap-2.5 sm:gap-4">
           {loading ? (
             Array.from({ length: 6 }).map((_, i) => <SkeletonTile key={i} />)
           ) : (
@@ -115,7 +115,7 @@ export default function HealthCategories() {
                 <Link
                   key={cat.id}
                   href={href}
-                  className="group relative flex flex-col rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg overflow-hidden min-w-0"
+                  className="group relative flex flex-col h-full rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg overflow-hidden min-w-0"
                   style={{ background: cat.bgImageUrl ? undefined : gradient, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
                 >
                   {cat.bgImageUrl && (
@@ -133,11 +133,14 @@ export default function HealthCategories() {
                     )}
                   </div>
 
-                  <span className="relative block w-full text-xs sm:text-base font-bold leading-tight truncate" style={{ color: '#0d2b6e' }}>
+                  {/* No line-clamp here on purpose — -webkit-line-clamp has previously cut
+                      Myanmar text mid-grapheme-cluster and rendered broken/overlapping glyphs.
+                      Natural wrapping is slower to overflow but never mangles the script. */}
+                  <span className="relative block w-full text-xs sm:text-base font-bold leading-tight wrap-break-word min-h-[2.4em] sm:min-h-[2.5em]" style={{ color: '#0d2b6e' }}>
                     {label}
                   </span>
                   {desc && (
-                    <span className="relative block w-full text-[11px] sm:text-sm text-gray-500 mt-1 truncate">
+                    <span className="relative block w-full text-[11px] sm:text-sm text-gray-500 mt-1 wrap-break-word">
                       {desc}
                     </span>
                   )}
