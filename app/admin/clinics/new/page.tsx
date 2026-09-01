@@ -161,9 +161,9 @@ export default function NewClinicPage() {
 
 
   return (
-    <div className="p-6 h-full flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500">
             <ArrowLeft size={18} />
@@ -210,11 +210,11 @@ export default function NewClinicPage() {
       </Section>
 
       {/* 2-column main layout */}
-      <div className="grid grid-cols-2 gap-5 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 flex-1">
         {/* LEFT column */}
         <div className="space-y-5">
           <Section title="Basic Info">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>Name (Myanmar) *</label>
                 <input className={inp} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Partner name in Myanmar" />
@@ -224,7 +224,7 @@ export default function NewClinicPage() {
                 <input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} placeholder="Partner name" />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className={lbl}>Phone 1</label>
                 <input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="09..." />
@@ -238,7 +238,7 @@ export default function NewClinicPage() {
                 <input className={inp} value={form.phone3} onChange={e => set('phone3', e.target.value)} placeholder="09..." />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <TimePicker label="Open Time"  value={form.openTime}  onChange={v => set('openTime', v)}  />
               <TimePicker label="Close Time" value={form.closeTime} onChange={v => set('closeTime', v)} />
             </div>
@@ -272,7 +272,7 @@ export default function NewClinicPage() {
               <label className={lbl}>Address (English)</label>
               <input className={inp} value={form.addressEn} onChange={e => set('addressEn', e.target.value)} placeholder="Address in English" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={lbl}>State / Region</label>
                 <input className={inp} value={form.state} onChange={e => set('state', e.target.value)} />

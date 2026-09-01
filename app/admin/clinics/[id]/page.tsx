@@ -237,9 +237,9 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
 
 
   return (
-    <div className="p-6 flex flex-col gap-5">
+    <div className="flex flex-col gap-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={() => router.push('/admin/clinics')} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 flex-shrink-0">
             <ArrowLeft size={18} />
@@ -300,7 +300,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       {error && <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</div>}
 
       {/* 3-column layout */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {/* COL 1 — basic info + location + about */}
         <div className="space-y-5">
@@ -316,12 +316,12 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div><label className={lbl}>နာမည် (မြန်မာ) *</label><input className={inp} value={form.name} onChange={e => set('name', e.target.value)} /></div>
             <div><label className={lbl}>Name (English)</label><input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} /></div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div><label className={lbl}>ဖုန်း ၁</label><input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
               <div><label className={lbl}>ဖုန်း ၂</label><input className={inp} value={form.phone2} onChange={e => set('phone2', e.target.value)} /></div>
               <div><label className={lbl}>ဖုန်း ၃</label><input className={inp} value={form.phone3} onChange={e => set('phone3', e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <TimePicker label="ဖွင့်ချိန်" value={form.openTime}  onChange={v => set('openTime', v)}  />
               <TimePicker label="ပိတ်ချိန်" value={form.closeTime} onChange={v => set('closeTime', v)} />
             </div>
@@ -337,7 +337,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
           <Section title="တည်နေရာ">
             <div><label className={lbl}>လိပ်စာ (မြန်မာ)</label><input className={inp} value={form.address} onChange={e => set('address', e.target.value)} /></div>
             <div><label className={lbl}>Address (English)</label><input className={inp} value={form.addressEn} onChange={e => set('addressEn', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className={lbl}>တိုင်း/ပြည်နယ်</label><input className={inp} value={form.state} onChange={e => set('state', e.target.value)} /></div>
               <div><label className={lbl}>မြို့နယ်</label><input className={inp} value={form.township} onChange={e => set('township', e.target.value)} /></div>
             </div>
