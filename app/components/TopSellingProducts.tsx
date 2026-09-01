@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, BadgeCheck, Bookmark, ShoppingBag, Star, Pill } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bookmark, ShoppingBag, Star, Pill } from 'lucide-react';
 import { useLang } from '../lib/LanguageContext';
 import { useFavorites } from '../lib/useFavorites';
 import IdentifyModal from './IdentifyModal';
@@ -107,11 +107,6 @@ export default function TopSellingProducts() {
                       <Pill className="w-9 h-9" style={{ color: `${PRIMARY}55` }} />
                     </div>
                   )}
-
-                  <span className="absolute top-2 left-2 flex items-center gap-1 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm">
-                    <BadgeCheck className="w-3 h-3" style={{ color: PRIMARY }} />
-                    <span className="text-[9px] font-bold uppercase tracking-wide" style={{ color: PRIMARY }}>{mm ? 'အာမခံ' : 'Verified'}</span>
-                  </span>
 
                   <button
                     onClick={e => { e.preventDefault(); toggleFav(p.id); }}

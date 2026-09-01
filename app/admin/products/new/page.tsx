@@ -39,7 +39,7 @@ function ClinicMultiSelect({ selected, onChange, clinics }: {
       <div onClick={() => setOpen(o => !o)}
         className={`min-h-[42px] flex flex-wrap items-center gap-1.5 cursor-pointer rounded-xl border bg-gray-50 px-3 py-2 text-sm transition-colors ${open ? 'border-[#2ab5ad] ring-2 ring-[#2ab5ad]/40' : 'border-gray-200 hover:border-gray-300'}`}>
         {selected.length === 0
-          ? <span className="text-gray-400 text-sm">Select clinics... (optional)</span>
+          ? <span className="text-gray-400 text-sm">Select partners... (optional)</span>
           : selected.map(c => (
               <span key={c.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 text-xs font-medium">
                 {c.name}
@@ -56,13 +56,13 @@ function ClinicMultiSelect({ selected, onChange, clinics }: {
             <div className="relative">
               <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
               <input autoFocus className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#2ab5ad]"
-                placeholder="Search clinics..." value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="Search partners..." value={query} onChange={e => setQuery(e.target.value)}
                 onClick={e => e.stopPropagation()} />
             </div>
           </div>
           <div className="max-h-52 overflow-y-auto">
             {filtered.length === 0
-              ? <p className="text-xs text-gray-400 text-center py-4">{query ? 'No clinics found' : 'All clinics selected'}</p>
+              ? <p className="text-xs text-gray-400 text-center py-4">{query ? 'No partners found' : 'All partners selected'}</p>
               : filtered.map(c => (
                   <button key={c.id} type="button" onClick={() => toggle(c)}
                     className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors">
@@ -379,8 +379,8 @@ export default function NewProductPage() {
             <BenefitsList benefits={form.keyBenefits} onChange={v => set('keyBenefits', v)} />
           </Section>
 
-          <Section title="Assign to Clinics">
-            <p className="text-xs text-gray-400 -mt-2">Optional — link this product to one or more clinics</p>
+          <Section title="Assign to Partners">
+            <p className="text-xs text-gray-400 -mt-2">Optional — link this product to one or more partners</p>
             <ClinicMultiSelect selected={selectedClinics} onChange={setSelectedClinics} clinics={clinics} />
           </Section>
 
