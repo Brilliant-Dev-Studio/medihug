@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Search, Star, Package } from 'lucide-react';
 import { useLang } from '@/app/lib/LanguageContext';
+import ContactSupportInline from '@/components/ContactSupportInline';
 
 const PRIMARY = '#0d2b6e';
 
@@ -59,42 +60,57 @@ function PublicProductsPageInner() {
     return true;
   });
 
+  // Whole catalog is empty (nothing set up yet) vs. a search/filter that just matched
+  // nothing — the former hides the search+filter chrome entirely and offers a way to reach
+  // support instead of dead-ending on "no products found".
+  const catalogEmpty = !loading && products.length === 0;
+
   return (
     <div className="w-full bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto px-6 py-10 sm:py-14">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{mm ? 'ကုန်ပစ္စည်းများ' : 'Products'}</h1>
         <p className="text-sm text-gray-500 mt-1.5">{mm ? 'သိုက်စွဲသူများ အကြိုက်ဆုံး ဆေးဝါးနှင့် ကျန်းမာရေးပစ္စည်းများ' : 'Browse trusted health and wellness products'}</p>
 
-        <div className="relative mt-6 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#0d2b6e] transition-colors"
-          />
-        </div>
+        {!catalogEmpty && (
+          <>
+            <div className="relative mt-6 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={mm ? 'ကုန်ပစ္စည်း ရှာဖွေပါ...' : 'Search products...'}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#0d2b6e] transition-colors"
+              />
+            </div>
 
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4">
-            <button onClick={() => setFilterCat('all')}
-              className="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all"
-              style={{ backgroundColor: filterCat === 'all' ? PRIMARY : 'transparent', borderColor: filterCat === 'all' ? PRIMARY : '#e5e7eb', color: filterCat === 'all' ? '#fff' : '#6b7280' }}>
-              {mm ? 'အားလုံး' : 'All'}
-            </button>
-            {categories.map(c => (
-              <button key={c.id} onClick={() => setFilterCat(c.name)}
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all"
-                style={{ backgroundColor: filterCat === c.name ? PRIMARY : 'transparent', borderColor: filterCat === c.name ? PRIMARY : '#e5e7eb', color: filterCat === c.name ? '#fff' : '#6b7280' }}>
-                {mm ? c.name : (c.nameEn ?? c.name)}
-              </button>
-            ))}
-          </div>
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                <button onClick={() => setFilterCat('all')}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                  style={{ backgroundColor: filterCat === 'all' ? PRIMARY : 'transparent', borderColor: filterCat === 'all' ? PRIMARY : '#e5e7eb', color: filterCat === 'all' ? '#fff' : '#6b7280' }}>
+                  {mm ? 'အားလုံး' : 'All'}
+                </button>
+                {categories.map(c => (
+                  <button key={c.id} onClick={() => setFilterCat(c.name)}
+                    className="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                    style={{ backgroundColor: filterCat === c.name ? PRIMARY : 'transparent', borderColor: filterCat === c.name ? PRIMARY : '#e5e7eb', color: filterCat === c.name ? '#fff' : '#6b7280' }}>
+                    {mm ? c.name : (c.nameEn ?? c.name)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 mt-8">
           {loading ? (
             Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)
+          ) : catalogEmpty ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center gap-4">
+              <Package className="w-10 h-10 text-gray-200" />
+              <p className="text-sm text-gray-400">{mm ? 'ကုန်ပစ္စည်းများ မကြာမီ ရောက်ရှိလာပါမည်' : 'Products are coming soon'}</p>
+              <ContactSupportInline mm={mm} />
+            </div>
           ) : filtered.length === 0 ? (
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <Package className="w-10 h-10 text-gray-200 mb-2" />

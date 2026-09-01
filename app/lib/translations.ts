@@ -14,7 +14,7 @@ export const t = {
     navPartners: 'မိတ်ဖက်များ',
 
     // Hero
-    heroBadge: 'MediHug ကျန်းမာရေးပလက်ဖောင်း',
+    heroBadge: 'Medihug — Your Digital Healthcare Ecosystem',
     heroTitle: 'ကျန်းမာရေးစောင့်ရှောက်မှု၊ သင့်လက်တစ်ကမ်းမှာ။',
     heroDesc: 'MediHug ဖြင့် အချိန်မရွေး၊ နေရာမရွေး အထူးကုဆရာဝန်ကြီးများနှင့် တိုက်ရိုက်ဗီဒီယိုကောလ် ပြသပြီး သင့်ကျန်းမာရေးကို စိတ်ချရဆုံး စောင့်ရှောက်လိုက်ပါ။',
     getCareNow: 'စာရင်းသွင်းရန်',
@@ -101,7 +101,7 @@ export const t = {
     navPartners: 'Partners',
 
     // Hero
-    heroBadge: 'MediHug Health Platform',
+    heroBadge: 'Medihug — Your Digital Healthcare Ecosystem',
     heroTitle: 'Connecting you to better health',
     heroDesc: 'MediHug connects patients and care providers for medical care, mental health, chronic condition management and more.',
     getCareNow: 'Register Now',
