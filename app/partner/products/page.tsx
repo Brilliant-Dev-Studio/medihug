@@ -70,7 +70,7 @@ export default function PartnerProductsPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map(p => (
-            <div key={p.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <Link key={p.id} href={`/partner/products/${p.id}`} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-gray-200 transition-colors block">
               <div className="relative aspect-square bg-gray-50">
                 {p.imageUrl && <Image src={p.imageUrl} alt={p.name} fill sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw" className="object-cover" />}
               </div>
@@ -81,7 +81,7 @@ export default function PartnerProductsPage() {
                   <p className="text-[10px] text-gray-400">Stock: {p.stock}</p>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
