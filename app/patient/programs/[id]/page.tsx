@@ -13,7 +13,7 @@ import { useLang } from '../../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from '../../booking/IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
-import PointsRedeemBox from '@/components/PointsRedeemBox';
+import DiscountBox from '@/components/DiscountBox';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
@@ -50,7 +50,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
   }, [programId]);
 
   const [payMethod, setPayMethod] = useState('');
-  const [pointsRedeem, setPointsRedeem] = useState({ pointsToRedeem: 0, discountAmount: 0 });
+  const [discount, setDiscount] = useState<{ pointsToRedeem: number; voucherCode: string | null; discountAmount: number }>({ pointsToRedeem: 0, voucherCode: null, discountAmount: 0 });
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
@@ -165,7 +165,8 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
           name: intake.name,
           phone: intake.phone,
           paymentMethod: payMethod,
-          pointsToRedeem: pointsRedeem.pointsToRedeem,
+          pointsToRedeem: discount.pointsToRedeem,
+          voucherCode: discount.voucherCode,
           receiptUrl,
           intake,
           ...(isCb && cbProof ? { cbPayOrderId: cbProof.orderId, cbPayGenerateRefOrder: cbProof.generateRefOrder } : {}),
@@ -315,16 +316,16 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
 
             <div className="flex flex-col gap-1 px-4 py-3 rounded-xl mt-1"
               style={{ background: `linear-gradient(135deg, ${PRIMARY}08 0%, ${SECONDARY}12 100%)`, border: `1px solid ${PRIMARY}15` }}>
-              {pointsRedeem.discountAmount > 0 && (
+              {discount.discountAmount > 0 && (
                 <div className="flex items-center justify-between text-xs text-amber-600">
-                  <span>{mm ? 'Points လျှော့ငွေ' : 'Points discount'}</span>
-                  <span>-{pointsRedeem.discountAmount.toLocaleString()} Ks</span>
+                  <span>{discount.voucherCode ? (mm ? 'Voucher လျှော့ငွေ' : 'Voucher discount') : (mm ? 'Points လျှော့ငွေ' : 'Points discount')}</span>
+                  <span>-{discount.discountAmount.toLocaleString()} Ks</span>
                 </div>
               )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500">{mm ? 'စျေးနှုန်း' : 'Price'}</span>
                 <span className="text-xl font-bold" style={{ color: PRIMARY }}>
-                  {Math.max(0, program.price - pointsRedeem.discountAmount).toLocaleString()} <span className="text-xs font-semibold text-gray-400">MMK</span>
+                  {Math.max(0, program.price - discount.discountAmount).toLocaleString()} <span className="text-xs font-semibold text-gray-400">MMK</span>
                 </span>
               </div>
             </div>
@@ -338,7 +339,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
             <p className="text-sm font-bold" style={{ color: PRIMARY }}>{mm ? 'ငွေပေးချေမှု' : 'Payment'}</p>
           </div>
 
-          <PointsRedeemBox mm={mm} phone={getStoredPatientPhone()} purchaseAmount={program.price} onChange={setPointsRedeem} />
+          <DiscountBox mm={mm} phone={getStoredPatientPhone()} purchaseAmount={program.price} sourceType="PROGRAM" programId={programId} onChange={setDiscount} />
 
           <PaymentMethodPicker
             mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}

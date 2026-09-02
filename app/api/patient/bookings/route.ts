@@ -6,6 +6,7 @@ import { computePatientPrice, computePlatformCut, resolveCommission } from '@/li
 import { notify } from '@/lib/notify';
 import { checkCbPayStatus } from '@/lib/cbpay';
 import { redeemPoints } from '@/lib/pointsLedger';
+import { redeemVoucher, VoucherRedemptionError } from '@/lib/voucherLedger';
 
 /* ── POST /api/patient/bookings ── */
 export async function POST(req: NextRequest) {
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
     const {
       name, phone, doctorId, date, time, reason, note,
       paymentMethod, receiptUrl, intake,
-      cbPayOrderId, cbPayGenerateRefOrder, pointsToRedeem,
+      cbPayOrderId, cbPayGenerateRefOrder, pointsToRedeem, voucherCode,
     } = body;
 
     if (!name || !phone || !doctorId || !date) {
@@ -123,13 +124,30 @@ export async function POST(req: NextRequest) {
       // can only discount the fee for the manual-receipt payment methods.
       if (cbPayVerified) return tx.appointment.findUniqueOrThrow({ where: { id: created.id }, include: { doctor: true, user: true } });
 
-      const { pointsRedeemed, discountAmount } = await redeemPoints(
-        tx, { userId: user.id, sourceType: 'CONSULTATION', sourceId: created.id, pointsToRedeem: pointsToRedeem ?? 0 }, fee,
-      );
+      let pointsRedeemed = 0;
+      let voucherApplied: string | null = null;
+      let discountAmount = 0;
+      if (voucherCode) {
+        const result = await redeemVoucher(tx, user.id, created.id, {
+          code: voucherCode, sourceType: 'CONSULTATION', doctorId, purchaseAmount: fee,
+        });
+        voucherApplied = result.voucherCode;
+        discountAmount = result.discountAmount;
+      } else {
+        const result = await redeemPoints(
+          tx, { userId: user.id, sourceType: 'CONSULTATION', sourceId: created.id, pointsToRedeem: pointsToRedeem ?? 0 }, fee,
+        );
+        pointsRedeemed = result.pointsRedeemed;
+        discountAmount = result.discountAmount;
+      }
 
       return tx.appointment.update({
         where: { id: created.id },
-        data: { fee: fee - discountAmount, pointsRedeemed, pointsDiscountAmount: discountAmount },
+        data: {
+          fee: fee - discountAmount,
+          pointsRedeemed, pointsDiscountAmount: voucherApplied ? 0 : discountAmount,
+          voucherCode: voucherApplied, voucherDiscountAmount: voucherApplied ? discountAmount : 0,
+        },
         include: { doctor: true, user: true },
       });
     });
@@ -175,6 +193,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ appointment }, { status: 201 });
   } catch (e) {
+    if (e instanceof VoucherRedemptionError) {
+      return NextResponse.json({ error: 'This voucher cannot be used for this booking.', code: e.reason }, { status: 400 });
+    }
     if (e instanceof Error && e.message === 'SLOT_TAKEN') {
       return NextResponse.json({ error: 'This time slot was just booked by someone else. Please choose another.', code: 'SLOT_TAKEN' }, { status: 409 });
     }

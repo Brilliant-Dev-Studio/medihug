@@ -4,83 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Search, X, ChevronDown, Plus } from 'lucide-react';
 import ImageDropzoneMulti from '@/components/admin/ImageDropzoneMulti';
+import ClinicMultiSelect, { type ClinicOption } from '@/components/admin/ClinicMultiSelect';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
 const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5';
 
 interface Category { id: string; name: string; nameEn: string | null; }
-interface Clinic   { id: string; name: string; nameEn: string | null; type: string; }
-
-/* ── Clinic multi-select dropdown ── */
-function ClinicMultiSelect({ selected, onChange, clinics }: {
-  selected: Clinic[]; onChange: (c: Clinic[]) => void; clinics: Clinic[];
-}) {
-  const [query, setQuery] = useState('');
-  const [open, setOpen]   = useState(false);
-  const ref               = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-  const selectedIds = selected.map(c => c.id);
-  const filtered = clinics.filter(c =>
-    !selectedIds.includes(c.id) &&
-    (!query || c.name.toLowerCase().includes(query.toLowerCase()) || (c.nameEn ?? '').toLowerCase().includes(query.toLowerCase()))
-  );
-  const toggle = (c: Clinic) => {
-    onChange(selectedIds.includes(c.id) ? selected.filter(s => s.id !== c.id) : [...selected, c]);
-    setQuery('');
-  };
-  return (
-    <div className="relative" ref={ref}>
-      {/* Trigger */}
-      <div onClick={() => setOpen(o => !o)}
-        className={`min-h-[42px] flex flex-wrap items-center gap-1.5 cursor-pointer rounded-xl border bg-gray-50 px-3 py-2 text-sm transition-colors ${open ? 'border-[#2ab5ad] ring-2 ring-[#2ab5ad]/40' : 'border-gray-200 hover:border-gray-300'}`}>
-        {selected.length === 0
-          ? <span className="text-gray-400 text-sm">Select partners... (optional)</span>
-          : selected.map(c => (
-              <span key={c.id} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 text-xs font-medium">
-                {c.name}
-                <button type="button" onClick={e => { e.stopPropagation(); toggle(c); }} className="text-teal-500 hover:text-red-500">
-                  <X size={11} />
-                </button>
-              </span>
-            ))}
-        <ChevronDown size={13} className={`ml-auto text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </div>
-      {open && (
-        <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-          <div className="p-2 border-b border-gray-100">
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input autoFocus className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:border-[#2ab5ad]"
-                placeholder="Search partners..." value={query} onChange={e => setQuery(e.target.value)}
-                onClick={e => e.stopPropagation()} />
-            </div>
-          </div>
-          <div className="max-h-52 overflow-y-auto">
-            {filtered.length === 0
-              ? <p className="text-xs text-gray-400 text-center py-4">{query ? 'No partners found' : 'All partners selected'}</p>
-              : filtered.map(c => (
-                  <button key={c.id} type="button" onClick={() => toggle(c)}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-gray-50 transition-colors">
-                    <div className="w-6 h-6 rounded-lg bg-teal-50 flex items-center justify-center shrink-0">
-                      <span className="text-[9px] font-bold text-teal-600">{c.type[0]}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-700 font-medium truncate">{c.name}</p>
-                      {c.nameEn && <p className="text-xs text-gray-400 truncate">{c.nameEn}</p>}
-                    </div>
-                  </button>
-                ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -225,7 +155,7 @@ function BenefitsList({ benefits, onChange }: { benefits: string[]; onChange: (b
 
 const EMPTY = {
   name: '', nameEn: '', description: '',
-  price: 0, stock: 0, images: [] as string[], category: '',
+  price: 0, priceThb: '', priceUsd: '', stock: 0, images: [] as string[], category: '',
   brand: '', type: '', strength: '', packSize: '',
   tags: [] as string[], keyBenefits: [] as string[],
   rating: 0, reviewCount: 0, isActive: true,
@@ -237,8 +167,8 @@ export default function NewProductPage() {
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [clinics, setClinics]       = useState<Clinic[]>([]);
-  const [selectedClinics, setSelectedClinics] = useState<Clinic[]>([]);
+  const [clinics, setClinics]       = useState<ClinicOption[]>([]);
+  const [selectedClinics, setSelectedClinics] = useState<ClinicOption[]>([]);
 
   useEffect(() => {
     fetch('/api/admin/product-categories').then(r => r.json()).then(d => setCategories(d.categories ?? []));
@@ -258,6 +188,8 @@ export default function NewProductPage() {
           nameEn:      form.nameEn      || null,
           description: form.description || null,
           price:       Number(form.price),
+          priceThb:    form.priceThb === '' ? null : Number(form.priceThb),
+          priceUsd:    form.priceUsd === '' ? null : Number(form.priceUsd),
           stock:       Number(form.stock),
           imageUrl:    form.images[0]   || null,
           images:      form.images,
@@ -350,15 +282,24 @@ export default function NewProductPage() {
           </Section>
 
           <Section title="Pricing & Stock">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={lbl}>Price (Ks)</label>
+                <label className={lbl}>Price (Ks) *</label>
                 <input className={inp} type="number" min={0} value={form.price} onChange={e => set('price', e.target.value)} />
               </div>
               <div>
-                <label className={lbl}>Stock Quantity</label>
-                <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
+                <label className={lbl}>Price (Baht)</label>
+                <input className={inp} type="number" min={0} step={0.01} value={form.priceThb} onChange={e => set('priceThb', e.target.value)} placeholder="optional" />
               </div>
+              <div>
+                <label className={lbl}>Price (USD)</label>
+                <input className={inp} type="number" min={0} step={0.01} value={form.priceUsd} onChange={e => set('priceUsd', e.target.value)} placeholder="optional" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 -mt-1">Baht/USD are set independently for reference — Ks is the real price used at checkout.</p>
+            <div>
+              <label className={lbl}>Stock Quantity</label>
+              <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
           </Section>
         </div>

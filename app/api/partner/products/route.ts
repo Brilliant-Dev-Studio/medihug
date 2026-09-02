@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { name, nameEn, description, price, stock, imageUrl, images, category,
+    const { name, nameEn, description, price, priceThb, priceUsd, stock, imageUrl, images, category,
       brand, type, strength, packSize, tags, keyBenefits, isActive } = body;
 
     if (!name) return NextResponse.json({ error: 'name လိုအပ်သည်။' }, { status: 400 });
@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
         nameEn:      nameEn      || null,
         description: description || null,
         price:       price       ?? 0,
+        priceThb:    priceThb === '' || priceThb == null ? null : Number(priceThb),
+        priceUsd:    priceUsd === '' || priceUsd == null ? null : Number(priceUsd),
         stock:       stock       ?? 0,
         imageUrl:    imageUrl    || null,
         images:      Array.isArray(images) ? images.slice(0, 5) : [],

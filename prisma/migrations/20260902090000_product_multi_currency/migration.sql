@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN "priceThb" DOUBLE PRECISION;
+ALTER TABLE "Product" ADD COLUMN "priceUsd" DOUBLE PRECISION;

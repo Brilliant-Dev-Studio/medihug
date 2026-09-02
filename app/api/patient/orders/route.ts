@@ -3,12 +3,13 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { redeemPoints } from '@/lib/pointsLedger';
+import { redeemVoucher, VoucherRedemptionError } from '@/lib/voucherLedger';
 
 /* ── POST /api/patient/orders ── */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, items, paymentMethod, receiptUrl, note, pointsToRedeem } = body;
+    const { name, phone, items, paymentMethod, receiptUrl, note, pointsToRedeem, voucherCode } = body;
 
     if (!name || !phone || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'name, phone, items are required.' }, { status: 400 });
@@ -52,13 +53,32 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const { pointsRedeemed, discountAmount } = await redeemPoints(
-        tx, { userId: user.id, sourceType: 'PRODUCT', sourceId: created.id, pointsToRedeem: pointsToRedeem ?? 0 }, totalAmount,
-      );
+      // Voucher and Points are mutually exclusive per purchase — a voucher code takes
+      // precedence if a client somehow sends both, and points redemption is skipped entirely.
+      let pointsRedeemed = 0;
+      let voucherApplied: string | null = null;
+      let discountAmount = 0;
+      if (voucherCode) {
+        const result = await redeemVoucher(tx, user.id, created.id, {
+          code: voucherCode, sourceType: 'PRODUCT', productIds, purchaseAmount: totalAmount,
+        });
+        voucherApplied = result.voucherCode;
+        discountAmount = result.discountAmount;
+      } else {
+        const result = await redeemPoints(
+          tx, { userId: user.id, sourceType: 'PRODUCT', sourceId: created.id, pointsToRedeem: pointsToRedeem ?? 0 }, totalAmount,
+        );
+        pointsRedeemed = result.pointsRedeemed;
+        discountAmount = result.discountAmount;
+      }
 
       return tx.order.update({
         where: { id: created.id },
-        data: { totalAmount: totalAmount - discountAmount, pointsRedeemed, pointsDiscountAmount: discountAmount },
+        data: {
+          totalAmount: totalAmount - discountAmount,
+          pointsRedeemed, pointsDiscountAmount: voucherApplied ? 0 : discountAmount,
+          voucherCode: voucherApplied, voucherDiscountAmount: voucherApplied ? discountAmount : 0,
+        },
         include: { items: { include: { product: true } }, user: true },
       });
     }, { maxWait: 15000, timeout: 15000 });
@@ -102,6 +122,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (e) {
+    if (e instanceof VoucherRedemptionError) {
+      return NextResponse.json({ error: 'This voucher cannot be used for this order.', code: e.reason }, { status: 400 });
+    }
     if (e instanceof Error && e.message === 'OUT_OF_STOCK') {
       return NextResponse.json({ error: 'One or more items are out of stock.', code: 'OUT_OF_STOCK' }, { status: 409 });
     }

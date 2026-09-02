@@ -152,7 +152,7 @@ function BenefitsList({ benefits, onChange }: { benefits: string[]; onChange: (b
 
 const EMPTY = {
   name: '', nameEn: '', description: '',
-  price: 0, stock: 0, images: [] as string[], category: '',
+  price: 0, priceThb: '', priceUsd: '', stock: 0, images: [] as string[], category: '',
   brand: '', type: '', strength: '', packSize: '',
   tags: [] as string[], keyBenefits: [] as string[],
   isActive: true,
@@ -182,6 +182,8 @@ export default function PartnerNewProductPage() {
           nameEn:      form.nameEn      || null,
           description: form.description || null,
           price:       Number(form.price),
+          priceThb:    form.priceThb === '' ? null : Number(form.priceThb),
+          priceUsd:    form.priceUsd === '' ? null : Number(form.priceUsd),
           stock:       Number(form.stock),
           imageUrl:    form.images[0]   || null,
           images:      form.images,
@@ -269,15 +271,24 @@ export default function PartnerNewProductPage() {
           </Section>
 
           <Section title="Pricing & Stock">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={lbl}>Price (Ks)</label>
+                <label className={lbl}>Price (Ks) *</label>
                 <input className={inp} type="number" min={0} value={form.price} onChange={e => set('price', e.target.value)} />
               </div>
               <div>
-                <label className={lbl}>Stock Quantity</label>
-                <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
+                <label className={lbl}>Price (Baht)</label>
+                <input className={inp} type="number" min={0} step={0.01} value={form.priceThb} onChange={e => set('priceThb', e.target.value)} placeholder="optional" />
               </div>
+              <div>
+                <label className={lbl}>Price (USD)</label>
+                <input className={inp} type="number" min={0} step={0.01} value={form.priceUsd} onChange={e => set('priceUsd', e.target.value)} placeholder="optional" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 -mt-1">Baht/USD are set independently for reference — Ks is the real price used at checkout.</p>
+            <div>
+              <label className={lbl}>Stock Quantity</label>
+              <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
           </Section>
         </div>

@@ -6,7 +6,7 @@ import { requireAdmin } from '@/lib/adminAuth';
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const product = await db.product.findUnique({ where: { id } });
+    const product = await db.product.findUnique({ where: { id }, include: { clinics: { select: { clinicId: true } } } });
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ product });
   } catch (e) {
@@ -20,10 +20,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { id: _id, createdAt, updatedAt, ...data } = body;
+    const { id: _id, createdAt, updatedAt, clinicIds, ...data } = body;
     void _id; void createdAt; void updatedAt;
 
-    const product = await db.product.update({ where: { id }, data });
+    const product = await db.$transaction(async tx => {
+      const updated = await tx.product.update({ where: { id }, data });
+      if (Array.isArray(clinicIds)) {
+        await tx.clinicProduct.deleteMany({ where: { productId: id } });
+        if (clinicIds.length > 0) {
+          await tx.clinicProduct.createMany({ data: clinicIds.map((clinicId: string) => ({ clinicId, productId: id })) });
+        }
+      }
+      return updated;
+    });
     return NextResponse.json({ product });
   } catch (e) {
     console.error(e);

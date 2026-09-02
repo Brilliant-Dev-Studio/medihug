@@ -23,7 +23,6 @@ export default function Footer() {
     { label: tr.contact, href: '/contact' },
     { label: tr.privacy, href: '/privacy' },
     { label: tr.telemedicine, href: '/patient/doctors' },
-    { label: tr.emergencyCare, href: '/patient/booking' },
   ];
 
   return (

@@ -113,6 +113,7 @@ model User {
   healthLogs               HealthLog[]
   programEnrollments       ProgramEnrollment[]
   pointsLedgerEntries      PointsLedger[]
+  voucherRedemptions       VoucherRedemption[]
 }
 
 // ─────────────────────────────────────────────
@@ -166,6 +167,7 @@ model Doctor {
   blogs                Blog[]
   customTimeRequests   CustomTimeRequest[]
   commissionRules      CommissionRule[]
+  vouchers             Voucher[]
 }
 
 // ─────────────────────────────────────────────
@@ -265,6 +267,7 @@ model Clinic {
   revenueLedgerEntries       RevenueLedger[]     @relation("RevenueLedgerClinic")
   revenueLedgerReferrals     RevenueLedger[]     @relation("RevenueLedgerReferralClinic")
   referredProgramEnrollments ProgramEnrollment[] @relation("ProgramEnrollmentReferralClinic")
+  vouchers                   Voucher[]
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -353,9 +356,11 @@ model Appointment {
   fee                  Int? // full patient-paid total (base × sessions, marked up by commission %)
   platformFeeAmount    Int? // platform's cut, snapshotted at booking time
   doctorPayoutAmount   Int? // what the doctor receives, snapshotted at booking time
-  pointsRedeemed       Int               @default(0)
-  pointsDiscountAmount Int               @default(0)
-  receiptUrl           String?
+  pointsRedeemed        Int               @default(0)
+  pointsDiscountAmount  Int               @default(0)
+  voucherCode           String?
+  voucherDiscountAmount Int               @default(0)
+  receiptUrl            String?
   cbPayStatus          CbPayStatus       @default(NONE)
   cbPayRefOrder        String?
   cbPayTransactionId   String?
@@ -467,7 +472,9 @@ model Product {
   name        String
   nameEn      String?
   description String?
-  price       Int      @default(0)
+  price       Int      @default(0) // Kyat (MMK) — the real transactional price, drives checkout/commission/revenue
+  priceThb    Float?   // Thai Baht — informational display price, set independently, no auto-conversion
+  priceUsd    Float?   // US Dollar — informational display price, set independently, no auto-conversion
   stock       Int      @default(0)
   imageUrl    String?
   images      String[] @default([])
@@ -487,6 +494,7 @@ model Product {
   clinics     ClinicProduct[]
   favoritedBy FavoriteProduct[]
   orderItems  OrderItem[]
+  vouchers    Voucher[]
 }
 
 // ─────────────────────────────────────────────
@@ -504,10 +512,12 @@ model Order {
   cbPayTransactionId   String?
   cbPayAmountConfirmed Int?
   cbPayPaidAt          DateTime?
-  totalAmount          Int
-  pointsRedeemed       Int         @default(0)
-  pointsDiscountAmount Int         @default(0)
-  note                 String?
+  totalAmount           Int
+  pointsRedeemed        Int         @default(0)
+  pointsDiscountAmount  Int         @default(0)
+  voucherCode           String?
+  voucherDiscountAmount Int         @default(0)
+  note                  String?
   cancelReason         String?
   cancelledAt          DateTime?
   createdAt            DateTime    @default(now())
@@ -705,6 +715,7 @@ model HealthcareProgram {
   doctors         ProgramDoctor[]
   enrollments     ProgramEnrollment[]
   categoryLinks   CategoryProgram[]
+  vouchers        Voucher[]
 
   @@index([clinicId])
   @@index([categoryId])
@@ -751,10 +762,12 @@ model ProgramEnrollment {
   cbPayTransactionId   String?
   cbPayAmountConfirmed Int?
   cbPayPaidAt          DateTime?
-  amount               Int
-  pointsRedeemed       Int                     @default(0)
-  pointsDiscountAmount Int                     @default(0)
-  intake               Json?
+  amount                Int
+  pointsRedeemed        Int                     @default(0)
+  pointsDiscountAmount  Int                     @default(0)
+  voucherCode           String?
+  voucherDiscountAmount Int                     @default(0)
+  intake                Json?
   status               ProgramEnrollmentStatus @default(PENDING_REVIEW)
   reviewNote           String?
   reviewedAt           DateTime?
@@ -893,6 +906,65 @@ model PointsLedger {
   @@unique([sourceType, sourceId, type])
   @@index([userId])
   @@index([userId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Vouchers — discount codes issued by SuperAdmin (platform-wide) or a
+// Partner (scoped to their own doctors/products/programs), redeemable on
+// Product orders, Program enrollments, and Doctor appointments.
+// See lib/voucherLedger.ts.
+// ─────────────────────────────────────────────
+
+enum VoucherDiscountType {
+  PERCENT
+  FIXED
+}
+
+model Voucher {
+  id            String              @id @default(cuid())
+  code          String              @unique // stored uppercase, e.g. "SAVE20"
+  label         String? // internal note for admin/partner's own reference
+  serviceType   RevenueSourceType // which purchase type this code applies to
+  discountType  VoucherDiscountType
+  discountValue Int // percent (1-100) or a Ks amount, depending on discountType
+  maxDiscountKs Int? // cap on the computed discount (mainly for PERCENT)
+  minPurchaseKs Int                 @default(0)
+  clinicId      String? // set when partner-issued — scopes eligibility to that partner's own doctors/products/programs; null = platform-wide (admin-issued)
+  doctorId      String? // optional narrower scope: only this doctor's consultations
+  productId     String? // optional narrower scope: cart must contain this product
+  programId     String? // optional narrower scope: only this program
+  maxUses       Int? // null = unlimited
+  usedCount     Int                 @default(0)
+  active        Boolean             @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  clinic      Clinic?             @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  doctor      Doctor?             @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  product     Product?            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  program     HealthcareProgram?  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  redemptions VoucherRedemption[]
+
+  @@index([clinicId])
+  @@index([serviceType])
+}
+
+model VoucherRedemption {
+  id             String            @id @default(cuid())
+  voucherId      String
+  userId         String
+  sourceType     RevenueSourceType
+  sourceId       String
+  discountAmount Int
+  createdAt      DateTime          @default(now())
+
+  voucher Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId]) // one redemption per purchase — idempotent guard, mirrors PointsLedger
+  @@index([voucherId])
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────

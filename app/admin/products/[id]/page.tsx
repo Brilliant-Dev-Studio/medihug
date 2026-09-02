@@ -4,6 +4,7 @@ import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Package, Search, X, ChevronDown, Plus } from 'lucide-react';
 import ImageDropzoneMulti from '@/components/admin/ImageDropzoneMulti';
+import ClinicMultiSelect, { type ClinicOption } from '@/components/admin/ClinicMultiSelect';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
@@ -11,11 +12,12 @@ const lbl = 'block text-xs font-semibold text-gray-600 mb-1.5';
 
 interface Product {
   id: string; name: string; nameEn: string | null;
-  description: string | null; price: number; stock: number;
+  description: string | null; price: number; priceThb: number | null; priceUsd: number | null; stock: number;
   imageUrl: string | null; images: string[]; category: string | null; isActive: boolean;
   brand: string | null; type: string | null; strength: string | null;
   packSize: string | null; tags: string[]; keyBenefits: string[];
   rating: number; reviewCount: number;
+  clinics?: { clinicId: string }[];
 }
 interface Category { id: string; name: string; nameEn: string | null; }
 
@@ -159,9 +161,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
+  const [clinics, setClinics]       = useState<ClinicOption[]>([]);
+  const [selectedClinics, setSelectedClinics] = useState<ClinicOption[]>([]);
   const [form, setForm]             = useState({
     name: '', nameEn: '', description: '',
-    price: 0, stock: 0, images: [] as string[], category: '', isActive: true,
+    price: 0, priceThb: '' as number | string, priceUsd: '' as number | string, stock: 0, images: [] as string[], category: '', isActive: true,
     brand: '', type: '', strength: '', packSize: '',
     tags: [] as string[], keyBenefits: [] as string[],
     rating: 0, reviewCount: 0,
@@ -171,15 +175,22 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     Promise.all([
       fetch(`/api/admin/products/${id}`).then(r => r.json()),
       fetch('/api/admin/product-categories').then(r => r.json()),
-    ]).then(([pd, cd]) => {
+      fetch('/api/admin/clinics?pageSize=200').then(r => r.json()),
+    ]).then(([pd, cd, cld]) => {
       const p: Product = pd.product;
       setProduct(p);
       setCategories(cd.categories ?? []);
+      const allClinics: ClinicOption[] = cld.clinics ?? [];
+      setClinics(allClinics);
+      const linkedIds = new Set((p.clinics ?? []).map(c => c.clinicId));
+      setSelectedClinics(allClinics.filter(c => linkedIds.has(c.id)));
       setForm({
         name:        p.name,
         nameEn:      p.nameEn      ?? '',
         description: p.description ?? '',
         price:       p.price,
+        priceThb:    p.priceThb ?? '',
+        priceUsd:    p.priceUsd ?? '',
         stock:       p.stock,
         images:      p.images ?? (p.imageUrl ? [p.imageUrl] : []),
         category:    p.category    ?? '',
@@ -210,6 +221,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           nameEn:      form.nameEn      || null,
           description: form.description || null,
           price:       Number(form.price),
+          priceThb:    form.priceThb === '' ? null : Number(form.priceThb),
+          priceUsd:    form.priceUsd === '' ? null : Number(form.priceUsd),
           stock:       Number(form.stock),
           imageUrl:    form.images[0]   || null,
           images:      form.images,
@@ -223,6 +236,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           rating:      Number(form.rating),
           reviewCount: Number(form.reviewCount),
           isActive:    form.isActive,
+          clinicIds:   selectedClinics.map(c => c.id),
         }),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); return; }
@@ -311,15 +325,24 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </Section>
 
           <Section title="Pricing & Stock">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={lbl}>Price (Ks)</label>
+                <label className={lbl}>Price (Ks) *</label>
                 <input className={inp} type="number" min={0} value={form.price} onChange={e => set('price', e.target.value)} />
               </div>
               <div>
-                <label className={lbl}>Stock Quantity</label>
-                <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
+                <label className={lbl}>Price (Baht)</label>
+                <input className={inp} type="number" min={0} step={0.01} value={form.priceThb} onChange={e => set('priceThb', e.target.value)} placeholder="optional" />
               </div>
+              <div>
+                <label className={lbl}>Price (USD)</label>
+                <input className={inp} type="number" min={0} step={0.01} value={form.priceUsd} onChange={e => set('priceUsd', e.target.value)} placeholder="optional" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 -mt-1">Baht/USD are set independently for reference — Ks is the real price used at checkout.</p>
+            <div>
+              <label className={lbl}>Stock Quantity</label>
+              <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
           </Section>
         </div>
@@ -338,6 +361,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <Section title="Key Benefits">
             <p className="text-xs text-gray-400 -mt-2">Bullet points shown on product detail page</p>
             <BenefitsList benefits={form.keyBenefits} onChange={v => set('keyBenefits', v)} />
+          </Section>
+
+          <Section title="Assign to Partners">
+            <p className="text-xs text-gray-400 -mt-2">Optional — link this product to one or more partners</p>
+            <ClinicMultiSelect selected={selectedClinics} onChange={setSelectedClinics} clinics={clinics} />
           </Section>
 
           <Section title="Settings">

@@ -70,7 +70,6 @@ export const t = {
     services: 'ဝန်ဆောင်မှုများ',
     telemedicine: 'အဝေးမှ ဆေးကုသမှု',
     doctorConsultation: 'ဆရာဝန် တိုင်ပင်ဆွေးနွေးမှု',
-    emergencyCare: 'အရေးပေါ် ကုသမှု',
     footerSupport: 'ပံ့ပိုးမှု',
     footerOperational: 'စနစ်များ ပုံမှန်လည်ပတ်နေသည်',
 
@@ -157,7 +156,6 @@ export const t = {
     services: 'Services',
     telemedicine: 'Telemedicine',
     doctorConsultation: 'Doctor Consultation',
-    emergencyCare: 'Emergency Care',
     footerSupport: 'Support',
     footerOperational: 'All systems operational',
 

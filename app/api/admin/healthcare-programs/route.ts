@@ -4,7 +4,10 @@ import { db } from '@/lib/db';
 /* ── GET /api/admin/healthcare-programs ── */
 export async function GET() {
   try {
-    const programs = await db.healthcareProgram.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'desc' }] });
+    const programs = await db.healthcareProgram.findMany({
+      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+      include: { clinic: { select: { id: true, name: true, nameEn: true } } },
+    });
     return NextResponse.json({ programs });
   } catch (e) {
     console.error(e);
@@ -16,7 +19,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, price, order, isActive, doctorIds, categoryId } = body;
+    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, price, order, isActive, doctorIds, categoryId, clinicId } = body;
 
     if (!imageUrl || !titleMm) {
       return NextResponse.json({ error: 'imageUrl, titleMm are required.' }, { status: 400 });
@@ -31,6 +34,7 @@ export async function POST(req: NextRequest) {
         order: order ?? 0,
         isActive: isActive ?? true,
         categoryId: categoryId || null,
+        clinicId: clinicId || null,
         doctors: Array.isArray(doctorIds) && doctorIds.length > 0
           ? { create: doctorIds.map((doctorId: string) => ({ doctorId })) }
           : undefined,

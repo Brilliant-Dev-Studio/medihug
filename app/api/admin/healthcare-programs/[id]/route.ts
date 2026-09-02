@@ -8,7 +8,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     const program = await db.healthcareProgram.findUnique({
       where: { id },
-      include: { doctors: { select: { doctorId: true } } },
+      include: {
+        doctors: { select: { doctorId: true } },
+        clinic: { select: { id: true, name: true, nameEn: true } },
+      },
     });
     if (!program) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ program });
@@ -23,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, price, order, isActive, doctorIds, categoryId } = body;
+    const { imageUrl, titleMm, titleEn, descMm, descEn, ctaLink, price, order, isActive, doctorIds, categoryId, clinicId } = body;
 
     const data: Record<string, unknown> = {};
     if (imageUrl !== undefined) data.imageUrl = imageUrl;
@@ -36,6 +39,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (order    !== undefined) data.order    = order;
     if (isActive !== undefined) data.isActive = isActive;
     if (categoryId !== undefined) data.categoryId = categoryId || null;
+    if (clinicId   !== undefined) data.clinicId   = clinicId || null;
 
     const program = await db.$transaction(async tx => {
       const updated = await tx.healthcareProgram.update({ where: { id }, data });
