@@ -21,7 +21,7 @@ export default function NoteEditorPanel({ appointment, open, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full sm:w-[420px] h-full bg-gray-50 overflow-y-auto flex flex-col">
+      <div className="relative w-full sm:w-[420px] h-dvh bg-gray-50 overflow-y-auto flex flex-col">
         <div className="sticky top-0 z-10 flex items-center justify-end px-4 pt-4 bg-gray-50">
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center bg-white border border-gray-100 hover:bg-gray-100 text-gray-400 shadow-sm">
             <X className="w-4 h-4" />

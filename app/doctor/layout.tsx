@@ -36,8 +36,13 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
   const pageTitle = navItems.find(i => pathname === i.href || pathname.startsWith(i.href + '/'))?.label ?? 'Doctor Portal';
 
-  // Video call room and the login page render full-screen — skip the portal chrome entirely.
-  if (pathname.endsWith('/call') || pathname === '/doctor/login') return <>{children}</>;
+  // Login page renders full-screen, no realtime needed pre-auth.
+  if (pathname === '/doctor/login') return <>{children}</>;
+
+  // Video call room renders full-screen too (skip the portal chrome), but the in-call chat
+  // panel still needs RealtimeProvider — losing this wrapper here throws
+  // "useRealtime must be used within a RealtimeProvider" as soon as the chat panel mounts.
+  if (pathname.endsWith('/call')) return <RealtimeProvider role="doctor">{children}</RealtimeProvider>;
 
   const handleLogout = async () => {
     await fetch('/api/doctor/logout', { method: 'POST' });

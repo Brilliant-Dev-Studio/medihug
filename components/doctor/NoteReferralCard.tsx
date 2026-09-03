@@ -188,9 +188,9 @@ export default function NoteReferralCard({ appt, mm, onSaved }: {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100">
       <button type="button" onClick={() => setPanelOpen(o => !o)}
-        className={`w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-gray-50/60 transition-colors ${panelOpen ? 'border-b border-gray-50' : ''}`}>
+        className={`w-full flex items-center gap-2.5 px-4 py-3 text-left rounded-t-2xl hover:bg-gray-50/60 transition-colors ${!panelOpen ? 'rounded-b-2xl' : 'border-b border-gray-50'}`}>
         <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}14` }}>
           <NotebookPen className="w-3.5 h-3.5" style={{ color: PRIMARY }} />
         </span>

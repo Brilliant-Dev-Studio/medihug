@@ -123,8 +123,14 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     router.replace('/signin');
   }, [authChecked, patientPhone, router]);
 
-  // Video call room renders full-screen — skip the portal chrome entirely.
-  if (pathname.endsWith('/call')) return <><IncomingCallRing />{children}</>;
+  // Video call room renders full-screen — skip the portal chrome entirely, but the in-call
+  // chat panel still needs RealtimeProvider — losing this wrapper here throws
+  // "useRealtime must be used within a RealtimeProvider" as soon as the chat panel mounts.
+  if (pathname.endsWith('/call')) return (
+    <RealtimeProvider role="patient" phone={patientPhone || undefined}>
+      <IncomingCallRing />{children}
+    </RealtimeProvider>
+  );
 
   // No session → don't render portal at all (redirect handled above).
   if (!authChecked || !patientPhone || portalBlocked) return null;

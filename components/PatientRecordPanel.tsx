@@ -40,7 +40,7 @@ export default function PatientRecordPanel({ appointment, open, onClose }: Props
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full sm:w-[420px] h-full bg-gray-50 overflow-y-auto flex flex-col">
+      <div className="relative w-full sm:w-[420px] h-dvh bg-gray-50 overflow-y-auto flex flex-col">
         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-white border-b border-gray-100">
           <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'လူနာ ဆေးမှတ်တမ်း', en: 'Patient Medical Record' })}</p>
           <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 text-gray-400">
