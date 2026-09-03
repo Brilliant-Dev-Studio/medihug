@@ -66,7 +66,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="text-white/40 text-xs mb-0.5">{lang === 'mm' ? 'ဖုန်း' : 'Phone'}</p>
-                  <p className="text-white text-sm font-medium">09684040180</p>
+                  <p className="text-white text-sm font-medium">09 784 101005</p>
                 </div>
               </div>
 
@@ -234,19 +234,6 @@ export default function ContactPage() {
             )}
           </div>
 
-        </div>
-
-        {/* Map — full width below */}
-        <div className="mt-4 sm:mt-6 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm border border-gray-100 h-56 sm:h-72">
-          <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3819.4530498782!2d96.15218731483!3d16.77449988840!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x30c1ec5b7ef4f191%3A0x9b8d5b9b0f3f9e0b!2sSakura%20Tower%2C%20Yangon!5e0!3m2!1sen!2smm!4v1718000000000!5m2!1sen!2smm"
-            width="100%"
-            height="100%"
-            style={{ border: 0 }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          />
         </div>
 
       </div>
