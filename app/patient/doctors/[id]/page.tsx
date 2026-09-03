@@ -92,6 +92,9 @@ export default function DoctorDetailPage() {
   const [tab,           setTab]           = useState<Tab>(searchParams.get('tab') === 'schedule' ? 'schedule' : 'profile');
   const [lightbox,      setLightbox]      = useState<number | null>(null);
   const [selectedDay,   setSelectedDay]   = useState(0);
+  const [hasPickedDate, setHasPickedDate] = useState(false);
+  const slotsSectionRef = useRef<HTMLDivElement>(null);
+  const dateSelectorRef = useRef<HTMLDivElement>(null);
   const [selectionMode, setSelectionMode] = useState<'single' | 'range'>('single');
   const [selectedSlot,  setSelectedSlot]  = useState<string | null>(null);
   const [rangeStart,    setRangeStart]    = useState<string | null>(null);
@@ -452,13 +455,16 @@ export default function DoctorDetailPage() {
       </div>
 
       {/* Date selector */}
-      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+      <div ref={dateSelectorRef} className="flex gap-2 overflow-x-auto pb-1 scroll-mt-4" style={{ scrollbarWidth: 'none' }}>
         {days.map((d, i) => {
           const active    = i === selectedDay;
           const isToday   = i === 0;
           const hasDrSlot = doctor.slots.some(s => s.dayOfWeek === d.getDay());
           return (
-            <button key={i} onClick={() => { setSelectedDay(i); resetAll(); }}
+            <button key={i} onClick={() => {
+                setSelectedDay(i); resetAll(); setHasPickedDate(true);
+                setTimeout(() => dateSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+              }}
               className="shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-2xl transition-all"
               style={{ minWidth: 60, backgroundColor: active ? PRIMARY : '#fff', border: `1.5px solid ${active ? PRIMARY : (hasDrSlot ? '#bbf7d0' : '#e5e7eb')}`, boxShadow: active ? `0 4px 14px ${PRIMARY}30` : 'none', opacity: hasDrSlot ? 1 : 0.5 }}>
               <span className="text-[10px] font-semibold" style={{ color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af' }}>
@@ -477,6 +483,13 @@ export default function DoctorDetailPage() {
         })}
       </div>
 
+      {!hasPickedDate ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 bg-white rounded-2xl border border-gray-100">
+          <Calendar className="w-10 h-10 text-gray-200" />
+          <p className="text-sm text-gray-400">{mm ? 'အချိန်ဇယား ကြည့်ရှုရန် ရက်စွဲတစ်ခု ရွေးချယ်ပါ' : 'Select a date above to see available times'}</p>
+        </div>
+      ) : (
+      <div ref={slotsSectionRef} className="flex flex-col gap-4 scroll-mt-4">
       {/* Legend */}
       {allSlots.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
@@ -552,6 +565,8 @@ export default function DoctorDetailPage() {
             </div>
           </div>
         ))
+      )}
+      </div>
       )}
 
       {/* Request a custom time */}

@@ -151,8 +151,15 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     <RealtimeProvider role="patient" phone={patientPhone || undefined}>
     <ThemeProvider>
     <IncomingCallRing />
-    <SupportChatWidget />
-    <PatientAIChatWidget stacked />
+    {/* Both floating widgets sit bottom-left/bottom-right — the booking page and doctor detail
+        page (schedule/booking tab) already have their own sticky bottom price bar pinned
+        there, so the widgets would overlap it. Hide on those pages only. */}
+    {pathname !== '/patient/booking' && !pathname.startsWith('/patient/doctors/') && (
+      <>
+        <SupportChatWidget />
+        <PatientAIChatWidget stacked />
+      </>
+    )}
     <DebugLogPanel />
     <div className="h-dvh overflow-hidden bg-gray-50 flex">
 

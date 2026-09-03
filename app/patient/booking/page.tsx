@@ -21,6 +21,19 @@ const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 const ACCENT    = 'var(--color-accent)';
 
+type FormStep = 'review' | 'payment' | 'receipt';
+const STEP_ORDER: FormStep[] = ['review', 'payment', 'receipt'];
+const STEP_TITLES: Record<FormStep, { mm: string; en: string }> = {
+  review:  { mm: 'အချက်အလက် စစ်ဆေးရန်', en: 'Review Booking' },
+  payment: { mm: 'ငွေပေးချေမှု',          en: 'Payment' },
+  receipt: { mm: 'ပြေစာ တင်ရန်',          en: 'Upload Receipt' },
+};
+const STEP_SUBTITLES: Record<FormStep, { mm: string; en: string }> = {
+  review:  { mm: 'အချက်အလက်များကို စစ်ဆေးပါ',  en: 'Check your booking details' },
+  payment: { mm: 'ငွေပေးချေနည်း ရွေးချယ်ပါ',    en: 'Choose how you want to pay' },
+  receipt: { mm: 'ငွေလွှဲပြေစာ တင်ပေးပါ',       en: 'Upload your payment receipt' },
+};
+
 /** Best-effort phone for a returning patient — only used to show their points balance
  * before the intake form (later in this flow) collects the real phone for this booking. */
 function getStoredPatientPhone(): string {
@@ -63,7 +76,7 @@ function BookingContent() {
   const [discount, setDiscount] = useState<{ pointsToRedeem: number; voucherCode: string | null; discountAmount: number }>({ pointsToRedeem: 0, voucherCode: null, discountAmount: 0 });
   const [receipt,    setReceipt]    = useState<{ file: File; url: string } | null>(null);
   const [dragOver,   setDragOver]   = useState(false);
-  const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
+  const [step, setStep] = useState<FormStep | 'intake' | 'done'>('review');
   const [note,       setNote]       = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitErr,  setSubmitErr]  = useState<{ message: string; code?: string } | null>(null);
@@ -74,7 +87,7 @@ function BookingContent() {
     : slotStart;
 
   /* CB Pay gates the medical intake form behind actual payment success, mirroring how other
-   * methods gate it behind the receipt upload — see PaymentCard/SubmitBar's isCb branches. */
+   * methods gate it behind the receipt upload — see PaymentMethodCard/PaymentActionBar's isCb branches. */
   const [cbPhase, setCbPhase] = useState<'idle' | 'paying' | 'failed'>('idle');
   const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
   const [cbAppMissing, setCbAppMissing] = useState(false);
@@ -165,6 +178,12 @@ function BookingContent() {
     if (payMethod === 'cb') { startCbPayment(); return; }
     if (!receipt) return;
     setStep('intake');
+  }
+
+  function handleBack() {
+    if (step === 'payment') setStep('review');
+    else if (step === 'receipt') setStep('payment');
+    else router.back();
   }
 
   const [lastIntake, setLastIntake] = useState<IntakeData | null>(null);
@@ -321,6 +340,7 @@ function BookingContent() {
     );
   }
 
+  /* ── Step 'form' phase (review / payment / receipt) ── */
   return (
     <div className="min-h-full bg-gray-50 lg:bg-gray-100">
 
@@ -335,37 +355,54 @@ function BookingContent() {
           >
             <div className="flex items-center gap-3 mb-1">
               <button
-                onClick={() => router.back()}
+                onClick={handleBack}
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
                 style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
               >
                 <ChevronLeft className="w-4 h-4 text-white" />
               </button>
-              <h1 className="text-2xl font-bold text-white">
-                {mm ? 'ချိန်းဆိုမှု အတည်ပြုရန်' : 'Confirm Booking'}
+              <h1 className="text-2xl font-bold text-white flex-1">
+                {mm ? STEP_TITLES[step].mm : STEP_TITLES[step].en}
               </h1>
+              <span className="text-white/80 text-xs font-bold px-2.5 py-1 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+                {STEP_ORDER.indexOf(step) + 1}/3
+              </span>
             </div>
             <p className="text-white/60 text-sm ml-11">
-              {mm ? 'အချက်အလက်စစ်ဆေးပြီး ငွေချေပါ' : 'Review details and complete payment'}
+              {mm ? STEP_SUBTITLES[step].mm : STEP_SUBTITLES[step].en}
             </p>
+            <StepProgress step={step} />
           </div>
 
           <div className="p-6 flex flex-col gap-5">
-            <BookingInfoCard mm={mm} doctorName={doctorName} doctorNameMm={doctorNameMm}
-              spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel}
-              fee={fee} sessions={sessions} basePrice={basePrice} />
-            <NoteCard mm={mm} note={note} setNote={setNote} />
-            <PaymentCard mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
-              receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
-              setDragOver={setDragOver} fileRef={fileRef} handleFile={handleFile}
-              handleDrop={handleDrop} fee={fee}
-              cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
-              purchaseAmount={basePrice * sessions} discount={discount} onDiscountChange={setDiscount} doctorId={doctorId} />
+            {step === 'review' && (
+              <>
+                <BookingInfoCard mm={mm} doctorName={doctorName} doctorNameMm={doctorNameMm}
+                  spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel}
+                  fee={fee} sessions={sessions} basePrice={basePrice} />
+                <NoteCard mm={mm} note={note} setNote={setNote} />
+              </>
+            )}
+            {step === 'payment' && (
+              <PaymentMethodCard mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
+                fee={fee} cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
+                purchaseAmount={basePrice * sessions} discount={discount} onDiscountChange={setDiscount} doctorId={doctorId} />
+            )}
+            {step === 'receipt' && (
+              <ReceiptUploadCard mm={mm} receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
+                setDragOver={setDragOver} fileRef={fileRef} handleFile={handleFile} handleDrop={handleDrop} fee={fee} />
+            )}
           </div>
 
-          {/* Submit bar */}
+          {/* Action bar */}
           <div className="mt-auto px-6 pb-6">
-            <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink} onSubmit={handleSubmit} />
+            {step === 'review' && <ReviewActionBar mm={mm} onContinue={() => setStep('payment')} />}
+            {step === 'payment' && (
+              <PaymentActionBar mm={mm} payMethod={payMethod} cbPhase={cbPhase} cbDeeplink={cbDeeplink}
+                cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
+                onContinue={() => setStep('receipt')} onPayCb={handleSubmit} />
+            )}
+            {step === 'receipt' && <ReceiptActionBar mm={mm} receipt={receipt} onSubmit={handleSubmit} />}
           </div>
         </div>
       </div>
@@ -383,40 +420,57 @@ function BookingContent() {
         >
           <div className="flex items-center gap-3 mb-1">
             <button
-              onClick={() => router.back()}
+              onClick={handleBack}
               className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
               style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
             >
               <ChevronLeft className="w-4 h-4 text-white" />
             </button>
-            <h1 className="text-xl font-bold text-white">
-              {mm ? 'ချိန်းဆိုမှု အတည်ပြုရန်' : 'Confirm Booking'}
+            <h1 className="text-xl font-bold text-white flex-1">
+              {mm ? STEP_TITLES[step].mm : STEP_TITLES[step].en}
             </h1>
+            <span className="text-white/80 text-xs font-bold px-2.5 py-1 rounded-full shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+              {STEP_ORDER.indexOf(step) + 1}/3
+            </span>
           </div>
           <p className="text-white/60 text-sm ml-11">
-            {mm ? 'အချက်အလက်စစ်ဆေးပြီး ငွေချေပါ' : 'Review details and complete payment'}
+            {mm ? STEP_SUBTITLES[step].mm : STEP_SUBTITLES[step].en}
           </p>
+          <StepProgress step={step} />
         </div>
 
         <div className="px-4 pt-5 flex flex-col gap-4">
-          <BookingInfoCard mm={mm} doctorName={doctorName} doctorNameMm={doctorNameMm}
-            spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel}
-            fee={fee} sessions={sessions} basePrice={basePrice} />
-          <NoteCard mm={mm} note={note} setNote={setNote} />
-          <PaymentCard mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
-            receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
-            setDragOver={setDragOver} fileRef={fileRef} handleFile={handleFile}
-            handleDrop={handleDrop} fee={fee}
-            cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
-            purchaseAmount={basePrice * sessions} discount={discount} onDiscountChange={setDiscount} doctorId={doctorId} />
+          {step === 'review' && (
+            <>
+              <BookingInfoCard mm={mm} doctorName={doctorName} doctorNameMm={doctorNameMm}
+                spec={spec} specMm={specMm} img={img} date={date} timeLabel={timeLabel}
+                fee={fee} sessions={sessions} basePrice={basePrice} />
+              <NoteCard mm={mm} note={note} setNote={setNote} />
+            </>
+          )}
+          {step === 'payment' && (
+            <PaymentMethodCard mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
+              fee={fee} cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
+              purchaseAmount={basePrice * sessions} discount={discount} onDiscountChange={setDiscount} doctorId={doctorId} />
+          )}
+          {step === 'receipt' && (
+            <ReceiptUploadCard mm={mm} receipt={receipt} setReceipt={setReceipt} dragOver={dragOver}
+              setDragOver={setDragOver} fileRef={fileRef} handleFile={handleFile} handleDrop={handleDrop} fee={fee} />
+          )}
         </div>
 
-        {/* Fixed bottom submit */}
+        {/* Fixed bottom action bar */}
         <div
           className="fixed bottom-16 left-0 right-0 px-4 pt-3 pb-4 border-t border-gray-100 z-30"
           style={{ backgroundColor: '#fff', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
         >
-          <SubmitBar mm={mm} receipt={receipt} payMethod={payMethod} fee={fee} cbPhase={cbPhase} cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink} onSubmit={handleSubmit} />
+          {step === 'review' && <ReviewActionBar mm={mm} onContinue={() => setStep('payment')} />}
+          {step === 'payment' && (
+            <PaymentActionBar mm={mm} payMethod={payMethod} cbPhase={cbPhase} cbDeeplink={cbDeeplink}
+              cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
+              onContinue={() => setStep('receipt')} onPayCb={handleSubmit} />
+          )}
+          {step === 'receipt' && <ReceiptActionBar mm={mm} receipt={receipt} onSubmit={handleSubmit} />}
         </div>
       </div>
     </div>
@@ -435,6 +489,21 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
         <p className="text-[10px] text-gray-400 uppercase tracking-wide">{label}</p>
         <p className="text-sm font-semibold text-gray-800 truncate">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function StepProgress({ step }: { step: FormStep }) {
+  const idx = STEP_ORDER.indexOf(step);
+  return (
+    <div className="flex items-center gap-1.5 mt-3 ml-11">
+      {STEP_ORDER.map((s, i) => (
+        <div
+          key={s}
+          className="h-1 flex-1 rounded-full transition-colors"
+          style={{ backgroundColor: i <= idx ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)' }}
+        />
+      ))}
     </div>
   );
 }
@@ -513,20 +582,15 @@ function NoteCard({ mm, note, setNote }: { mm: boolean; note: string; setNote: (
         onChange={e => setNote(e.target.value)}
         rows={3}
         placeholder={mm ? 'ဆရာဝန်ထံ ကြိုတင်ပြောလိုသည့် အကြောင်းအရာ...' : 'Anything the doctor should know in advance...'}
-        className="w-full text-sm text-gray-700 placeholder-gray-300 resize-none outline-none rounded-xl border border-gray-100 px-3 py-2.5 focus:border-blue-200 transition-colors"
+        className="w-full text-sm text-gray-700 placeholder-gray-400 resize-none outline-none rounded-xl border border-gray-100 px-3 py-2.5 focus:border-blue-200 transition-colors"
       />
     </div>
   );
 }
 
-function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOver, setDragOver,
-  fileRef, handleFile, handleDrop, fee, cbDeeplink, cbAppMissing, onRetryDeeplink,
+function PaymentMethodCard({ mm, payMethod, setPayMethod, fee, cbDeeplink, cbAppMissing, onRetryDeeplink,
   purchaseAmount, discount, onDiscountChange, doctorId }: {
   mm: boolean; payMethod: string; setPayMethod: (v: string) => void;
-  receipt: { file: File; url: string } | null; setReceipt: (v: null) => void;
-  dragOver: boolean; setDragOver: (v: boolean) => void;
-  fileRef: React.RefObject<HTMLInputElement | null>;
-  handleFile: (f: File) => void; handleDrop: (e: React.DragEvent) => void;
   fee: string;
   cbDeeplink: string | null; cbAppMissing: boolean; onRetryDeeplink: () => void;
   purchaseAmount: number;
@@ -571,80 +635,105 @@ function PaymentCard({ mm, payMethod, setPayMethod, receipt, setReceipt, dragOve
         mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
         cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={onRetryDeeplink}
       />
-
-      {/* Receipt upload */}
-      {!!payMethod && payMethod !== 'cb' && (
-      <div>
-        <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">
-          {mm ? 'ငွေလွှဲပြေစာ တင်ပါ' : 'Upload payment receipt'}
-        </p>
-
-        {receipt ? (
-          <div className="relative rounded-2xl overflow-hidden border border-gray-100" style={{ height: 180 }}>
-            <Image src={receipt.url} alt="receipt" fill className="object-contain bg-gray-50" />
-            <button
-              onClick={() => setReceipt(null)}
-              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center"
-            >
-              <X className="w-3.5 h-3.5 text-white" />
-            </button>
-            <div
-              className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center gap-2"
-              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)' }}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
-              <span className="text-white text-xs font-semibold truncate">{receipt.file.name}</span>
-            </div>
-          </div>
-        ) : (
-          <div
-            onDrop={handleDrop}
-            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onClick={() => fileRef.current?.click()}
-            className="flex flex-col items-center justify-center gap-2.5 py-8 rounded-2xl border-2 border-dashed cursor-pointer transition-all"
-            style={{
-              borderColor: dragOver ? PRIMARY : '#d1d5db',
-              backgroundColor: dragOver ? '#eff6ff' : '#fafafa',
-            }}
-          >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ backgroundColor: '#eff6ff' }}
-            >
-              <Upload className="w-5 h-5" style={{ color: PRIMARY }} />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-semibold" style={{ color: PRIMARY }}>
-                {mm ? 'ပုံ / PDF တင်ရန် နှိပ်ပါ' : 'Tap to upload image or PDF'}
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">
-                {mm ? 'သို့မဟုတ် ဤနေရာသို့ ဆွဲချပါ' : 'or drag and drop here'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-        />
-      </div>
-      )}
     </div>
   );
 }
 
-function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, cbAppMissing, onRetryDeeplink, onSubmit }: {
-  mm: boolean; receipt: { file: File; url: string } | null; payMethod: string; fee: string;
-  cbPhase: 'idle' | 'paying' | 'failed'; cbDeeplink: string | null; cbAppMissing: boolean;
-  onRetryDeeplink: () => void; onSubmit: () => void;
+function ReceiptUploadCard({ mm, receipt, setReceipt, dragOver, setDragOver, fileRef, handleFile, handleDrop, fee }: {
+  mm: boolean;
+  receipt: { file: File; url: string } | null; setReceipt: (v: null) => void;
+  dragOver: boolean; setDragOver: (v: boolean) => void;
+  fileRef: React.RefObject<HTMLInputElement | null>;
+  handleFile: (f: File) => void; handleDrop: (e: React.DragEvent) => void;
+  fee: string;
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Upload className="w-4 h-4" style={{ color: SECONDARY }} />
+        <p className="text-sm font-bold" style={{ color: PRIMARY }}>
+          {mm ? 'ငွေလွှဲပြေစာ တင်ပါ' : 'Upload payment receipt'}
+        </p>
+      </div>
+      <p className="text-xs text-gray-400 -mt-2">
+        {mm ? `${fee} Ks ကို ပေးချေပြီးပါက ပြေစာဓာတ်ပုံကို တင်ပေးပါ` : `After paying ${fee} Ks, upload a photo of your receipt below.`}
+      </p>
+
+      {receipt ? (
+        <div className="relative rounded-2xl overflow-hidden border border-gray-100" style={{ height: 220 }}>
+          <Image src={receipt.url} alt="receipt" fill className="object-contain bg-gray-50" />
+          <button
+            onClick={() => setReceipt(null)}
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center"
+          >
+            <X className="w-3.5 h-3.5 text-white" />
+          </button>
+          <div
+            className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center gap-2"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)' }}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+            <span className="text-white text-xs font-semibold truncate">{receipt.file.name}</span>
+          </div>
+        </div>
+      ) : (
+        <div
+          onDrop={handleDrop}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onClick={() => fileRef.current?.click()}
+          className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-2xl border-2 border-dashed cursor-pointer transition-all"
+          style={{
+            borderColor: dragOver ? PRIMARY : '#d1d5db',
+            backgroundColor: dragOver ? '#eff6ff' : '#fafafa',
+          }}
+        >
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            style={{ backgroundColor: '#eff6ff' }}
+          >
+            <Upload className="w-5 h-5" style={{ color: PRIMARY }} />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-semibold" style={{ color: PRIMARY }}>
+              {mm ? 'ပုံ / PDF တင်ရန် နှိပ်ပါ' : 'Tap to upload image or PDF'}
+            </p>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              {mm ? 'သို့မဟုတ် ဤနေရာသို့ ဆွဲချပါ' : 'or drag and drop here'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+      />
+    </div>
+  );
+}
+
+function ReviewActionBar({ mm, onContinue }: { mm: boolean; onContinue: () => void }) {
+  return (
+    <button
+      onClick={onContinue}
+      className="w-full py-4 rounded-2xl text-sm font-bold text-white transition-all"
+      style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}
+    >
+      {mm ? 'ဆက်လက်လုပ်ဆောင်ရန်' : 'Continue'}
+    </button>
+  );
+}
+
+function PaymentActionBar({ mm, payMethod, cbPhase, cbDeeplink, cbAppMissing, onRetryDeeplink, onContinue, onPayCb }: {
+  mm: boolean; payMethod: string; cbPhase: 'idle' | 'paying' | 'failed';
+  cbDeeplink: string | null; cbAppMissing: boolean; onRetryDeeplink: () => void;
+  onContinue: () => void; onPayCb: () => void;
 }) {
   const isCb = payMethod === 'cb';
-  const canSubmit = !!payMethod && (isCb ? cbPhase !== 'paying' : receipt !== null);
 
   if (isCb && cbPhase === 'paying') {
     return (
@@ -667,6 +756,7 @@ function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, cbAppMiss
     );
   }
 
+  const canContinue = !!payMethod;
   return (
     <div className="flex flex-col gap-2">
       {isCb && cbPhase === 'failed' && (
@@ -679,7 +769,32 @@ function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, cbAppMiss
           {mm ? '⚠ ငွေပေးချေနည်း ရွေးရန် လိုအပ်သည်' : '⚠ Please select a payment method to continue'}
         </p>
       )}
-      {!!payMethod && !isCb && !receipt && (
+      <button
+        onClick={isCb ? onPayCb : onContinue}
+        disabled={!canContinue}
+        className="w-full py-4 rounded-2xl text-sm font-bold text-white transition-all"
+        style={{
+          background: canContinue
+            ? `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)`
+            : '#d1d5db',
+          cursor: canContinue ? 'pointer' : 'not-allowed',
+        }}
+      >
+        {isCb
+          ? (mm ? 'CB Pay ဖြင့် ငွေချေမည်' : 'Pay with CB Pay')
+          : (mm ? 'ဆက်လက်လုပ်ဆောင်ရန်' : 'Continue')}
+      </button>
+    </div>
+  );
+}
+
+function ReceiptActionBar({ mm, receipt, onSubmit }: {
+  mm: boolean; receipt: { file: File; url: string } | null; onSubmit: () => void;
+}) {
+  const canSubmit = receipt !== null;
+  return (
+    <div className="flex flex-col gap-2">
+      {!receipt && (
         <p className="text-center text-xs text-amber-500 font-semibold">
           {mm ? '⚠ ငွေပေးချေပြေစာ တင်ရန် လိုအပ်သည်' : '⚠ Please upload payment receipt to continue'}
         </p>
@@ -695,9 +810,7 @@ function SubmitBar({ mm, receipt, payMethod, fee, cbPhase, cbDeeplink, cbAppMiss
           cursor: canSubmit ? 'pointer' : 'not-allowed',
         }}
       >
-        {isCb
-          ? (mm ? 'CB Pay ဖြင့် ငွေချေမည်' : 'Pay with CB Pay')
-          : (mm ? 'ဆရာဝန်နှင့်ချိန်းဆိုရန်' : 'Submit Booking')}
+        {mm ? 'ဆရာဝန်နှင့်ချိန်းဆိုရန်' : 'Submit Booking'}
       </button>
     </div>
   );

@@ -134,23 +134,6 @@ export default function PaymentMethodPicker({
                           <p className="text-xs text-gray-500 text-center">
                             {mm ? 'ပုံကို နှိပ်ပြီး ချဲ့ကြည့်နိုင်ပါသည် · MMQR ကို စကင်ဖတ်ပြီး ငွေလွှဲပေးပါ' : 'Tap image to zoom · Scan the MMQR to pay'}
                           </p>
-
-                          {subMethods.length > 0 && (
-                            <div className="w-full flex flex-col gap-1.5">
-                              <p className="text-xs font-semibold" style={{ color: PRIMARY }}>
-                                {mm ? 'ဘယ် App နဲ့ ငွေလွှဲခဲ့ပါသလဲ *' : 'Which app did you pay with? *'}
-                              </p>
-                              <select
-                                required
-                                value={mmqrSelected ? payMethod : ''}
-                                onChange={e => setPayMethod(e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-gray-300"
-                              >
-                                <option value="" disabled>{mm ? 'ရွေးပါ...' : 'Select...'}</option>
-                                {subMethods.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-                              </select>
-                            </div>
-                          )}
                         </div>
                       )}
 
@@ -178,6 +161,24 @@ export default function PaymentMethodPicker({
                   );
                 })}
               </div>
+
+              {(mmqrOpen || mmqrSelected) && subMethods.length > 0 && (
+                <div className="rounded-2xl border-2 p-4 flex flex-col gap-2.5" style={{ borderColor: PRIMARY, backgroundColor: `${PRIMARY}08` }}>
+                  <p className="text-base font-bold" style={{ color: PRIMARY }}>
+                    {mm ? 'ဘယ် App နဲ့ ငွေလွှဲခဲ့ပါသလဲ *' : 'Which app did you pay with? *'}
+                  </p>
+                  <select
+                    required
+                    value={mmqrSelected ? payMethod : ''}
+                    onChange={e => setPayMethod(e.target.value)}
+                    className="w-full bg-white border-2 rounded-xl px-4 py-3.5 text-base font-semibold text-gray-800 outline-none"
+                    style={{ borderColor: `${PRIMARY}40` }}
+                  >
+                    <option value="" disabled>{mm ? 'ရွေးပါ...' : 'Select...'}</option>
+                    {subMethods.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  </select>
+                </div>
+              )}
 
               {zoomQr && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6" onClick={() => setZoomQr(false)}>

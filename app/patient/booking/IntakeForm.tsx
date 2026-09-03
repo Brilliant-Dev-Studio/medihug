@@ -391,7 +391,7 @@ export default function IntakeForm({ mm, onDone }: { mm: boolean; onDone: (data:
   }
 
   const card = 'bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4';
-  const inputCls = 'w-full text-sm text-gray-700 placeholder-gray-300 rounded-xl border border-gray-100 px-3 py-2.5 outline-none focus:border-opacity-60 transition-colors';
+  const inputCls = 'w-full text-sm text-gray-700 placeholder-gray-400 rounded-xl border border-gray-100 px-3 py-2.5 outline-none focus:border-opacity-60 transition-colors';
 
   const CATEGORY_LABELS = CATEGORIES.map(c => ({ id: c.id, icon: c.icon, label: t(mm, c) }));
   const activeCategory = CATEGORY_LABELS.find(c => c.id === category);
