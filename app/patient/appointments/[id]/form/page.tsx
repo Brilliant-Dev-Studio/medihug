@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 import IntakeForm, { type IntakeData } from '../../../booking/IntakeForm';
 import { useLang } from '../../../../lib/LanguageContext';
 import AppointmentChatPanel from '@/components/AppointmentChatPanel';
+import CopyLinkButton from '@/components/CopyLinkButton';
 
 const P  = 'var(--color-primary)';
 const PD = 'var(--color-primary-dark)';
@@ -326,6 +327,15 @@ export default function FormViewPage() {
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
               <span className="text-xs font-semibold text-white">{t(mm, { mm: 'တင်ပြပြီး', en: 'Submitted' })}</span>
             </div>
+            {appt.status === 'CONFIRMED' && (
+              <CopyLinkButton
+                path={`/patient/appointments/${appt.id}/call`}
+                label={t(mm, { mm: 'ဗီဒီယို လင့်ခ် ကူးမည်', en: 'Copy Video Link' })}
+                copiedLabel={t(mm, { mm: 'ကူးပြီးပါပြီ', en: 'Copied!' })}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white transition-colors"
+                style={{ backgroundColor: 'rgba(255,255,255,0.12)' }}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -348,31 +358,40 @@ export default function FormViewPage() {
         </div>
 
         {appt.status === 'CONFIRMED' && (
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${P}12` }}>
-              <Video className="w-5 h-5" style={{ color: P }} />
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${P}12` }}>
+                <Video className="w-5 h-5" style={{ color: P }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'ဗီဒီယိုခေါ်ဆိုမှု', en: 'Video Call' })}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {appt.doctorApproved
+                    ? t(mm, { mm: 'ဆရာဝန် အသင့်ဖြစ်ပါပြီ', en: 'Doctor is ready' })
+                    : t(mm, { mm: 'ဆရာဝန် အတည်ပြုရန် စောင့်နေပါသည်', en: 'Waiting for doctor to approve' })}
+                </p>
+              </div>
+              {appt.doctorApproved ? (
+                <button
+                  onClick={() => router.push(`/patient/appointments/${appt.id}/call`)}
+                  className="text-xs font-bold px-4 py-2.5 rounded-xl text-white shrink-0"
+                  style={{ backgroundColor: P }}
+                >
+                  {t(mm, { mm: 'ခေါ်ဆိုမည်', en: 'Join Call' })}
+                </button>
+              ) : (
+                <span className="text-xs font-semibold px-3 py-2 rounded-xl text-gray-400 bg-gray-50 shrink-0">
+                  {t(mm, { mm: 'မအသင့်သေးပါ', en: 'Not ready' })}
+                </span>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-800">{t(mm, { mm: 'ဗီဒီယိုခေါ်ဆိုမှု', en: 'Video Call' })}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {appt.doctorApproved
-                  ? t(mm, { mm: 'ဆရာဝန် အသင့်ဖြစ်ပါပြီ', en: 'Doctor is ready' })
-                  : t(mm, { mm: 'ဆရာဝန် အတည်ပြုရန် စောင့်နေပါသည်', en: 'Waiting for doctor to approve' })}
-              </p>
-            </div>
-            {appt.doctorApproved ? (
-              <button
-                onClick={() => router.push(`/patient/appointments/${appt.id}/call`)}
-                className="text-xs font-bold px-4 py-2.5 rounded-xl text-white shrink-0"
-                style={{ backgroundColor: P }}
-              >
-                {t(mm, { mm: 'ခေါ်ဆိုမည်', en: 'Join Call' })}
-              </button>
-            ) : (
-              <span className="text-xs font-semibold px-3 py-2 rounded-xl text-gray-400 bg-gray-50 shrink-0">
-                {t(mm, { mm: 'မအသင့်သေးပါ', en: 'Not ready' })}
-              </span>
-            )}
+            <CopyLinkButton
+              path={`/patient/appointments/${appt.id}/call`}
+              label={t(mm, { mm: 'ဗီဒီယို လင့်ခ် ကူးမည်', en: 'Copy Video Link' })}
+              copiedLabel={t(mm, { mm: 'ကူးပြီးပါပြီ', en: 'Copied!' })}
+              className="lg:hidden w-full py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border transition-colors"
+              style={{ color: P, borderColor: `${P}30`, backgroundColor: `${P}08` }}
+            />
           </div>
         )}
 

@@ -7,9 +7,11 @@ import {
   CheckCircle2, Star, RotateCcw, Ban, FileText, CalendarX2, ClipboardCheck,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLang } from '../../lib/LanguageContext';
 import { combineDateAndTime } from '@/lib/timeSlots';
 import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
+import CopyLinkButton from '@/components/CopyLinkButton';
 
 const JOIN_WINDOW_MS = 5 * 60 * 1000;
 
@@ -128,7 +130,7 @@ const STATUS_CONFIG: Record<Status, {
     badgeEn: 'Pending Payment',    badgeMm: 'ငွေပေးချေမှု စောင့်ဆိုင်းနေသည်',
     pillBg: '#f59e0b', pillText: '#fff',
     alertEn: 'Super Admin is actively verifying your 10% mobile wallet deposit slip.',
-    alertMm: 'Admin မှ သင်၏ ငွေပေးချေမှု ၁၀% ဖုန်းဘဏ် ငွေသွင်းဂါမြောက်ကို စစ်ဆေးနေသည်။',
+    alertMm: 'Admin မှ ငွေပေးချေမှု့ကို စစ်ဆေးနေသည်။',
   },
   confirmed: {
     badgeEn: 'Confirmed',          badgeMm: 'အတည်ပြုပြီး',
@@ -214,6 +216,7 @@ function useNow(intervalMs: number): number {
 }
 
 function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; onViewRx: (id: string) => void }) {
+  const router = useRouter();
   const cfg = STATUS_CONFIG[appt.status];
   const now = useNow(15000);
   // Falls back to joinable-on-approval if the time couldn't be parsed, so a bad `time` string never hard-blocks the patient.
@@ -225,7 +228,10 @@ function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; 
   })();
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <div
+      onClick={() => router.push(`/patient/appointments/${appt.id}/form`)}
+      className="bg-white rounded-xl border border-gray-100 overflow-hidden cursor-pointer transition-shadow hover:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)]"
+    >
 
       {/* ── Mobile layout ── */}
       <div className="lg:hidden px-4 py-4 flex flex-col gap-3">
@@ -262,7 +268,7 @@ function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; 
           )}
         </div>
         {/* Action buttons row */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2" onClick={e => e.stopPropagation()}>
           <div className="flex items-center gap-2">
             {appt.status === 'ready' && joinable && (
               <Link href={`/patient/appointments/${appt.id}/call`} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white"
@@ -284,6 +290,15 @@ function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; 
               <button className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-red-400 border border-red-200 active:bg-red-50">
                 <X className="w-3.5 h-3.5" />{mm ? 'ပယ်ဖျက်မည်' : 'Cancel'}
               </button>
+            )}
+            {appt.status !== 'pending_payment' && (
+              <CopyLinkButton
+                path={`/patient/appointments/${appt.id}/call`}
+                label={mm ? 'လင့်ခ် ကူးမည်' : 'Copy Link'}
+                copiedLabel={mm ? 'ကူးပြီး!' : 'Copied!'}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-colors"
+                style={{ color: PRIMARY, borderColor: `${PRIMARY}30`, backgroundColor: `${PRIMARY}08` }}
+              />
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -333,7 +348,7 @@ function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; 
             </span>
           )}
         </div>
-        <div className="shrink-0 flex items-center gap-3">
+        <div className="shrink-0 flex items-center gap-3" onClick={e => e.stopPropagation()}>
           <span className="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap"
             style={{ backgroundColor: cfg.pillBg, color: cfg.pillText }}>
             {mm ? cfg.badgeMm : cfg.badgeEn}
@@ -374,6 +389,15 @@ function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; 
               <X className="w-4 h-4" />{mm ? 'ပယ်ဖျက်မည်' : 'Cancel'}
             </button>
           )}
+          {appt.status !== 'pending_payment' && (
+            <CopyLinkButton
+              path={`/patient/appointments/${appt.id}/call`}
+              label={mm ? 'လင့်ခ် ကူးမည်' : 'Copy Link'}
+              copiedLabel={mm ? 'ကူးပြီး!' : 'Copied!'}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+              style={{ color: PRIMARY, borderColor: `${PRIMARY}30`, backgroundColor: `${PRIMARY}08` }}
+            />
+          )}
           <Link href={`/patient/appointments/${appt.id}/form`} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
             <ChevronRight className="w-4 h-4" />
           </Link>
@@ -384,10 +408,14 @@ function UpcomingCard({ appt, mm, onViewRx }: { appt: Appointment; mm: boolean; 
 }
 
 function PastCard({ appt, mm, onViewRx }: { appt: PastAppointment; mm: boolean; onViewRx: (id: string) => void }) {
+  const router = useRouter();
   const cfg = PAST_CONFIG[appt.status];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <div
+      onClick={() => router.push(`/patient/appointments/${appt.id}/form`)}
+      className="bg-white rounded-xl border border-gray-100 overflow-hidden cursor-pointer transition-shadow hover:shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)]"
+    >
 
       {/* ── Mobile layout ── */}
       <div className="lg:hidden px-4 py-4 flex flex-col gap-3">
@@ -427,7 +455,7 @@ function PastCard({ appt, mm, onViewRx }: { appt: PastAppointment; mm: boolean; 
               {mm ? cfg.mm : cfg.en}
             </span>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
             {appt.hasPrescription && (
               <button onClick={() => onViewRx(appt.id)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
@@ -467,7 +495,7 @@ function PastCard({ appt, mm, onViewRx }: { appt: PastAppointment; mm: boolean; 
             <p className="text-xs text-gray-400 mt-2 leading-relaxed line-clamp-1">{mm ? appt.note_mm : appt.note_en}</p>
           )}
         </div>
-        <div className="shrink-0 flex items-center gap-3">
+        <div className="shrink-0 flex items-center gap-3" onClick={e => e.stopPropagation()}>
           {appt.rating !== undefined && (
             <div className="flex items-center gap-0.5">
               {[1,2,3,4,5].map(s => (

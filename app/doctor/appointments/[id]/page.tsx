@@ -16,6 +16,7 @@ import PrescriptionComposerModal from '@/components/doctor/PrescriptionComposerM
 import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
 import AppointmentChatPanel from '@/components/AppointmentChatPanel';
 import PatientHealthLogsCard from '@/components/PatientHealthLogsCard';
+import CopyLinkButton from '@/components/CopyLinkButton';
 
 interface PastPrescription {
   id: string;
@@ -499,6 +500,13 @@ export default function DoctorAppointmentDetailPage({ params }: { params: Promis
                   {t(mm, { mm: 'ဗီဒီယိုခေါ်ဆိုမည်', en: 'Start Video Call' })}
                 </button>
               )}
+              <CopyLinkButton
+                path={`/doctor/appointments/${id}/call`}
+                label={t(mm, { mm: 'ဗီဒီယို လင့်ခ် ကူးမည်', en: 'Copy Video Link' })}
+                copiedLabel={t(mm, { mm: 'ကူးပြီးပါပြီ', en: 'Copied!' })}
+                className="w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 border transition-colors"
+                style={{ color: PRIMARY, borderColor: `${PRIMARY}30`, backgroundColor: `${PRIMARY}08` }}
+              />
             </div>
           )}
 
