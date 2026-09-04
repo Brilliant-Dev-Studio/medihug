@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Layers, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
@@ -54,6 +55,7 @@ function Badge({ style }: { style: { label: string; bg: string; color: string } 
 }
 
 export default function RevenueLedgerPage() {
+  const router = useRouter();
   const [entries, setEntries]   = useState<LedgerEntry[]>([]);
   const [totals, setTotals]     = useState({ patientPaid: 0, medihugShareAmount: 0, partnerShareAmount: 0, partnerReferralFeeAmount: 0, gatewayFeeAmount: 0, providerShareAmount: 0, netMedihugRevenue: 0 });
   const [loading, setLoading]   = useState(true);
@@ -200,7 +202,7 @@ export default function RevenueLedgerPage() {
                   <p className="text-sm text-gray-400">No revenue ledger entries yet.</p>
                 </td></tr>
               ) : entries.map(e => (
-                <tr key={e.id} className="hover:bg-gray-50/60 transition-colors">
+                <tr key={e.id} onClick={() => router.push(`/admin/finance/revenue-ledger/${e.id}`)} className="hover:bg-gray-50/60 transition-colors cursor-pointer">
                   <td className="px-4 py-3.5">
                     <p className="text-xs font-semibold text-gray-700">{e.sourceType}</p>
                     <p className="text-[10px] text-gray-400">
@@ -237,7 +239,7 @@ export default function RevenueLedgerPage() {
                     {e.providerShareAmount > 0 ? e.providerShareAmount.toLocaleString() : '—'}
                   </td>
                   <td className="px-4 py-3.5 text-right text-sm font-bold" style={{ color: PRIMARY }}>{e.netMedihugRevenue.toLocaleString()}</td>
-                  <td className="px-4 py-3.5">
+                  <td className="px-4 py-3.5" onClick={ev => ev.stopPropagation()}>
                     <select
                       value={e.settlementStatus}
                       disabled={settlingId === e.id}
