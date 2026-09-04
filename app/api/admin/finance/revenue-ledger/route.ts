@@ -43,8 +43,27 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    // CONSULTATION rows carry their patient/doctor/appointment-date detail via the linked
+    // Appointment (sourceId) — the ledger table itself only ever stores money, not who-saw-whom.
+    const appointmentIds = entries.filter(e => e.sourceType === 'CONSULTATION').map(e => e.sourceId);
+    const appointments = appointmentIds.length
+      ? await db.appointment.findMany({
+          where: { id: { in: appointmentIds } },
+          select: {
+            id: true, date: true, time: true,
+            user: { select: { name: true, phone: true } },
+            doctor: { select: { name: true, nameEn: true } },
+          },
+        })
+      : [];
+    const appointmentMap = new Map(appointments.map(a => [a.id, a]));
+    const entriesWithAppointment = entries.map(e => ({
+      ...e,
+      appointment: e.sourceType === 'CONSULTATION' ? appointmentMap.get(e.sourceId) ?? null : null,
+    }));
+
     return NextResponse.json({
-      entries, total, page, totalPages: Math.ceil(total / limit),
+      entries: entriesWithAppointment, total, page, totalPages: Math.ceil(total / limit),
       totals: {
         patientPaid: totals._sum.patientPaid ?? 0,
         medihugShareAmount: totals._sum.medihugShareAmount ?? 0,

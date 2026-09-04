@@ -65,12 +65,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // Consultations are always Medihug-owned revenue (a doctor isn't "owned" by a clinic) —
     // clinicId stays null; a referring clinic (if any) only earns a referral fee, not ownership.
+    // Booked into the ledger the moment admin confirms (so POS reflects it immediately, not
+    // only once the consultation is marked COMPLETED) — recordRevenueLedger upserts by
+    // sourceType+sourceId, so the later COMPLETED pass just re-confirms the same row.
+    if (
+      (status === 'CONFIRMED' && before?.status !== 'CONFIRMED') ||
+      (status === 'COMPLETED' && before?.status !== 'COMPLETED')
+    ) {
+      if (appointment.fee != null) {
+        recordRevenueLedger({
+          sourceType: 'CONSULTATION', sourceId: id, patientPaid: appointment.fee,
+          clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: appointment.paymentMethod,
+          providerShareAmount: appointment.doctorPayoutAmount ?? 0,
+        });
+      }
+    }
+
     if (status === 'COMPLETED' && before?.status !== 'COMPLETED' && appointment.fee != null) {
-      recordRevenueLedger({
-        sourceType: 'CONSULTATION', sourceId: id, patientPaid: appointment.fee,
-        clinicId: null, referralClinicId: appointment.referredClinicId, paymentMethod: appointment.paymentMethod,
-        providerShareAmount: appointment.doctorPayoutAmount ?? 0,
-      });
       awardPoints({ userId: appointment.userId, sourceType: 'CONSULTATION', sourceId: id, netAmountKs: appointment.fee });
     }
 

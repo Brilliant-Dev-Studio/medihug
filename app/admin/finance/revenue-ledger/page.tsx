@@ -9,6 +9,11 @@ interface LedgerEntry {
   id: string;
   sourceType: 'CONSULTATION' | 'PROGRAM' | 'PRODUCT' | 'HOME_SERVICE' | 'PARTNER_SERVICE';
   sourceId: string;
+  appointment: {
+    id: string; date: string; time: string | null;
+    user: { name: string; phone: string | null } | null;
+    doctor: { name: string; nameEn: string | null } | null;
+  } | null;
   patientPaid: number;
   ownershipType: 'MEDIHUG' | 'PARTNER' | 'SHARED';
   clinic: { id: string; name: string; nameEn: string | null } | null;
@@ -172,6 +177,8 @@ export default function RevenueLedgerPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Source</th>
+                <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Patient</th>
+                <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Doctor</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ownership</th>
                 <th className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Clinic</th>
                 <th className="px-4 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Patient Paid</th>
@@ -186,9 +193,9 @@ export default function RevenueLedgerPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={11} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" /></td></tr>
+                <tr><td colSpan={13} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" /></td></tr>
               ) : entries.length === 0 ? (
-                <tr><td colSpan={11} className="py-16 text-center">
+                <tr><td colSpan={13} className="py-16 text-center">
                   <Layers className="w-8 h-8 mx-auto text-gray-200 mb-2" />
                   <p className="text-sm text-gray-400">No revenue ledger entries yet.</p>
                 </td></tr>
@@ -196,7 +203,17 @@ export default function RevenueLedgerPage() {
                 <tr key={e.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-4 py-3.5">
                     <p className="text-xs font-semibold text-gray-700">{e.sourceType}</p>
-                    <p className="text-[10px] text-gray-400">{new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    <p className="text-[10px] text-gray-400">
+                      {new Date(e.appointment?.date ?? e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {e.appointment?.time ? ` · ${e.appointment.time}` : ''}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3.5 text-xs text-gray-600">
+                    {e.appointment?.user?.name ?? '—'}
+                    {e.appointment?.user?.phone && <p className="text-[10px] text-gray-400">{e.appointment.user.phone}</p>}
+                  </td>
+                  <td className="px-4 py-3.5 text-xs text-gray-600">
+                    {e.appointment?.doctor ? (e.appointment.doctor.nameEn ?? e.appointment.doctor.name) : '—'}
                   </td>
                   <td className="px-4 py-3.5"><Badge style={OWNERSHIP_STYLE[e.ownershipType]} /></td>
                   <td className="px-4 py-3.5 text-xs text-gray-500">
