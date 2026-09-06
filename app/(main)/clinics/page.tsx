@@ -150,7 +150,7 @@ function ClinicsByType({ type, highlight, onBack }: { type: string; highlight: s
                 const location = [address, c.township].filter(Boolean).join(', ');
                 const isHighlighted = c.id === highlight;
                 return (
-                  <Link key={c.id} href={`/patient/clinics/${c.id}`}
+                  <Link key={c.id} href={`/clinics/${c.id}`}
                     ref={isHighlighted ? highlightRef : undefined}
                     className={`rounded-2xl border bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow ${
                       isHighlighted ? 'border-2 ring-4' : 'border-gray-100'

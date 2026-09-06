@@ -146,6 +146,14 @@ export default function TopSellingProducts() {
         )}
       </div>
 
+      {!loading && products.length > 0 && (
+        <div className="relative z-10 max-w-6xl mx-auto px-6 mt-6 flex justify-center sm:hidden">
+          <Link href="/products" className="text-xs font-semibold px-5 py-2.5 rounded-full border-2" style={{ color: PRIMARY, borderColor: PRIMARY }}>
+            {tr.viewAll}
+          </Link>
+        </div>
+      )}
+
       {needsIdentity && <IdentifyModal mm={mm} onClose={closeIdentity} onSubmit={submitIdentity} />}
     </section>
   );

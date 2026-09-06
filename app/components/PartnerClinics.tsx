@@ -150,7 +150,7 @@ export default function PartnerClinics() {
                       </a>
                     )}
                     <Link
-                      href={`/patient/clinics/${c.id}`}
+                      href={`/clinics/${c.id}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-2.5 rounded-full text-white text-[11px] sm:text-xs font-bold hover:opacity-90 transition-opacity"
                       style={{ backgroundColor: PRIMARY }}
                     >
@@ -164,6 +164,14 @@ export default function PartnerClinics() {
           })
         )}
       </div>
+
+      {!loading && clinics.length > 0 && (
+        <div className="relative z-10 max-w-6xl mx-auto px-6 mt-6 flex justify-center sm:hidden">
+          <Link href="/clinics" className="text-xs font-semibold px-5 py-2.5 rounded-full border-2" style={{ color: PRIMARY, borderColor: PRIMARY }}>
+            {tr.seeAll}
+          </Link>
+        </div>
+      )}
     </section>
   );
 }
