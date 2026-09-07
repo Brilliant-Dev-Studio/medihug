@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const user = await db.user.findUnique({
       where:  { phone },
-      select: { id: true, name: true, phone: true, gender: true, birthday: true, state: true, township: true, profileImage: true, role: true },
+      select: { id: true, name: true, phone: true, gender: true, birthday: true, state: true, township: true, address: true, profileImage: true, role: true },
     });
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { phone, profileImage, name, gender, birthday, state, township } = body;
+    const { phone, profileImage, name, gender, birthday, state, township, address } = body;
 
     if (!phone) {
       return NextResponse.json({ error: 'phone is required.' }, { status: 400 });
@@ -44,11 +44,12 @@ export async function PATCH(req: NextRequest) {
     if (birthday !== undefined) data.birthday = birthday ? new Date(birthday) : null;
     if (state !== undefined) data.state = state || null;
     if (township !== undefined) data.township = township || null;
+    if (address !== undefined) data.address = address || null;
 
     const user = await db.user.update({
       where: { phone },
       data,
-      select: { id: true, name: true, phone: true, gender: true, birthday: true, state: true, township: true, profileImage: true },
+      select: { id: true, name: true, phone: true, gender: true, birthday: true, state: true, township: true, address: true, profileImage: true },
     });
 
     return NextResponse.json({ user });

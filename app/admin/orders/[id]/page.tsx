@@ -16,6 +16,7 @@ interface Order {
   id: string;
   status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
   totalAmount: number; paymentMethod: string | null; receiptUrl: string | null; note: string | null;
+  deliveryAddress: string | null;
   cbPayStatus: 'NONE' | 'INITIATED' | 'SUCCESS' | 'FAILED';
   cbPayTransactionId: string | null;
   cancelReason: string | null;
@@ -121,6 +122,12 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                 </div>
               </div>
             </div>
+            {order.deliveryAddress && (
+              <div className="mt-4 pt-4 border-t border-gray-50">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Delivery Address</p>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">{order.deliveryAddress}</p>
+              </div>
+            )}
             {order.note && (
               <div className="mt-4 pt-4 border-t border-gray-50">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Note</p>

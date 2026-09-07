@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '@/components/admin/ConfirmModal';
+import DangerDeleteModal from '@/components/admin/DangerDeleteModal';
 
 const PRIMARY = '#2ab5ad';
 
@@ -380,12 +381,12 @@ export default function AdminDoctorsPage() {
         )}
       </div>
 
-      <ConfirmModal
+      <DangerDeleteModal
         open={!!removeTarget}
         title="Delete doctor permanently?"
-        message={removeTarget ? `"${removeTarget.name}" and all related data (appointments, reviews, slots, gallery) will be permanently deleted. This cannot be undone.` : ''}
+        message="All related data (appointments, reviews, slots, gallery) will be permanently deleted. This cannot be undone."
+        itemName={removeTarget?.name ?? ''}
         confirmLabel="Delete"
-        variant="danger"
         loading={removingId === removeTarget?.id}
         onConfirm={confirmRemove}
         onCancel={() => setRemoveTarget(null)}

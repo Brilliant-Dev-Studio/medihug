@@ -22,6 +22,7 @@ interface Enrollment {
   cbPayStatus: string;
   cbPayTransactionId: string | null;
   intake: IntakeData | null;
+  deliveryAddress: string | null;
   status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
   reviewNote: string | null;
   createdAt: string;
@@ -184,6 +185,13 @@ export default function ProgramEnrollmentDetailPage({ params }: { params: Promis
         { label: 'CB Pay Status', value: enrollment.cbPayStatus },
         { label: 'CB Pay Transaction', value: enrollment.cbPayTransactionId ?? '—' },
       ]} />
+
+      {enrollment.deliveryAddress && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Delivery Address</p>
+          <p className="text-sm text-gray-600 whitespace-pre-wrap">{enrollment.deliveryAddress}</p>
+        </div>
+      )}
 
       {enrollment.receiptUrl && (
         <div className="bg-white rounded-2xl border border-gray-100 p-4">

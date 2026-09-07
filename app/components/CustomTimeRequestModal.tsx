@@ -6,6 +6,11 @@ import { X, CalendarClock } from 'lucide-react';
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 
+function getStoredPatient(): { name: string; phone: string } | null {
+  if (typeof window === 'undefined') return null;
+  try { return JSON.parse(localStorage.getItem('medihug_patient') ?? 'null'); } catch { return null; }
+}
+
 export default function CustomTimeRequestModal({ mm, defaultDateIso, onClose, onSubmit, submitting }: {
   mm: boolean;
   defaultDateIso: string;
@@ -14,8 +19,9 @@ export default function CustomTimeRequestModal({ mm, defaultDateIso, onClose, on
   submitting: boolean;
 }) {
   const todayIso = new Date().toISOString().slice(0, 10);
-  const [name, setName]     = useState('');
-  const [phone, setPhone]   = useState('');
+  const patient = getStoredPatient();
+  const [name, setName]     = useState(patient?.name  ?? '');
+  const [phone, setPhone]   = useState(patient?.phone ?? '');
   const [date, setDate]     = useState(defaultDateIso.slice(0, 10));
   const [hour, setHour]     = useState('');
   const [minute, setMinute] = useState('');

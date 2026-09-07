@@ -14,6 +14,7 @@ import { useCart } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
 import DiscountBox from '@/components/DiscountBox';
+import DeliveryAddressSection from '@/components/DeliveryAddressSection';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
@@ -57,6 +58,7 @@ function CheckoutContent() {
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
   const [note,      setNote]      = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
   const [done,       setDone]       = useState(false);
@@ -96,7 +98,7 @@ function CheckoutContent() {
 
   async function handleSubmit() {
     const isCb = payMethod === 'cb';
-    if (!payMethod || !name.trim() || !phone.trim() || (!isCb && !receipt)) return;
+    if (!payMethod || !name.trim() || !phone.trim() || !deliveryAddress.trim() || (!isCb && !receipt)) return;
     setSubmitting(true); setError('');
     try {
       const receiptUrl = isCb ? null : await compressAndUpload(receipt!.file, () => {}, '/api/patient/upload');
@@ -106,6 +108,7 @@ function CheckoutContent() {
           name: name.trim(), phone: phone.trim(),
           items: checkoutLines.map(l => ({ productId: l.productId, quantity: l.quantity })),
           paymentMethod: payMethod, receiptUrl, note,
+          deliveryAddress: deliveryAddress.trim(),
           pointsToRedeem: discount.pointsToRedeem,
           voucherCode: discount.voucherCode,
         }),
@@ -226,7 +229,7 @@ function CheckoutContent() {
   }
 
   const isCb = payMethod === 'cb';
-  const canSubmit = !!payMethod && !!name.trim() && !!phone.trim() && !submitting && (isCb || !!receipt);
+  const canSubmit = !!payMethod && !!name.trim() && !!phone.trim() && !!deliveryAddress.trim() && !submitting && (isCb || !!receipt);
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -283,6 +286,9 @@ function CheckoutContent() {
                 placeholder={mm ? 'မှတ်ချက် (ရွေးချယ်စရာ)' : 'Note (optional)'}
                 className="w-full text-sm text-gray-700 rounded-xl border border-gray-200 px-3.5 py-2.5 outline-none focus:border-gray-300 transition-colors resize-none" />
             </div>
+
+            {/* delivery address */}
+            <DeliveryAddressSection mm={mm} phone={phone} onChange={setDeliveryAddress} />
 
             {/* payment — mirrors app/patient/booking payment section */}
             <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
@@ -353,6 +359,11 @@ function CheckoutContent() {
             {error && <p className="text-center text-xs text-red-500 font-semibold">{error}</p>}
 
             <div className="flex flex-col gap-2">
+              {!deliveryAddress.trim() && (
+                <p className="text-center text-xs text-amber-500 font-semibold">
+                  {mm ? '⚠ ပို့ဆောင်မည့်လိပ်စာ ဖြည့်ရန် လိုအပ်သည်' : '⚠ Please enter a delivery address to continue'}
+                </p>
+              )}
               {!payMethod && (
                 <p className="text-center text-xs text-amber-500 font-semibold">
                   {mm ? '⚠ ငွေပေးချေနည်း ရွေးရန် လိုအပ်သည်' : '⚠ Please select a payment method to continue'}

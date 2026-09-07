@@ -16,7 +16,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id: programId } = await params;
     const body = await req.json();
     const {
-      name, phone, paymentMethod, receiptUrl, intake,
+      name, phone, paymentMethod, receiptUrl, intake, deliveryAddress,
       cbPayOrderId, cbPayGenerateRefOrder, pointsToRedeem, voucherCode,
     } = body;
 
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           receiptUrl: receiptUrl ?? null,
           amount: program.price,
           intake: intake ?? undefined,
+          deliveryAddress: deliveryAddress ?? null,
           ...(cbPayVerified ? {
             cbPayStatus: 'SUCCESS' as const,
             cbPayRefOrder: cbPayGenerateRefOrder,

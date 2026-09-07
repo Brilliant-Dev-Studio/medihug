@@ -117,14 +117,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-/* ── DELETE /api/admin/clinics/[id] ── */
+/* ── DELETE /api/admin/clinics/[id] — permanently removes the clinic. Clinic-owned data
+ * (branches, gallery, doctor/product links, clinic-scoped vouchers, referral QR records)
+ * cascades away with it; real business records (appointments, programs, revenue ledger)
+ * only have their clinicId cleared (see schema onDelete rules), never deleted. ── */
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin(req, 'partners.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const { id } = await params;
-    await db.clinic.update({ where: { id }, data: { isActive: false } });
+    const clinic = await db.clinic.findUnique({ where: { id }, select: { id: true } });
+    if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    await db.clinic.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (e) {
     console.error(e);

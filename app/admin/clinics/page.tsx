@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search, Plus, Loader2, CheckCircle2, XCircle,
-  Building2, ChevronLeft, ChevronRight, MapPin, Phone, Clock, ShieldCheck,
+  Building2, ChevronLeft, ChevronRight, MapPin, Phone, Clock, ShieldCheck, Trash2,
 } from 'lucide-react';
+import DangerDeleteModal from '@/components/admin/DangerDeleteModal';
 
 const PRIMARY = '#2ab5ad';
 
@@ -29,6 +30,8 @@ export default function AdminClinicsPage() {
   const [isActive, setIsActive]     = useState('');
   const [page, setPage]             = useState(1);
   const [partnerTypes, setPartnerTypes] = useState<PartnerType[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<Clinic | null>(null);
+  const [removingId, setRemovingId]     = useState<string | null>(null);
   const pageSize                    = 12;
 
   useEffect(() => {
@@ -61,6 +64,20 @@ export default function AdminClinicsPage() {
       body: JSON.stringify({ isActive: !c.isActive }),
     });
     load();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setRemovingId(deleteTarget.id);
+    try {
+      const res = await fetch(`/api/admin/clinics/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) return;
+      setClinics(prev => prev.filter(c => c.id !== deleteTarget.id));
+      setTotal(prev => Math.max(0, prev - 1));
+    } finally {
+      setRemovingId(null);
+      setDeleteTarget(null);
+    }
   };
 
   return (
@@ -165,14 +182,22 @@ export default function AdminClinicsPage() {
                 )}
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-xs text-gray-400">{c._count?.doctors ?? 0} doctors</span>
-                  <button
-                    onClick={e => toggleActive(e, c)}
-                    className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${c.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}
-                  >
-                    {c.isActive
-                      ? <><CheckCircle2 size={11} /> Active</>
-                      : <><XCircle size={11} /> Inactive</>}
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={e => toggleActive(e, c)}
+                      className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${c.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}
+                    >
+                      {c.isActive
+                        ? <><CheckCircle2 size={11} /> Active</>
+                        : <><XCircle size={11} /> Inactive</>}
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeleteTarget(c); }}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -209,6 +234,17 @@ export default function AdminClinicsPage() {
           </div>
         </div>
       )}
+
+      <DangerDeleteModal
+        open={!!deleteTarget}
+        title="Delete partner permanently?"
+        message="All branches, gallery photos, and doctor/product links for this partner will be permanently deleted. Appointments, programs, and revenue history stay intact but unlinked from this partner. This cannot be undone."
+        itemName={deleteTarget?.name ?? ''}
+        confirmLabel="Delete"
+        loading={removingId === deleteTarget?.id}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

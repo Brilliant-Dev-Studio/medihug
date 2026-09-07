@@ -245,6 +245,7 @@ export default function DoctorDetailPage() {
         return;
       }
       toast.success(mm ? 'တောင်းဆိုမှု ပေးပို့ပြီးပါပြီ — Admin မှ ဆက်သွယ်ပါမည်' : 'Request sent — our team will contact you');
+      localStorage.setItem('medihug_patient', JSON.stringify({ name: data.name, phone: data.phone }));
       setShowCustomRequest(false);
     } catch {
       toast.error(mm ? 'Server ချိတ်ဆက်မှု မအောင်မြင်ပါ' : 'Could not connect to server');
@@ -741,11 +742,6 @@ export default function DoctorDetailPage() {
               <p className="text-2xl font-bold" style={{ color: PRIMARY }}>
                 {totalFee.toLocaleString()} <span className="text-sm font-semibold text-gray-400">MMK</span>
               </p>
-              {doctor.patientPrice > doctor.price && (
-                <p className="text-[11px] text-gray-400 mt-1">
-                  {mm ? 'ဆရာဝန်ခ' : 'Doctor'} {(doctor.price * sessionCount).toLocaleString()} + {mm ? 'ပလက်ဖောင်းခ' : 'Platform fee'} {((doctor.patientPrice - doctor.price) * sessionCount).toLocaleString()} MMK
-                </p>
-              )}
             </div>
             <button onClick={goToBooking}
               className="block w-full text-center text-sm font-bold py-3.5 rounded-xl text-white transition-opacity hover:opacity-90"
@@ -813,11 +809,6 @@ export default function DoctorDetailPage() {
               <span className="text-xl font-bold" style={{ color: PRIMARY }}>{totalFee.toLocaleString()} MMK</span>
             </div>
           </div>
-          {doctor.patientPrice > doctor.price && (
-            <p className="text-center text-[10px] text-gray-400 mb-2">
-              {mm ? 'ဆရာဝန်ခ' : 'Doctor'} {(doctor.price * sessionCount).toLocaleString()} + {mm ? 'ပလက်ဖောင်းခ' : 'Platform fee'} {((doctor.patientPrice - doctor.price) * sessionCount).toLocaleString()} MMK
-            </p>
-          )}
           <button onClick={goToBooking}
             className="block w-full text-center text-base font-bold py-4 rounded-2xl text-white active:scale-95 transition-transform"
             style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>

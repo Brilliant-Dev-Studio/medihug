@@ -44,6 +44,7 @@ export default function ProfilePage() {
   const [gender, setGender]     = useState<'male' | 'female'>('male');
   const [state, setState]       = useState(STATES[0]);
   const [township, setTownship] = useState('');
+  const [address, setAddress]   = useState('');
   const [saved, setSaved]       = useState(false);
   const [saving, setSaving]     = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -75,6 +76,7 @@ export default function ProfilePage() {
       if (u?.gender) setGender(u.gender === 'FEMALE' ? 'female' : 'male');
       if (u?.state) setState(u.state);
       if (u?.township) setTownship(u.township);
+      if (u?.address) setAddress(u.address);
       if (u?.birthday) {
         const d2 = new Date(u.birthday);
         setDay(String(d2.getUTCDate()));
@@ -125,7 +127,7 @@ export default function ProfilePage() {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone, name: name.trim(), gender: gender === 'female' ? 'FEMALE' : 'MALE',
-          birthday, state, township,
+          birthday, state, township, address: address.trim(),
         }),
       });
       const data = await res.json();
@@ -253,6 +255,12 @@ export default function ProfilePage() {
             </label>
             <input className={inputCls} value={township} onChange={e => setTownship(e.target.value)}
               placeholder={mm ? 'မြို့နယ် ထည့်ပါ' : 'Enter township'} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-gray-500">{mm ? 'အသေးစိတ်လိပ်စာ' : 'Delivery Address'}</label>
+            <textarea className={inputCls} value={address} onChange={e => setAddress(e.target.value)} rows={2}
+              placeholder={mm ? 'အိမ်/လမ်း/ရပ်ကွက် အသေးစိတ် ထည့်ပါ' : 'House no., street, ward, etc.'} />
+            <p className="text-[11px] text-gray-400">{mm ? 'ကုန်ပစ္စည်း/အစီအစဉ် checkout မှာ default ပို့ဆောင်လိပ်စာအဖြစ် သုံးပါမည်' : 'Used as your default delivery address at checkout'}</p>
           </div>
         </div>
       </div>

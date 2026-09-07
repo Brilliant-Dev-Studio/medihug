@@ -9,7 +9,7 @@ import { redeemVoucher, VoucherRedemptionError } from '@/lib/voucherLedger';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, phone, items, paymentMethod, receiptUrl, note, pointsToRedeem, voucherCode } = body;
+    const { name, phone, items, paymentMethod, receiptUrl, note, deliveryAddress, pointsToRedeem, voucherCode } = body;
 
     if (!name || !phone || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'name, phone, items are required.' }, { status: 400 });
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
           paymentMethod: paymentMethod ?? null,
           receiptUrl: receiptUrl ?? null,
           note: note ?? null,
+          deliveryAddress: deliveryAddress ?? null,
           items: { create: itemsData },
         },
       });

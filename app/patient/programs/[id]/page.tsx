@@ -14,6 +14,7 @@ import IntakeForm, { IntakeData } from '../../booking/IntakeForm';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
 import DiscountBox from '@/components/DiscountBox';
+import DeliveryAddressSection from '@/components/DeliveryAddressSection';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
 
@@ -53,6 +54,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
   const [discount, setDiscount] = useState<{ pointsToRedeem: number; voucherCode: string | null; discountAmount: number }>({ pointsToRedeem: 0, voucherCode: null, discountAmount: 0 });
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [step, setStep] = useState<'form' | 'intake' | 'done'>('form');
   const [submitting, setSubmitting] = useState(false);
   const [submitErr,  setSubmitErr]  = useState<{ message: string } | null>(null);
@@ -144,7 +146,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
   }
 
   function handleSubmit() {
-    if (!payMethod) return;
+    if (!payMethod || !deliveryAddress.trim()) return;
     if (payMethod === 'cb') { startCbPayment(); return; }
     if (!receipt) return;
     setStep('intake');
@@ -169,6 +171,7 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
           voucherCode: discount.voucherCode,
           receiptUrl,
           intake,
+          deliveryAddress: deliveryAddress.trim(),
           ...(isCb && cbProof ? { cbPayOrderId: cbProof.orderId, cbPayGenerateRefOrder: cbProof.generateRefOrder } : {}),
         }),
       });
@@ -332,6 +335,9 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
+        {/* Delivery address */}
+        <DeliveryAddressSection mm={mm} phone={getStoredPatientPhone()} onChange={setDeliveryAddress} />
+
         {/* Payment */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
           <div className="flex items-center gap-2">
@@ -405,6 +411,9 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
             {payMethod === 'cb' && cbPhase === 'failed' && (
               <p className="text-center text-xs text-red-500 font-semibold">{mm ? '⚠ ငွေချေမှု မအောင်မြင်ပါ။ ထပ်စမ်းကြည့်ပါ' : '⚠ Payment was not successful. Please try again.'}</p>
             )}
+            {!deliveryAddress.trim() && (
+              <p className="text-center text-xs text-amber-500 font-semibold">{mm ? '⚠ ပို့ဆောင်မည့်လိပ်စာ ဖြည့်ရန် လိုအပ်သည်' : '⚠ Please enter a delivery address to continue'}</p>
+            )}
             {!payMethod && (
               <p className="text-center text-xs text-amber-500 font-semibold">{mm ? '⚠ ငွေပေးချေနည်း ရွေးရန် လိုအပ်သည်' : '⚠ Please select a payment method to continue'}</p>
             )}
@@ -413,11 +422,11 @@ export default function ProgramPurchasePage({ params }: { params: Promise<{ id: 
             )}
             <button
               onClick={handleSubmit}
-              disabled={!payMethod || (payMethod === 'cb' ? false : !receipt)}
+              disabled={!payMethod || !deliveryAddress.trim() || (payMethod === 'cb' ? false : !receipt)}
               className="w-full py-4 rounded-2xl text-sm font-bold text-white transition-all"
               style={{
-                background: (!!payMethod && (payMethod === 'cb' || receipt)) ? `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` : '#d1d5db',
-                cursor: (!!payMethod && (payMethod === 'cb' || receipt)) ? 'pointer' : 'not-allowed',
+                background: (!!payMethod && !!deliveryAddress.trim() && (payMethod === 'cb' || receipt)) ? `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` : '#d1d5db',
+                cursor: (!!payMethod && !!deliveryAddress.trim() && (payMethod === 'cb' || receipt)) ? 'pointer' : 'not-allowed',
               }}
             >
               {payMethod === 'cb' ? (mm ? 'CB Pay ဖြင့် ငွေချေမည်' : 'Pay with CB Pay') : (mm ? 'ဝယ်ယူရန်' : 'Enroll Now')}

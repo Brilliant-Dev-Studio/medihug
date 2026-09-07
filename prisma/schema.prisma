@@ -93,6 +93,7 @@ model User {
   birthday     DateTime?
   state        String?
   township     String?
+  address      String? // free-text delivery/home address, distinct from state/township — used as the default checkout delivery address
   profileImage String?
   isActive     Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -518,6 +519,7 @@ model Order {
   voucherCode           String?
   voucherDiscountAmount Int         @default(0)
   note                  String?
+  deliveryAddress      String? // snapshotted at checkout — may differ from the patient's current profile address
   cancelReason         String?
   cancelledAt          DateTime?
   createdAt            DateTime    @default(now())
@@ -768,6 +770,7 @@ model ProgramEnrollment {
   voucherCode           String?
   voucherDiscountAmount Int                     @default(0)
   intake                Json?
+  deliveryAddress      String? // snapshotted at checkout — may differ from the patient's current profile address
   status               ProgramEnrollmentStatus @default(PENDING_REVIEW)
   reviewNote           String?
   reviewedAt           DateTime?

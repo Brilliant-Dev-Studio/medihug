@@ -6,6 +6,7 @@ import {
   Search, Plus, Loader2, CheckCircle2, XCircle,
   Package, ChevronLeft, ChevronRight, Edit2, Trash2,
 } from 'lucide-react';
+import DangerDeleteModal from '@/components/admin/DangerDeleteModal';
 
 const PRIMARY = '#2ab5ad';
 
@@ -22,44 +23,6 @@ interface Product {
   createdAt: string;
 }
 
-/* ── Delete Confirm Modal ── */
-function DeleteModal({ product, onClose, onDeleted }: {
-  product: Product; onClose: () => void; onDeleted: () => void;
-}) {
-  const [loading, setLoading] = useState(false);
-
-  const handleDelete = async () => {
-    setLoading(true);
-    await fetch(`/api/admin/products/${product.id}`, { method: 'DELETE' });
-    setLoading(false);
-    onDeleted();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl p-6 w-80 shadow-2xl">
-        <h3 className="font-bold text-gray-800 mb-2">Delete product?</h3>
-        <p className="text-sm text-gray-500 mb-5">
-          <span className="font-medium text-gray-700">{product.name}</span> will be permanently deleted.
-        </p>
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2 rounded-xl border text-sm font-medium text-gray-600 hover:bg-gray-50">
-            Cancel
-          </button>
-          <button
-            onClick={handleDelete} disabled={loading}
-            className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : null}
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ── Main Page ── */
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -72,6 +35,7 @@ export default function AdminProductsPage() {
   const [page, setPage]           = useState(1);
   const pageSize                  = 12;
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [removingId, setRemovingId]     = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,6 +62,19 @@ export default function AdminProductsPage() {
       body: JSON.stringify({ isActive: !p.isActive }),
     });
     load();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setRemovingId(deleteTarget.id);
+    try {
+      const res = await fetch(`/api/admin/products/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) return;
+      setDeleteTarget(null);
+      load();
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   const pageNums = (() => {
@@ -279,13 +256,16 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      {deleteTarget && (
-        <DeleteModal
-          product={deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onDeleted={() => { setDeleteTarget(null); load(); }}
-        />
-      )}
+      <DangerDeleteModal
+        open={!!deleteTarget}
+        title="Delete product permanently?"
+        message="This product will be permanently deleted. This cannot be undone."
+        itemName={deleteTarget?.name ?? ''}
+        confirmLabel="Delete"
+        loading={removingId === deleteTarget?.id}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
