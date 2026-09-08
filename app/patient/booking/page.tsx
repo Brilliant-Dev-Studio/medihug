@@ -635,6 +635,21 @@ function PaymentMethodCard({ mm, payMethod, setPayMethod, fee, cbDeeplink, cbApp
         mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}
         cbDeeplink={cbDeeplink} cbAppMissing={cbAppMissing} onRetryDeeplink={onRetryDeeplink}
       />
+
+      <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 flex flex-col gap-2">
+        <p className="text-xs font-bold text-gray-700">
+          စည်းမျဉ်း စည်းကမ်းများ ( ရက်ချိန်း/ဘွတ်ကင် အတည်မပြုခင် သေချာစွာဖတ်ရှုပါ )
+        </p>
+        <p className="text-[11px] leading-relaxed text-gray-500">
+          ၁။ ဆရာဝန်နှင့် ရက်ချိန်းပြောင်းလဲလိုပါက တိုင်ပင်ဆွေးနွေးမှု မစတင်ခင် ၁ နာရီ အလို အချိန်ထိ တောင်းဆိုနိုင်သည်။ (လက်ရှိရွေးချယ်ပြီးဖြစ်သော ဆရာဝန်နှင့် တစ်ကြိမ်သာ ပြောင်းလဲခွင့်ရှိသည်)။
+        </p>
+        <p className="text-[11px] leading-relaxed text-gray-500">
+          ၂။ ရက်ချိန်းပယ်ဖျက်ခြင်းနှင့် ငွေပြန်အမ်းခြင်းများအား အထူးအခြေအနေများ (လူနာ အရေးပေါ်ဆေးရုံတက်ရခြင်း (သို့) လူနာဆုံးပါးခြင်း) ၌သာ လက်ခံသွားပါမည်။
+        </p>
+        <p className="text-[11px] leading-relaxed text-gray-500">
+          ၃။ ရက်ချိန်းပြောင်းလဲခြင်းနှင့် ရက်ချိန်းပယ်ဖျက်ခြင်းအတွက် ဝန်ဆောင်မှုဆိုင်ရာ ဖုန်းနံပါတ် ၀၉၇၈၄၁၀၁၀၀၅ သို့ ဆက်သွယ်စုံစမ်းပါ။
+        </p>
+      </div>
     </div>
   );
 }
