@@ -275,8 +275,8 @@ export default function AiPrivacyPage() {
           </p>
           <p className="text-xs text-gray-400 mt-2">
             {mm
-              ? 'မေးမြန်းလိုပါက support@medihug.com သို့ ဆက်သွယ်ပါ။'
-              : 'For enquiries, contact support@medihug.com'}
+              ? 'မေးမြန်းလိုပါက support@medihug.com သို့မဟုတ် Viber 09 784 101005 သို့ ဆက်သွယ်ပါ။'
+              : 'For enquiries, contact support@medihug.com or Viber 09 784 101005'}
           </p>
         </div>
       </div>
