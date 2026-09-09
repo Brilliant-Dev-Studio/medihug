@@ -386,7 +386,7 @@ export default function AdminDoctorsPage() {
         title="Delete doctor permanently?"
         message="All related data (appointments, reviews, slots, gallery) will be permanently deleted. This cannot be undone."
         itemName={removeTarget?.name ?? ''}
-        confirmLabel="Delete"
+        confirmLabel="Yes, Delete"
         loading={removingId === removeTarget?.id}
         onConfirm={confirmRemove}
         onCancel={() => setRemoveTarget(null)}

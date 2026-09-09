@@ -101,8 +101,8 @@ function PublicProductsPageInner() {
             <Image src="/medihug-icon.png" alt="" width={20} height={20} aria-hidden className="object-contain" />
             <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PRIMARY }}>MediHug Shop</p>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mt-2">{mm ? 'ကုန်ပစ္စည်းများ' : 'Products'}</h1>
-          <p className="text-sm text-gray-500 mt-2 max-w-lg">{mm ? 'သိုက်စွဲသူများ အကြိုက်ဆုံး ဆေးဝါးနှင့် ကျန်းမာရေးပစ္စည်းများ' : 'Browse trusted health and wellness products'}</p>
+          <h1 className="text-4xl font-bold text-gray-900 mt-2">{mm ? 'ကျန်းမာရေးဆိုင်ရာ ဝန်ဆောင်မှု၊ ဆေးနှင့် ပစ္စည်းများ' : 'Products'}</h1>
+          <p className="text-sm text-gray-500 mt-2 max-w-lg">{mm ? 'သုံးစွဲသူများအကြိုက်ဆုံး ဆေးဝါးနှင့် ကျန်းမာရေးပစ္စည်းများ' : 'Browse trusted health and wellness products'}</p>
           <div className="h-1 w-14 rounded-full mt-4" style={{ background: `linear-gradient(90deg, ${PRIMARY} 0%, ${ACCENT} 100%)` }} />
         </div>
       </div>
@@ -129,8 +129,8 @@ function PublicProductsPageInner() {
             <Image src="/medihug-icon.png" alt="" width={16} height={16} aria-hidden className="object-contain" />
             <p className="text-white/60 text-[11px] font-bold uppercase tracking-widest">MediHug Shop</p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">{mm ? 'ကုန်ပစ္စည်းများ' : 'Products'}</h1>
-          <p className="text-white/70 text-sm mt-1.5 max-w-xs">{mm ? 'သိုက်စွဲသူများ အကြိုက်ဆုံး ဆေးဝါးနှင့် ကျန်းမာရေးပစ္စည်းများ' : 'Browse trusted health and wellness products'}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">{mm ? 'ကျန်းမာရေးဆိုင်ရာ ဝန်ဆောင်မှု၊ ဆေးနှင့် ပစ္စည်းများ' : 'Products'}</h1>
+          <p className="text-white/70 text-sm mt-1.5 max-w-xs">{mm ? 'သုံးစွဲသူများအကြိုက်ဆုံး ဆေးဝါးနှင့် ကျန်းမာရေးပစ္စည်းများ' : 'Browse trusted health and wellness products'}</p>
           <div className="h-1 w-12 rounded-full mt-4" style={{ background: `linear-gradient(90deg, ${ACCENT} 0%, #fff 100%)`, opacity: 0.9 }} />
         </div>
       </div>

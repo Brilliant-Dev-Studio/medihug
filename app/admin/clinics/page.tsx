@@ -240,7 +240,7 @@ export default function AdminClinicsPage() {
         title="Delete partner permanently?"
         message="All branches, gallery photos, and doctor/product links for this partner will be permanently deleted. Appointments, programs, and revenue history stay intact but unlinked from this partner. This cannot be undone."
         itemName={deleteTarget?.name ?? ''}
-        confirmLabel="Delete"
+        confirmLabel="Yes, Delete"
         loading={removingId === deleteTarget?.id}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}

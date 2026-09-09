@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 
 interface DangerDeleteModalProps {
   open: boolean;
   title: string;
   message: string;
-  /** Exact text the admin must type before the delete button enables — the extra
-   * confirmation step so a stray click can't destroy a record. */
+  /** Name of the item being deleted, shown inline so the admin can double-check it. */
   itemName: string;
   confirmLabel?: string;
   cancelLabel?: string;
@@ -19,16 +17,10 @@ interface DangerDeleteModalProps {
 
 export default function DangerDeleteModal({
   open, title, message, itemName,
-  confirmLabel = 'Delete', cancelLabel = 'Cancel',
+  confirmLabel = 'Yes, Delete', cancelLabel = 'No',
   loading = false, onConfirm, onCancel,
 }: DangerDeleteModalProps) {
-  const [typed, setTyped] = useState('');
-
-  useEffect(() => { if (open) setTyped(''); }, [open]);
-
   if (!open) return null;
-
-  const matched = typed.trim().length > 0 && typed.trim() === itemName.trim();
 
   return (
     <div
@@ -54,18 +46,11 @@ export default function DangerDeleteModal({
         <h3 className="text-base font-bold text-gray-900 mb-1.5">{title}</h3>
         <p className="text-sm text-gray-500 leading-relaxed mb-4">{message}</p>
 
-        <label className="block text-xs text-gray-400 mb-1.5">
-          Type <span className="font-bold text-gray-700">{itemName}</span> to confirm
-        </label>
-        <input
-          type="text"
-          value={typed}
-          onChange={e => setTyped(e.target.value)}
-          disabled={loading}
-          placeholder={itemName}
-          autoFocus
-          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 disabled:opacity-50"
-        />
+        {itemName && (
+          <p className="text-sm font-semibold text-gray-700 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 mb-5 truncate">
+            {itemName}
+          </p>
+        )}
 
         <div className="flex items-center gap-2.5">
           <button
@@ -77,7 +62,7 @@ export default function DangerDeleteModal({
           </button>
           <button
             onClick={onConfirm}
-            disabled={loading || !matched}
+            disabled={loading}
             className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold px-4 py-2.5 rounded-xl text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#dc2626' }}
           >

@@ -328,7 +328,7 @@ export default function AdminPatientsPage() {
         open={!!removeTarget}
         title="Delete patient permanently?"
         message={removeTarget ? `"${removeTarget.name}" and all related data (appointments${removeTarget._count.appointments ? ` — ${removeTarget._count.appointments} record(s)` : ''}, favorites, custom time requests) will be permanently deleted. This cannot be undone.` : ''}
-        confirmLabel="Delete"
+        confirmLabel="Yes, Delete"
         variant="danger"
         loading={removingId === removeTarget?.id}
         onConfirm={confirmRemove}

@@ -261,7 +261,7 @@ export default function AdminProductsPage() {
         title="Delete product permanently?"
         message="This product will be permanently deleted. This cannot be undone."
         itemName={deleteTarget?.name ?? ''}
-        confirmLabel="Delete"
+        confirmLabel="Yes, Delete"
         loading={removingId === deleteTarget?.id}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}

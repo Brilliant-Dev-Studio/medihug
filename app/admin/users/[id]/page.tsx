@@ -257,7 +257,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
         open={showRemove}
         title="Delete patient permanently?"
         message={`"${patient.name}" and all related data (${appointments.length} appointment(s), favorites, custom time requests) will be permanently deleted. This cannot be undone.`}
-        confirmLabel="Delete"
+        confirmLabel="Yes, Delete"
         variant="danger"
         loading={removing}
         onConfirm={confirmRemove}
