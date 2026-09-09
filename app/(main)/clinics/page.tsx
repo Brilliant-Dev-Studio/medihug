@@ -8,6 +8,8 @@ import { Search, Star, Building2, ArrowRight, ArrowLeft, ChevronRight, MapPin, B
 import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
+const ACCENT = '#2ab5ad';
+const CATEGORY_COLORS = [ACCENT, '#f59e0b', '#ef4444', '#8b5cf6', '#0ea5e9', '#ec4899', '#10b981', '#f97316'];
 
 interface PartnerType { id: string; name: string; nameEn: string | null; }
 
@@ -29,6 +31,66 @@ function SkeletonCard() {
         <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-1/2" />
       </div>
     </div>
+  );
+}
+
+function PageHero({ eyebrow, title, subtitle, idSuffix }: { eyebrow: string; title: string; subtitle: string; idSuffix: string }) {
+  return (
+    <>
+      {/* Desktop hero — light brand-tinted band with a dot pattern and a faint icon watermark */}
+      <div className="hidden lg:block relative overflow-hidden border-b border-gray-100" style={{ background: `linear-gradient(135deg, ${PRIMARY}06 0%, ${PRIMARY}0f 100%)` }}>
+        <svg className="absolute inset-0 w-full h-full opacity-[0.07]" aria-hidden="true">
+          <defs>
+            <pattern id={`hero-dots-${idSuffix}`} width="26" height="26" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="2" fill={PRIMARY} />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#hero-dots-${idSuffix})`} />
+        </svg>
+        <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-[0.08] pointer-events-none" style={{ background: PRIMARY }} />
+        <div className="absolute right-32 -bottom-16 w-48 h-48 rounded-full opacity-10 pointer-events-none" style={{ background: ACCENT }} />
+        <Image
+          src="/medihug-icon.png" alt="" width={340} height={340} aria-hidden
+          className="absolute -right-8 top-1/2 -translate-y-1/2 opacity-[0.07] pointer-events-none select-none object-contain"
+        />
+        <div className="max-w-6xl mx-auto px-8 pt-14 pb-10 relative">
+          <div className="flex items-center gap-2">
+            <Image src="/medihug-icon.png" alt="" width={20} height={20} aria-hidden className="object-contain" />
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: PRIMARY }}>{eyebrow}</p>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mt-2">{title}</h1>
+          <p className="text-sm text-gray-500 mt-2 max-w-lg">{subtitle}</p>
+          <div className="h-1 w-14 rounded-full mt-4" style={{ background: `linear-gradient(90deg, ${PRIMARY} 0%, ${ACCENT} 100%)` }} />
+        </div>
+      </div>
+
+      {/* Mobile/tablet hero — dark, colorful banner */}
+      <div className="lg:hidden relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, #163a8a 100%)` }}>
+        <svg className="absolute inset-0 w-full h-full opacity-[0.08]" aria-hidden="true">
+          <defs>
+            <pattern id={`hero-dots-mobile-${idSuffix}`} width="22" height="22" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.6" fill="#fff" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#hero-dots-mobile-${idSuffix})`} />
+        </svg>
+        <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full opacity-10 pointer-events-none" style={{ background: ACCENT }} />
+        <div className="absolute -right-6 bottom-0 w-28 h-28 rounded-full opacity-10 pointer-events-none translate-y-1/2" style={{ background: '#4facfe' }} />
+        <Image
+          src="/medihug-icon.png" alt="" width={150} height={150} aria-hidden
+          className="absolute -right-2 -bottom-4 opacity-[0.12] pointer-events-none select-none object-contain"
+        />
+        <div className="relative px-6 pt-8 pb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <Image src="/medihug-icon.png" alt="" width={16} height={16} aria-hidden className="object-contain" />
+            <p className="text-white/60 text-[11px] font-bold uppercase tracking-widest">{eyebrow}</p>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">{title}</h1>
+          <p className="text-white/70 text-sm mt-1.5 max-w-xs">{subtitle}</p>
+          <div className="h-1 w-12 rounded-full mt-4" style={{ background: `linear-gradient(90deg, ${ACCENT} 0%, #fff 100%)`, opacity: 0.9 }} />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -55,17 +117,21 @@ function PartnerTypePicker({ onPick }: { onPick: (name: string) => void }) {
 
   return (
     <div className="w-full bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto px-6 py-10 sm:py-14">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{mm ? 'မိတ်ဖက်များ' : 'Our Partners'}</h1>
-        <p className="text-sm text-gray-500 mt-1.5">{mm ? 'အမျိုးအစားအလိုက် ရွေးချယ်ပြီး မိတ်ဖက်များကို ကြည့်ရှုပါ' : 'Pick a category to see the partners under it'}</p>
+      <PageHero
+        idSuffix="clinics-picker"
+        eyebrow="MediHug Partners"
+        title={mm ? 'မိတ်ဖက်များ' : 'Our Partners'}
+        subtitle={mm ? 'အမျိုးအစားအလိုက် ရွေးချယ်ပြီး မိတ်ဖက်များကို ကြည့်ရှုပါ' : 'Pick a category to see the partners under it'}
+      />
 
-        <div className="relative mt-6 max-w-sm">
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 pb-10 pt-6 lg:pt-8">
+        <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={mm ? 'အမျိုးအစား ရှာဖွေရန်...' : 'Search categories...'}
-            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#0d2b6e] transition-colors"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#0d2b6e] transition-colors shadow-sm"
           />
         </div>
 
@@ -80,16 +146,19 @@ function PartnerTypePicker({ onPick }: { onPick: (name: string) => void }) {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
-            {filtered.map(t => {
+            {filtered.map((t, i) => {
               const label = mm ? t.name : (t.nameEn ?? t.name);
+              const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
               return (
                 <button
                   key={t.id}
                   onClick={() => onPick(t.name)}
-                  className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded-xl px-4 py-4 text-left font-bold text-gray-800 transition-colors hover:border-teal-300 hover:text-teal-600"
+                  className="group flex items-center gap-3 bg-white border rounded-xl px-4 py-4 text-left font-bold text-gray-800 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ borderColor: `${color}30` }}
                 >
-                  <span className="leading-snug">{label}</span>
-                  <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                  <span className="leading-snug flex-1 truncate">{label}</span>
+                  <ChevronRight className="w-4 h-4 text-gray-300 shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color }} />
                 </button>
               );
             })}
@@ -123,16 +192,19 @@ function ClinicsByType({ type, highlight, onBack }: { type: string; highlight: s
 
   return (
     <div className="w-full bg-gray-50 min-h-screen">
-      <div className="max-w-6xl mx-auto px-6 py-10 sm:py-14">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors mb-4">
+      <PageHero
+        idSuffix="clinics-type"
+        eyebrow="MediHug Partners"
+        title={type}
+        subtitle={loading ? (mm ? 'ရှာနေသည်...' : 'Loading...') : `${clinics.length} ${mm ? 'မိတ်ဖက်' : clinics.length === 1 ? 'partner' : 'partners'}`}
+      />
+
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 pb-10 pt-6 lg:pt-8">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors mb-2">
           <ArrowLeft className="w-4 h-4" /> {mm ? 'အမျိုးအစားများ' : 'All Categories'}
         </button>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{type}</h1>
-        <p className="text-sm text-gray-500 mt-1.5">
-          {loading ? (mm ? 'ရှာနေသည်...' : 'Loading...') : `${clinics.length} ${mm ? 'မိတ်ဖက်' : clinics.length === 1 ? 'partner' : 'partners'}`}
-        </p>
 
-        <div className="mt-8">
+        <div className="mt-6">
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -152,7 +224,7 @@ function ClinicsByType({ type, highlight, onBack }: { type: string; highlight: s
                 return (
                   <Link key={c.id} href={`/clinics/${c.id}`}
                     ref={isHighlighted ? highlightRef : undefined}
-                    className={`rounded-2xl border bg-white overflow-hidden flex flex-col hover:shadow-md transition-shadow ${
+                    className={`rounded-2xl border bg-white overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
                       isHighlighted ? 'border-2 ring-4' : 'border-gray-100'
                     }`}
                     style={isHighlighted ? { borderColor: PRIMARY, ['--tw-ring-color' as string]: `${PRIMARY}33` } : undefined}>

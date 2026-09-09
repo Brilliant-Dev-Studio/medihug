@@ -8,6 +8,7 @@ import { ArrowRight, HeartPulse } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
+const ACCENT = '#2ab5ad';
 
 interface Category { id: string; name: string; nameEn: string | null; }
 interface Program {
@@ -57,11 +58,30 @@ function ProgramsListPageInner() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="w-full pt-20 pb-14" style={{ backgroundColor: PRIMARY }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <p className="text-white/50 text-xs uppercase tracking-widest mb-3">{mm ? 'MediHug' : 'MediHug'}</p>
+      <div className="w-full pt-20 pb-14 relative overflow-hidden" style={{ backgroundColor: PRIMARY }}>
+        <svg className="absolute inset-0 w-full h-full opacity-[0.06]" aria-hidden="true">
+          <defs>
+            <pattern id="programs-hero-dots" width="26" height="26" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="2" fill="#fff" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#programs-hero-dots)" />
+        </svg>
+        <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full opacity-10 pointer-events-none" style={{ background: ACCENT }} />
+        <div className="absolute right-40 -bottom-20 w-48 h-48 rounded-full opacity-10 pointer-events-none" style={{ background: '#4facfe' }} />
+        <Image
+          src="/medihug-icon.png" alt="" width={320} height={320} aria-hidden
+          className="absolute -right-6 top-1/2 -translate-y-1/2 opacity-[0.12] pointer-events-none select-none object-contain"
+        />
+
+        <div className="max-w-6xl mx-auto px-6 relative">
+          <div className="flex items-center gap-2 mb-3">
+            <Image src="/medihug-icon.png" alt="" width={20} height={20} aria-hidden className="object-contain" />
+            <p className="text-white/50 text-xs uppercase tracking-widest">MediHug</p>
+          </div>
           <h1 className="text-3xl sm:text-5xl font-bold text-white">{tr.healthcareProgramsTitle}</h1>
           <p className="text-white/70 text-sm sm:text-base mt-3 max-w-xl leading-relaxed">{tr.healthcareProgramsSubtitle}</p>
+          <div className="h-1 w-14 rounded-full mt-5" style={{ background: `linear-gradient(90deg, ${ACCENT} 0%, #fff 100%)`, opacity: 0.8 }} />
         </div>
       </div>
 
