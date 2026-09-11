@@ -15,7 +15,7 @@ interface Clinic {
   address: string | null; addressEn: string | null;
   township: string | null;
   country: string | null; countryEn: string | null;
-  imageUrl: string | null;
+  imageUrl: string | null; coverUrl: string | null;
   rating: number; reviewCount: number;
 }
 
@@ -174,25 +174,31 @@ export default function MedihugTourismPage() {
                 return (
                   <Link key={c.id} href={`/clinics/${c.id}`}
                     className="group relative rounded-3xl border border-gray-100 bg-white overflow-hidden flex flex-col shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:border-transparent">
-                    <div className="absolute top-0 left-0 right-0 h-1 z-10" style={{ background: `linear-gradient(90deg, ${PRIMARY} 0%, ${ACCENT} 100%)` }} />
-                    <div className="relative w-full h-48 overflow-hidden" style={{ background: `linear-gradient(135deg, ${PRIMARY}12 0%, ${ACCENT}12 100%)` }}>
-                      {c.imageUrl ? (
-                        <Image src={c.imageUrl} alt={name} fill className="object-contain p-6 transition-transform duration-500 group-hover:scale-105" />
+                    {/* Cover banner */}
+                    <div className="relative w-full h-24 overflow-hidden">
+                      {c.coverUrl ? (
+                        <Image src={c.coverUrl} alt="" fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Plane className="w-10 h-10" style={{ color: `${PRIMARY}40` }} />
-                        </div>
+                        <div className="w-full h-full" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)` }} />
                       )}
                       {country && (
-                        <span className="absolute top-3 left-3 flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white shadow-sm" style={{ background: `linear-gradient(90deg, ${ACCENT} 0%, #22c1a8 100%)` }}>
+                        <span className="absolute top-3 right-3 flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white shadow-sm backdrop-blur-sm bg-black/20 border border-white/30">
                           <BadgeCheck className="w-3.5 h-3.5" /> {country}
                         </span>
                       )}
                     </div>
-                    <div className="p-4 flex flex-col gap-2 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="text-sm font-bold text-gray-800 leading-snug line-clamp-2">{name}</h3>
-                      </div>
+
+                    {/* Overlapping logo */}
+                    <div className="absolute top-24 left-4 -translate-y-1/2 w-16 h-16 rounded-2xl bg-white border-2 border-white shadow-md overflow-hidden flex items-center justify-center">
+                      {c.imageUrl ? (
+                        <Image src={c.imageUrl} alt={name} fill className="object-contain p-1.5" />
+                      ) : (
+                        <Plane className="w-6 h-6" style={{ color: `${PRIMARY}60` }} />
+                      )}
+                    </div>
+
+                    <div className="p-4 pt-10 flex flex-col gap-2 flex-1">
+                      <h3 className="text-sm font-bold text-gray-800 leading-snug line-clamp-2">{name}</h3>
                       <span className="self-start text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ backgroundColor: `${PRIMARY}0f`, color: PRIMARY }}>
                         {c.type}
                       </span>
