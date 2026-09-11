@@ -21,6 +21,7 @@ interface Slot {
 
 const newKey = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 interface SpecialtyItem { id: string; name: string; }
+interface ClinicOption { id: string; name: string; nameEn: string | null; }
 
 const DAYS    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAYS_MM = ['တနင်္ဂနွေ','တနင်္လာ','အင်္ဂါ','ဗုဒ္ဓဟူး','ကြာသပတေး','သောကြာ','စနေ'];
@@ -46,9 +47,23 @@ export default function PartnerCreateDoctorPage() {
   const [error, setError]             = useState('');
   const [step, setStep]               = useState<1|2|3>(1);
   const [specialties, setSpecialties] = useState<SpecialtyItem[]>([]);
+  const [clinicOptions, setClinicOptions] = useState<ClinicOption[]>([]);
+  const [targetClinicId, setTargetClinicId] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/specialties').then(r => r.json()).then(d => setSpecialties(d.specialties ?? []));
+  }, []);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/partner/me').then(r => r.json()),
+      fetch('/api/partner/sub-clinics').then(r => r.json()),
+    ]).then(([me, sub]) => {
+      const own: ClinicOption[] = me.clinic ? [{ id: me.clinic.id, name: me.clinic.name, nameEn: me.clinic.nameEn }] : [];
+      const subClinics: ClinicOption[] = sub.subClinics ?? [];
+      setClinicOptions([...own, ...subClinics]);
+      if (me.clinic) setTargetClinicId(me.clinic.id);
+    });
   }, []);
 
   const set = (k: string, v: unknown) => setForm(f => ({ ...f, [k]: v }));
@@ -84,7 +99,7 @@ export default function PartnerCreateDoctorPage() {
       };
       const res  = await fetch('/api/partner/doctors', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, slots, gallery }),
+        body: JSON.stringify({ ...payload, slots, gallery, clinicId: targetClinicId }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? 'Error'); setLoading(false); return; }
@@ -158,6 +173,17 @@ export default function PartnerCreateDoctorPage() {
 
         {step === 1 && (<>
           <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Doctor Info</p>
+
+          {clinicOptions.length > 1 && (
+            <div>
+              <label className={lbl}>Clinic</label>
+              <select className={inp} value={targetClinicId} onChange={e => setTargetClinicId(e.target.value)}>
+                {clinicOptions.map(c => (
+                  <option key={c.id} value={c.id}>{c.nameEn ?? c.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div><label className={lbl}>Name (Myanmar) *</label>

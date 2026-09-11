@@ -86,7 +86,7 @@ export const searchClinics = tool({
     limit: z.number().int().min(1).max(10).optional().default(10),
   }),
   execute: async ({ type, search, limit }) => {
-    const where: Record<string, unknown> = { isActive: true, isPartner: true };
+    const where: Record<string, unknown> = { isActive: true, isPartner: true, isInternational: false };
     if (type) where.type = { contains: type, mode: 'insensitive' };
     if (search) where.OR = [
       { name: { contains: search, mode: 'insensitive' } },

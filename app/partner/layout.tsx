@@ -5,28 +5,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck, QrCode, HeartPulse, Bell, Wallet, Ticket } from 'lucide-react';
+import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck, QrCode, HeartPulse, Bell, Wallet, Ticket, Globe } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
 
 const PRIMARY = '#3b5bdb';
 
-interface ClinicInfo { id: string; name: string; nameEn: string | null; imageUrl: string | null; userId?: string; }
-
-const navItems = [
-  { href: '/partner/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/partner/appointments', icon: Calendar,        label: 'Appointments' },
-  { href: '/partner/doctors',      icon: Stethoscope,     label: 'Doctors' },
-  { href: '/partner/products',     icon: ShoppingBag,     label: 'Product and Services' },
-  { href: '/partner/programs',     icon: HeartPulse,      label: 'Programs' },
-  { href: '/partner/orders',       icon: Receipt,         label: 'Orders' },
-  { href: '/partner/vouchers',     icon: Ticket,          label: 'Vouchers' },
-  { href: '/partner/earnings',     icon: Wallet,          label: 'Earnings' },
-  { href: '/partner/notifications', icon: Bell,           label: 'Notifications' },
-  { href: '/partner/referrals',    icon: QrCode,          label: 'Verify Referral' },
-  { href: '/partner/login-history', icon: ShieldCheck,    label: 'Login History' },
-  { href: '/partner/profile',      icon: Building2,       label: 'Clinic Profile' },
-];
+interface ClinicInfo { id: string; name: string; nameEn: string | null; imageUrl: string | null; userId?: string; isInternational?: boolean; }
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,6 +23,22 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     if (pathname === '/partner/login') return;
     fetch('/api/partner/me').then(r => r.json()).then(d => setClinic(d.clinic ?? null));
   }, [pathname]);
+
+  const navItems = [
+    { href: '/partner/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/partner/appointments', icon: Calendar,        label: 'Appointments' },
+    { href: '/partner/doctors',      icon: Stethoscope,     label: 'Doctors' },
+    { href: '/partner/international-partner', icon: Globe,  label: 'International Partner' },
+    { href: '/partner/products',     icon: ShoppingBag,     label: 'Product and Services' },
+    { href: '/partner/programs',     icon: HeartPulse,      label: 'Programs' },
+    { href: '/partner/orders',       icon: Receipt,         label: 'Orders' },
+    { href: '/partner/vouchers',     icon: Ticket,          label: 'Vouchers' },
+    { href: '/partner/earnings',     icon: Wallet,          label: 'Earnings' },
+    { href: '/partner/notifications', icon: Bell,           label: 'Notifications' },
+    { href: '/partner/referrals',    icon: QrCode,          label: 'Verify Referral' },
+    { href: '/partner/login-history', icon: ShieldCheck,    label: 'Login History' },
+    { href: '/partner/profile',      icon: Building2,       label: 'Clinic Profile' },
+  ];
 
   const pageTitle = navItems.find(i => pathname === i.href || pathname.startsWith(i.href + '/'))?.label ?? 'Partner Portal';
 
@@ -113,7 +114,9 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-white truncate">{clinic.nameEn ?? clinic.name}</p>
-              <p className="text-[10px] text-white/40 truncate">Clinic Partner</p>
+              <p className="text-[10px] truncate" style={{ color: clinic.isInternational ? '#7dd3fc' : 'rgba(255,255,255,0.4)' }}>
+                {clinic.isInternational ? 'International Partner' : 'Clinic Partner'}
+              </p>
             </div>
           </div>
         )}

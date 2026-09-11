@@ -10,7 +10,7 @@ import {
   ShieldCheck, Menu, X, ChevronRight, ChevronDown, Building2, Tags, BookOpen, Layers, Megaphone, Image as ImageIcon,
   Bell, CalendarClock, Headset, HeartPulse, Store, ClipboardCheck,
   Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
-  ArrowLeftRight, History, Trash2, ClipboardList, MessageSquareQuote, Coins, Ticket,
+  ArrowLeftRight, History, Trash2, ClipboardList, MessageSquareQuote, Coins, Ticket, Globe,
 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
@@ -53,6 +53,7 @@ const navGroups = [
       { href: '/admin/vouchers',     icon: Ticket,       mm: 'ဒစ်စကောင့် ကူပွန်', en: 'Vouchers', perm: 'pos.manage' as Permission },
       { href: '/admin/custom-time-requests', icon: CalendarClock, mm: 'အထူးအချိန်တောင်းဆိုမှုများ', en: 'Custom Time Requests', perm: 'dashboard.view' as Permission },
       { href: '/admin/clinics',       icon: Building2,    mm: 'မိတ်ဖက်များ', en: 'Partners', perm: 'partners.manage' as Permission },
+      { href: '/admin/international-partners', icon: Globe, mm: 'နိုင်ငံတကာ မိတ်ဖက်များ', en: 'International Partners', perm: 'partners.manage' as Permission },
       { href: '/admin/partner-types', icon: Tags,         mm: 'မိတ်ဖက် အမျိုးအစားများ',    en: 'Partner Types', perm: 'partners.manage' as Permission },
       { href: '/admin/specialties',   icon: Tags,         mm: 'အထူးကုဌာနများ',              en: 'Specialties', perm: 'partners.manage' as Permission },
     ],

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const clinic = await db.clinic.findUnique({
     where: { id: payload.clinicId },
-    select: { id: true, name: true, nameEn: true, type: true, imageUrl: true },
+    select: { id: true, name: true, nameEn: true, type: true, imageUrl: true, isInternational: true },
   });
   if (!clinic) return NextResponse.json({ clinic: null }, { status: 404 });
 

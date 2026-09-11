@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const clinic = await db.clinic.findUnique({
     where: { id: clinicId },
-    include: { gallery: { orderBy: { order: 'asc' } } },
+    include: { gallery: { orderBy: { order: 'asc' } }, _count: { select: { doctors: true } } },
   });
   if (!clinic) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json({ clinic });
@@ -33,6 +33,7 @@ export async function PATCH(req: NextRequest) {
     name, nameEn, address, addressEn, state, township,
     phone, phone2, phone3, website, facebookUrl, tiktokUrl, mapUrl,
     imageUrl, coverUrl, openTime, closeTime, aboutMm, aboutEn, tagsMm, tagsEn,
+    country, countryEn, isInternational,
   } = body;
 
   if (name !== undefined && !name.trim()) {
@@ -63,6 +64,9 @@ export async function PATCH(req: NextRequest) {
       ...(aboutEn     !== undefined && { aboutEn }),
       ...(tagsMm      !== undefined && { tagsMm }),
       ...(tagsEn      !== undefined && { tagsEn }),
+      ...(country     !== undefined && { country }),
+      ...(countryEn   !== undefined && { countryEn }),
+      ...(isInternational !== undefined && { isInternational: !!isInternational }),
     },
   });
   return NextResponse.json({ clinic });

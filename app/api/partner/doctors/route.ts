@@ -4,18 +4,24 @@ import { verifyPartnerToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 
-/* ── GET /api/partner/doctors — read-only, doctors attached to own clinic ── */
+/* ── GET /api/partner/doctors — read-only, doctors attached to own clinic and any
+ * sub-clinics (International Partners) registered under this partner's account ── */
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('partner_token')?.value;
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const payload = await verifyPartnerToken(token);
   if (!payload?.clinicId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const subClinics = await db.clinic.findMany({ where: { parentClinicId: payload.clinicId }, select: { id: true } });
+  const clinicIds = [payload.clinicId, ...subClinics.map(c => c.id)];
+
   const links = await db.clinicDoctor.findMany({
-    where: { clinicId: payload.clinicId },
-    include: { doctor: true },
+    where: { clinicId: { in: clinicIds } },
+    include: { doctor: true, clinic: { select: { id: true, name: true, nameEn: true } } },
   });
-  return NextResponse.json({ doctors: links.map(l => l.doctor) });
+  return NextResponse.json({
+    doctors: links.map(l => ({ ...l.doctor, clinic: l.clinic })),
+  });
 }
 
 /* ── POST /api/partner/doctors — create a doctor + login account, auto-linked to this
@@ -33,13 +39,24 @@ export async function POST(req: NextRequest) {
     const {
       name, nameEn, specialty, specialtyEn, bio,
       phone, phoneSecondary, viber, password, imageUrl, experience, price,
-      isAvailable, slots, gallery,
+      isAvailable, slots, gallery, clinicId,
       qualifications, careerMm, careerEn, clinicNote, clinicNoteEn, location,
       clinicTypesMm, clinicTypesEn, languages,
     } = body;
 
     if (!name || !specialty || !phone || !password) {
       return NextResponse.json({ error: 'name, specialty, phone, password are required.' }, { status: 400 });
+    }
+
+    // Doctors can be created for the partner's own clinic or one of their sub-clinics
+    // (International Partners) — never for anyone else's clinic.
+    let targetClinicId = payload.clinicId;
+    if (clinicId && clinicId !== payload.clinicId) {
+      const subClinic = await db.clinic.findUnique({ where: { id: clinicId }, select: { id: true, parentClinicId: true } });
+      if (!subClinic || subClinic.parentClinicId !== payload.clinicId) {
+        return NextResponse.json({ error: 'Unauthorized clinic' }, { status: 403 });
+      }
+      targetClinicId = clinicId;
     }
 
     const existing = await db.user.findUnique({ where: { phone } });
@@ -82,9 +99,9 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // The whole point of this endpoint: auto-link to the partner's own clinic, never a
-      // clinic picker — a partner can only ever create doctors for their own shop.
-      await tx.clinicDoctor.create({ data: { clinicId: payload.clinicId!, doctorId: doc.id } });
+      // Links to the partner's own clinic by default, or an explicitly chosen sub-clinic
+      // (validated above) — never a clinic outside the partner's own account.
+      await tx.clinicDoctor.create({ data: { clinicId: targetClinicId!, doctorId: doc.id } });
 
       if (slots && slots.length > 0) {
         await tx.doctorSlot.createMany({
@@ -118,7 +135,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (doctor) {
-      const clinic = await db.clinic.findUnique({ where: { id: payload.clinicId }, select: { name: true, nameEn: true, imageUrl: true } });
+      const clinic = await db.clinic.findUnique({ where: { id: targetClinicId }, select: { name: true, nameEn: true, imageUrl: true } });
       const clinicName = clinic?.nameEn ?? clinic?.name ?? 'A partner clinic';
       const admins = await db.user.findMany({
         where:  { role: 'SUPER_ADMIN', isActive: true },

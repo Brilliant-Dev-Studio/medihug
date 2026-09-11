@@ -221,39 +221,47 @@ model PartnerType {
 }
 
 model Clinic {
-  id          String   @id @default(cuid())
-  name        String
-  nameEn      String?
-  type        String   @default("Clinic")
-  address     String?
-  addressEn   String?
-  state       String?
-  township    String?
-  phone       String?
-  phone2      String?
-  phone3      String?
-  website     String?
-  facebookUrl String?
-  tiktokUrl   String?
-  mapUrl      String?
-  imageUrl    String?
-  coverUrl    String?
-  openTime    String?
-  closeTime   String?
-  aboutMm     String?
-  aboutEn     String?
-  tagsMm      String[]
-  tagsEn      String[]
-  verified    Boolean  @default(false)
-  rating      Float    @default(0)
-  reviewCount Int      @default(0)
-  isActive    Boolean  @default(true)
-  isPartner   Boolean  @default(true)
-  ownerId     String?  @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  nameEn          String?
+  type            String   @default("Clinic")
+  address         String?
+  addressEn       String?
+  state           String?
+  township        String?
+  phone           String?
+  phone2          String?
+  phone3          String?
+  website         String?
+  facebookUrl     String?
+  tiktokUrl       String?
+  mapUrl          String?
+  imageUrl        String?
+  coverUrl        String?
+  openTime        String?
+  closeTime       String?
+  aboutMm         String?
+  aboutEn         String?
+  tagsMm          String[]
+  tagsEn          String[]
+  verified        Boolean  @default(false)
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0)
+  isActive        Boolean  @default(true)
+  isPartner       Boolean  @default(true)
+  isInternational Boolean  @default(false)
+  country         String?
+  countryEn       String?
+  ownerId         String?  @unique
+  // A sub-clinic (e.g. an International Partner registered by an existing partner) has no
+  // login of its own — it's managed entirely through the parent's partner-portal session.
+  parentClinicId  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   owner                      User?               @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  parent                     Clinic?             @relation("ClinicSubClinics", fields: [parentClinicId], references: [id], onDelete: Cascade)
+  subClinics                 Clinic[]            @relation("ClinicSubClinics")
   doctors                    ClinicDoctor[]
   appointments               Appointment[]
   referredAppointments       Appointment[]       @relation("AppointmentReferralClinic")
@@ -345,45 +353,45 @@ model ClinicProduct {
 // ─────────────────────────────────────────────
 
 model Appointment {
-  id                   String            @id @default(cuid())
-  userId               String
-  doctorId             String
-  clinicId             String?
-  date                 DateTime
-  time                 String?
-  reason               String?
-  note                 String?
-  paymentMethod        String?
-  fee                  Int? // full patient-paid total (base × sessions, marked up by commission %)
-  platformFeeAmount    Int? // platform's cut, snapshotted at booking time
-  doctorPayoutAmount   Int? // what the doctor receives, snapshotted at booking time
+  id                    String            @id @default(cuid())
+  userId                String
+  doctorId              String
+  clinicId              String?
+  date                  DateTime
+  time                  String?
+  reason                String?
+  note                  String?
+  paymentMethod         String?
+  fee                   Int? // full patient-paid total (base × sessions, marked up by commission %)
+  platformFeeAmount     Int? // platform's cut, snapshotted at booking time
+  doctorPayoutAmount    Int? // what the doctor receives, snapshotted at booking time
   pointsRedeemed        Int               @default(0)
   pointsDiscountAmount  Int               @default(0)
   voucherCode           String?
   voucherDiscountAmount Int               @default(0)
   receiptUrl            String?
-  cbPayStatus          CbPayStatus       @default(NONE)
-  cbPayRefOrder        String?
-  cbPayTransactionId   String?
-  cbPayAmountConfirmed Int?
-  cbPayPaidAt          DateTime?
-  intake               Json?
-  aiSummary            String?
-  doctorNote           String? // doctor-written clinical note for this consultation, Markdown source
-  referredDoctorId     String? // referral to another doctor on the platform
-  referredClinicId     String? // referral to a partner clinic on the platform
-  status               AppointmentStatus @default(PENDING)
-  doctorApproved       Boolean           @default(false)
-  callRinging          Boolean           @default(false)
-  callDeclined         Boolean           @default(false)
-  callActive           Boolean           @default(false) // true while doctor+patient are both actually in the video call — drives the admin "Join" button
-  unreadDoctorChat     Boolean           @default(false) // new patient message doctor hasn't seen
-  unreadPatientChat    Boolean           @default(false) // new doctor message patient hasn't seen
-  lastChatMessageAt    DateTime?
-  cancelReason         String?
-  cancelledAt          DateTime?
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  cbPayStatus           CbPayStatus       @default(NONE)
+  cbPayRefOrder         String?
+  cbPayTransactionId    String?
+  cbPayAmountConfirmed  Int?
+  cbPayPaidAt           DateTime?
+  intake                Json?
+  aiSummary             String?
+  doctorNote            String? // doctor-written clinical note for this consultation, Markdown source
+  referredDoctorId      String? // referral to another doctor on the platform
+  referredClinicId      String? // referral to a partner clinic on the platform
+  status                AppointmentStatus @default(PENDING)
+  doctorApproved        Boolean           @default(false)
+  callRinging           Boolean           @default(false)
+  callDeclined          Boolean           @default(false)
+  callActive            Boolean           @default(false) // true while doctor+patient are both actually in the video call — drives the admin "Join" button
+  unreadDoctorChat      Boolean           @default(false) // new patient message doctor hasn't seen
+  unreadPatientChat     Boolean           @default(false) // new doctor message patient hasn't seen
+  lastChatMessageAt     DateTime?
+  cancelReason          String?
+  cancelledAt           DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   doctor Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
@@ -474,8 +482,8 @@ model Product {
   nameEn      String?
   description String?
   price       Int      @default(0) // Kyat (MMK) — the real transactional price, drives checkout/commission/revenue
-  priceThb    Float?   // Thai Baht — informational display price, set independently, no auto-conversion
-  priceUsd    Float?   // US Dollar — informational display price, set independently, no auto-conversion
+  priceThb    Float? // Thai Baht — informational display price, set independently, no auto-conversion
+  priceUsd    Float? // US Dollar — informational display price, set independently, no auto-conversion
   stock       Int      @default(0)
   imageUrl    String?
   images      String[] @default([])
@@ -503,27 +511,27 @@ model Product {
 // ─────────────────────────────────────────────
 
 model Order {
-  id                   String      @id @default(cuid())
-  userId               String
-  status               OrderStatus @default(PENDING)
-  paymentMethod        String?
-  receiptUrl           String?
-  cbPayStatus          CbPayStatus @default(NONE)
-  cbPayRefOrder        String?
-  cbPayTransactionId   String?
-  cbPayAmountConfirmed Int?
-  cbPayPaidAt          DateTime?
+  id                    String      @id @default(cuid())
+  userId                String
+  status                OrderStatus @default(PENDING)
+  paymentMethod         String?
+  receiptUrl            String?
+  cbPayStatus           CbPayStatus @default(NONE)
+  cbPayRefOrder         String?
+  cbPayTransactionId    String?
+  cbPayAmountConfirmed  Int?
+  cbPayPaidAt           DateTime?
   totalAmount           Int
   pointsRedeemed        Int         @default(0)
   pointsDiscountAmount  Int         @default(0)
   voucherCode           String?
   voucherDiscountAmount Int         @default(0)
   note                  String?
-  deliveryAddress      String? // snapshotted at checkout — may differ from the patient's current profile address
-  cancelReason         String?
-  cancelledAt          DateTime?
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
+  deliveryAddress       String? // snapshotted at checkout — may differ from the patient's current profile address
+  cancelReason          String?
+  cancelledAt           DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   items   OrderItem[]
@@ -712,12 +720,12 @@ model HealthcareProgram {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  clinic          Clinic?             @relation(fields: [clinicId], references: [id], onDelete: SetNull)
-  category        ProgramCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  doctors         ProgramDoctor[]
-  enrollments     ProgramEnrollment[]
-  categoryLinks   CategoryProgram[]
-  vouchers        Voucher[]
+  clinic        Clinic?             @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  category      ProgramCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  doctors       ProgramDoctor[]
+  enrollments   ProgramEnrollment[]
+  categoryLinks CategoryProgram[]
+  vouchers      Voucher[]
 
   @@index([clinicId])
   @@index([categoryId])
@@ -754,29 +762,29 @@ model ProgramDoctor {
 }
 
 model ProgramEnrollment {
-  id                   String                  @id @default(cuid())
-  programId            String
-  userId               String
-  paymentMethod        String?
-  receiptUrl           String?
-  cbPayStatus          CbPayStatus             @default(NONE)
-  cbPayRefOrder        String?
-  cbPayTransactionId   String?
-  cbPayAmountConfirmed Int?
-  cbPayPaidAt          DateTime?
+  id                    String                  @id @default(cuid())
+  programId             String
+  userId                String
+  paymentMethod         String?
+  receiptUrl            String?
+  cbPayStatus           CbPayStatus             @default(NONE)
+  cbPayRefOrder         String?
+  cbPayTransactionId    String?
+  cbPayAmountConfirmed  Int?
+  cbPayPaidAt           DateTime?
   amount                Int
   pointsRedeemed        Int                     @default(0)
   pointsDiscountAmount  Int                     @default(0)
   voucherCode           String?
   voucherDiscountAmount Int                     @default(0)
   intake                Json?
-  deliveryAddress      String? // snapshotted at checkout — may differ from the patient's current profile address
-  status               ProgramEnrollmentStatus @default(PENDING_REVIEW)
-  reviewNote           String?
-  reviewedAt           DateTime?
-  referredClinicId     String? // partner clinic that referred this patient into the program (shared-revenue referral commission)
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
+  deliveryAddress       String? // snapshotted at checkout — may differ from the patient's current profile address
+  status                ProgramEnrollmentStatus @default(PENDING_REVIEW)
+  reviewNote            String?
+  reviewedAt            DateTime?
+  referredClinicId      String? // partner clinic that referred this patient into the program (shared-revenue referral commission)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 
   program        HealthcareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1136,7 +1144,7 @@ model CommissionRule {
 }
 
 enum PaymentMethodKind {
-  WALLET        // KPay, Wave Pay, AYA Pay, etc — patient pays in their own app, uploads a receipt
+  WALLET // KPay, Wave Pay, AYA Pay, etc — patient pays in their own app, uploads a receipt
   BANK_TRANSFER // manual bank transfer — shows account number/name, patient uploads a receipt
 }
 
@@ -1145,8 +1153,8 @@ model PaymentMethodConfig {
   key           String            @unique
   label         String
   kind          PaymentMethodKind @default(WALLET)
-  accountNumber String?           // BANK_TRANSFER only
-  accountName   String?           // BANK_TRANSFER only
+  accountNumber String? // BANK_TRANSFER only
+  accountName   String? // BANK_TRANSFER only
   feePercent    Int               @default(0)
   feeFixed      Int               @default(0)
   order         Int               @default(0)

@@ -2,12 +2,11 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import TimePicker from '@/components/admin/TimePicker';
 import {
   ArrowLeft, Loader2, X, ShieldCheck,
   Phone, Globe, Clock, MapPin, Star, CheckCircle2,
-  Stethoscope, Package, Building2, Link2, Music2, Map, KeyRound, Search, Plane,
+  Stethoscope, Package, Link2, Music2, Map, KeyRound, Search, Plane,
 } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
 import BranchEditor, { type BranchItem } from '@/components/admin/BranchEditor';
@@ -25,6 +24,7 @@ interface Clinic {
   id: string; name: string; nameEn: string | null;
   type: string; address: string | null; addressEn: string | null;
   state: string | null; township: string | null;
+  country: string | null; countryEn: string | null;
   phone: string | null; phone2: string | null; phone3: string | null; website: string | null;
   facebookUrl: string | null; tiktokUrl: string | null; mapUrl: string | null;
   imageUrl: string | null; coverUrl: string | null;
@@ -42,7 +42,7 @@ interface Clinic {
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button type="button" onClick={() => onChange(!on)} aria-label={label}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${on ? 'bg-[#2ab5ad]' : 'bg-gray-300'}`}>
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${on ? 'bg-[#2ab5ad]' : 'bg-gray-300'}`}>
       <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-6' : 'translate-x-1'}`} />
     </button>
   );
@@ -57,7 +57,7 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
   );
 }
 
-export default function ClinicDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function InternationalPartnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
 
@@ -80,6 +80,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
 
   const [form, setForm] = useState({
     name: '', nameEn: '', type: '',
+    country: '', countryEn: '',
     phone: '', phone2: '', phone3: '', website: '',
     facebookUrl: '', tiktokUrl: '', mapUrl: '',
     openTime: '', closeTime: '',
@@ -103,6 +104,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       setClinic(c);
       setForm({
         name: c.name, nameEn: c.nameEn ?? '', type: c.type,
+        country: c.country ?? '', countryEn: c.countryEn ?? '',
         phone: c.phone ?? '', phone2: c.phone2 ?? '', phone3: c.phone3 ?? '', website: c.website ?? '',
         facebookUrl: c.facebookUrl ?? '', tiktokUrl: c.tiktokUrl ?? '', mapUrl: c.mapUrl ?? '',
         openTime: c.openTime ?? '', closeTime: c.closeTime ?? '',
@@ -149,6 +151,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name, nameEn: form.nameEn || null, type: form.type,
+          country: form.country || null, countryEn: form.countryEn || null,
           phone: form.phone || null, phone2: form.phone2 || null, phone3: form.phone3 || null,
           website: form.website || null,
           facebookUrl: form.facebookUrl || null, tiktokUrl: form.tiktokUrl || null, mapUrl: form.mapUrl || null,
@@ -159,6 +162,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
           tagsMm: form.tagsMm, tagsEn: form.tagsEn,
           imageUrl: form.imageUrl || null, coverUrl: form.coverUrl || null,
           verified: form.verified, isPartner: form.isPartner, isActive: form.isActive,
+          isInternational: true,
           branches,
         }),
       });
@@ -242,40 +246,37 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <button onClick={() => router.push('/admin/clinics')} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 flex-shrink-0">
+          <button onClick={() => router.push('/admin/international-partners')} className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 shrink-0">
             <ArrowLeft size={18} />
           </button>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-gray-800 truncate">{clinic.name}</h1>
-              {clinic.verified && <ShieldCheck size={16} className="text-[#2ab5ad] flex-shrink-0" />}
-              <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 bg-teal-50 text-teal-700">
+              {clinic.verified && <ShieldCheck size={16} className="text-[#2ab5ad] shrink-0" />}
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0 bg-teal-50 text-teal-700">
                 {clinic.type}
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0 bg-blue-50 text-blue-700 flex items-center gap-1">
+                <Plane size={11} /> International
               </span>
             </div>
             {clinic.nameEn && <p className="text-xs text-gray-400">{clinic.nameEn}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link href={`/admin/international-partners/${id}`}
-            className="px-3.5 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-semibold flex items-center gap-1.5 hover:bg-gray-50 transition-colors">
-            <Plane size={15} /> Manage as International Partner
-          </Link>
-          <button onClick={saveInfo} disabled={saving}
-            className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60 hover:opacity-90"
-            style={{ backgroundColor: PRIMARY }}>
-            {saving ? <Loader2 size={16} className="animate-spin" /> : null}
-            {saving ? 'သိမ်းနေသည်...' : 'ပြောင်းလဲမှုများ သိမ်းဆည်း'}
-          </button>
-        </div>
+        <button onClick={saveInfo} disabled={saving}
+          className="shrink-0 px-5 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60 hover:opacity-90"
+          style={{ backgroundColor: PRIMARY }}>
+          {saving ? <Loader2 size={16} className="animate-spin" /> : null}
+          {saving ? 'သိမ်းနေသည်...' : 'ပြောင်းလဲမှုများ သိမ်းဆည်း'}
+        </button>
       </div>
 
       {/* Clinic hero */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="h-28 bg-gradient-to-br from-teal-50 to-teal-100 relative">
+        <div className="h-28 bg-linear-to-br from-teal-50 to-teal-100 relative">
           {clinic.coverUrl
             ? <img src={clinic.coverUrl} alt="cover" className="w-full h-full object-cover" />
-            : <div className="flex items-center justify-center h-full"><Building2 size={36} className="text-teal-300" /></div>}
+            : <div className="flex items-center justify-center h-full"><Plane size={36} className="text-teal-300" /></div>}
           {clinic.imageUrl && (
             <img src={clinic.imageUrl} alt={clinic.name}
               className="absolute bottom-0 left-5 translate-y-1/2 h-14 w-14 rounded-2xl object-cover border-2 border-white shadow-md" />
@@ -283,6 +284,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         </div>
         <div className="px-5 pt-10 pb-4">
           <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+            {(clinic.country || clinic.countryEn) && <span className="flex items-center gap-1 font-semibold text-teal-600"><Plane size={12}/>{clinic.countryEn ?? clinic.country}</span>}
             {clinic.phone    && <span className="flex items-center gap-1"><Phone size={12}/>{clinic.phone}</span>}
             {clinic.phone2   && <span className="flex items-center gap-1"><Phone size={12}/>{clinic.phone2}</span>}
             {clinic.phone3   && <span className="flex items-center gap-1"><Phone size={12}/>{clinic.phone3}</span>}
@@ -323,6 +325,10 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div><label className={lbl}>နာမည် (မြန်မာ) *</label><input className={inp} value={form.name} onChange={e => set('name', e.target.value)} /></div>
             <div><label className={lbl}>Name (English)</label><input className={inp} value={form.nameEn} onChange={e => set('nameEn', e.target.value)} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div><label className={lbl}>နိုင်ငံ (မြန်မာ) *</label><input className={inp} value={form.country} onChange={e => set('country', e.target.value)} placeholder="e.g. ထိုင်း" /></div>
+              <div><label className={lbl}>Country (English)</label><input className={inp} value={form.countryEn} onChange={e => set('countryEn', e.target.value)} placeholder="e.g. Thailand" /></div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div><label className={lbl}>ဖုန်း ၁</label><input className={inp} value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
               <div><label className={lbl}>ဖုန်း ၂</label><input className={inp} value={form.phone2} onChange={e => set('phone2', e.target.value)} /></div>
@@ -346,7 +352,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             <div><label className={lbl}>Address (English)</label><input className={inp} value={form.addressEn} onChange={e => set('addressEn', e.target.value)} /></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label className={lbl}>တိုင်း/ပြည်နယ်</label><input className={inp} value={form.state} onChange={e => set('state', e.target.value)} /></div>
-              <div><label className={lbl}>မြို့နယ်</label><input className={inp} value={form.township} onChange={e => set('township', e.target.value)} /></div>
+              <div><label className={lbl}>မြို့နယ်/City</label><input className={inp} value={form.township} onChange={e => set('township', e.target.value)} /></div>
             </div>
           </Section>
 
@@ -379,7 +385,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag('Mm'); } }}
                   placeholder="tag ရိုက်ပြီး Enter" />
                 <button type="button" onClick={() => addTag('Mm')}
-                  className="px-4 py-2.5 rounded-xl text-white text-sm font-medium flex-shrink-0"
+                  className="px-4 py-2.5 rounded-xl text-white text-sm font-medium shrink-0"
                   style={{ backgroundColor: PRIMARY }}>+</button>
               </div>
               {form.tagsMm.length > 0 && (
@@ -401,7 +407,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag('En'); } }}
                   placeholder="type tag, press Enter" />
                 <button type="button" onClick={() => addTag('En')}
-                  className="px-4 py-2.5 rounded-xl text-white text-sm font-medium flex-shrink-0"
+                  className="px-4 py-2.5 rounded-xl text-white text-sm font-medium shrink-0"
                   style={{ backgroundColor: PRIMARY }}>+</button>
               </div>
               {form.tagsEn.length > 0 && (
@@ -420,7 +426,7 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
             <div className="space-y-2">
               {[
                 { key: 'verified',  label: 'Verified ✓',  desc: 'Verified badge ပြမည်' },
-                { key: 'isPartner', label: 'Partner',      desc: 'Partner clinic' },
+                { key: 'isPartner', label: 'Partner',      desc: 'Active partner' },
                 { key: 'isActive',  label: 'Active',       desc: 'Patient ဘက်မှာ ပြ/မပြ' },
               ].map(({ key, label, desc }) => (
                 <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
@@ -486,13 +492,13 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                     <div key={d.id} onClick={() => toggleDoctor(d.id)}
                       className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors border bg-teal-50 border-teal-200 hover:bg-red-50 hover:border-red-200 group">
                       {d.imageUrl
-                        ? <img src={d.imageUrl} alt={d.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
-                        : <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 flex-shrink-0">{d.name[0]}</div>}
+                        ? <img src={d.imageUrl} alt={d.name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                        : <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">{d.name[0]}</div>}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 truncate">{d.name}</p>
                         <p className="text-xs text-gray-400 truncate">{d.specialty}</p>
                       </div>
-                      <CheckCircle2 size={15} className="text-[#2ab5ad] flex-shrink-0 group-hover:text-red-400" />
+                      <CheckCircle2 size={15} className="text-[#2ab5ad] shrink-0 group-hover:text-red-400" />
                     </div>
                   ))}
             </div>
@@ -520,8 +526,8 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                       <div key={d.id} onClick={() => toggleDoctor(d.id)}
                         className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border border-gray-100 hover:bg-teal-50 hover:border-teal-200 transition-colors">
                         {d.imageUrl
-                          ? <img src={d.imageUrl} alt={d.name} className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
-                          : <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 flex-shrink-0">{d.name[0]}</div>}
+                          ? <img src={d.imageUrl} alt={d.name} className="h-7 w-7 rounded-full object-cover shrink-0" />
+                          : <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-400 shrink-0">{d.name[0]}</div>}
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium text-gray-700 truncate">{d.name}</p>
                           <p className="text-[10px] text-gray-400 truncate">{d.specialty}</p>
@@ -542,13 +548,13 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
                     <div key={p.id} onClick={() => toggleProduct(p.id)}
                       className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors border bg-teal-50 border-teal-200 hover:bg-red-50 hover:border-red-200 group">
                       {p.imageUrl
-                        ? <img src={p.imageUrl} alt={p.name} className="h-8 w-8 rounded-xl object-cover flex-shrink-0" />
-                        : <div className="h-8 w-8 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><Package size={13} className="text-gray-400" /></div>}
+                        ? <img src={p.imageUrl} alt={p.name} className="h-8 w-8 rounded-xl object-cover shrink-0" />
+                        : <div className="h-8 w-8 rounded-xl bg-gray-100 flex items-center justify-center shrink-0"><Package size={13} className="text-gray-400" /></div>}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 truncate">{p.name}</p>
                         <p className="text-xs text-gray-400">{p.price.toLocaleString()} Ks</p>
                       </div>
-                      <CheckCircle2 size={15} className="text-[#2ab5ad] flex-shrink-0 group-hover:text-red-400" />
+                      <CheckCircle2 size={15} className="text-[#2ab5ad] shrink-0 group-hover:text-red-400" />
                     </div>
                   ))}
             </div>

@@ -20,6 +20,7 @@ export default function Footer() {
 
   const links = [
     { label: tr.home, href: '/' },
+    { label: tr.navTourism, href: '/medihug-tourism' },
     { label: tr.contact, href: '/contact' },
     { label: tr.privacy, href: '/privacy' },
     { label: tr.telemedicine, href: '/patient/doctors' },

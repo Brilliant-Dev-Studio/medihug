@@ -20,10 +20,12 @@ export async function GET(req: NextRequest) {
       { name:   { contains: search, mode: 'insensitive' } },
       { nameEn: { contains: search, mode: 'insensitive' } },
     ];
-    const isPartner = searchParams.get('isPartner') ?? '';
-    if (type)               where.type      = type;
-    if (isActive  !== '')   where.isActive  = isActive  === 'true';
-    if (isPartner !== '')   where.isPartner = isPartner === 'true';
+    const isPartner    = searchParams.get('isPartner') ?? '';
+    const international = searchParams.get('international') ?? '';
+    if (type)                where.type            = type;
+    if (isActive  !== '')    where.isActive        = isActive  === 'true';
+    if (isPartner !== '')    where.isPartner       = isPartner === 'true';
+    if (international !== '') where.isInternational = international === 'true';
 
     const [clinics, total] = await Promise.all([
       db.clinic.findMany({
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
       phone, phone2, phone3, website, facebookUrl, tiktokUrl, mapUrl,
       imageUrl, coverUrl, openTime, closeTime,
       aboutMm, aboutEn, tagsMm, tagsEn, verified, isPartner,
+      isInternational, country, countryEn,
     } = body;
 
     if (!name) return NextResponse.json({ error: 'name လိုအပ်သည်။' }, { status: 400 });
@@ -89,6 +92,9 @@ export async function POST(req: NextRequest) {
         tagsEn:    tagsEn    ?? [],
         verified:  verified  ?? false,
         isPartner: isPartner ?? true,
+        isInternational: isInternational ?? false,
+        country:   country   || null,
+        countryEn: countryEn || null,
         isActive:  true,
       },
     });

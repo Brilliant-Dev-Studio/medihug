@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
     const type   = searchParams.get('type')   ?? '';
     const search = searchParams.get('search') ?? '';
 
-    const where: Record<string, unknown> = { isActive: true, isPartner: true };
+    const international = searchParams.get('international') ?? '';
+
+    const where: Record<string, unknown> = { isActive: true, isPartner: true, isInternational: false };
+    if (international === 'true') where.isInternational = true;
     if (type)   where.type = { equals: type, mode: 'insensitive' };
     if (search) where.OR = [
       { name:   { contains: search, mode: 'insensitive' } },

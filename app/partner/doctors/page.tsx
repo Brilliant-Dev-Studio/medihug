@@ -11,6 +11,7 @@ interface Doctor {
   id: string; name: string; nameEn: string | null;
   specialty: string; specialtyEn: string | null;
   imageUrl: string | null; rating: number; reviewCount: number;
+  clinic?: { id: string; name: string; nameEn: string | null };
 }
 
 function Skel({ className }: { className: string }) {
@@ -70,25 +71,33 @@ export default function PartnerDoctorsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {doctors.map(d => (
-            <div key={d.id} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-3">
-              {d.imageUrl ? (
-                <Image src={d.imageUrl} alt={d.name} width={48} height={48} className="w-12 h-12 rounded-xl object-cover shrink-0" />
-              ) : (
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
-                  {d.name.charAt(0)}
-                </div>
-              )}
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-gray-800 truncate">{d.nameEn ?? d.name}</p>
-                <p className="text-xs text-gray-400 truncate">{d.specialtyEn ?? d.specialty}</p>
-                <div className="flex items-center gap-1 mt-1">
-                  <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                  <span className="text-xs text-gray-500">{d.rating.toFixed(1)} ({d.reviewCount})</span>
+          {doctors.map(d => {
+            const hasMultipleClinics = new Set(doctors.map(x => x.clinic?.id)).size > 1;
+            return (
+              <div key={d.id} className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-3">
+                {d.imageUrl ? (
+                  <Image src={d.imageUrl} alt={d.name} width={48} height={48} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
+                    {d.name.charAt(0)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-gray-800 truncate">{d.nameEn ?? d.name}</p>
+                  <p className="text-xs text-gray-400 truncate">{d.specialtyEn ?? d.specialty}</p>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <span className="text-xs text-gray-500">{d.rating.toFixed(1)} ({d.reviewCount})</span>
+                    {hasMultipleClinics && d.clinic && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 truncate max-w-24">
+                        {d.clinic.nameEn ?? d.clinic.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
