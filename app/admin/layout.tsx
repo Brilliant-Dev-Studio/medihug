@@ -11,6 +11,7 @@ import {
   Bell, CalendarClock, Headset, HeartPulse, Store, ClipboardCheck,
   Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
   ArrowLeftRight, History, Trash2, ClipboardList, MessageSquareQuote, Coins, Ticket, Globe, HeartHandshake,
+  Truck, PackagePlus,
 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
@@ -38,6 +39,10 @@ const navGroups = [
           { href: '/admin/finance/forecast',        icon: TrendingUp, mm: 'ခန့်မှန်းချက်',         en: 'Forecast' },
           { href: '/admin/finance/revenue',         icon: Megaphone,  mm: 'Program/Ads ဝင်ငွေ',   en: 'Program/Ads Revenue' },
           { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',  en: 'Cash Flow' },
+          { href: '/admin/suppliers',               icon: Truck,       mm: 'ပေးသွင်းသူများ',      en: 'Suppliers' },
+          { href: '/admin/stores',                  icon: Store,       mm: 'စတိုလ်များ',          en: 'Stores' },
+          { href: '/admin/purchases',               icon: PackagePlus, mm: 'ဝယ်ယူမှုများ',        en: 'Purchases' },
+          { href: '/admin/inventory/stock-ledger',  icon: History,     mm: 'ကုန်ပစ္စည်း မှတ်တမ်း', en: 'Stock Ledger' },
           { href: '/admin/finance/audit-log',       icon: History,    mm: 'မှတ်တမ်း Log',         en: 'Audit Log' },
           { href: '/admin/deletion-requests',       icon: Trash2,     mm: 'ဖျက်ရန် တောင်းဆိုမှုများ', en: 'Deletion Requests', perm: 'pos.delete' as Permission },
         ],

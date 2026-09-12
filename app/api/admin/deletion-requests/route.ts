@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/adminAuth';
 import { notify } from '@/lib/notify';
 import { DELETION_APPROVER_ROLES } from '@/lib/permissions';
 
-const SUPPORTED_ENTITY_TYPES = ['Expense', 'ExpenseCategory', 'CommissionRule', 'PaymentMethodConfig', 'Order', 'Refund'];
+const SUPPORTED_ENTITY_TYPES = ['Expense', 'ExpenseCategory', 'CommissionRule', 'PaymentMethodConfig', 'Order', 'Refund', 'Supplier', 'Store', 'Purchase'];
 
 /* ── GET /api/admin/deletion-requests — review queue (SUPER_ADMIN/CO_ADMIN only) ── */
 export async function GET(req: NextRequest) {

@@ -6,7 +6,13 @@ import { requireAdmin } from '@/lib/adminAuth';
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const product = await db.product.findUnique({ where: { id }, include: { clinics: { select: { clinicId: true } } } });
+    const product = await db.product.findUnique({
+      where: { id },
+      include: {
+        clinics: { select: { clinicId: true } },
+        stocks: { include: { store: { select: { id: true, name: true, code: true } } } },
+      },
+    });
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json({ product });
   } catch (e) {

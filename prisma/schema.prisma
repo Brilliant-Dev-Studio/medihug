@@ -115,6 +115,8 @@ model User {
   programEnrollments       ProgramEnrollment[]
   pointsLedgerEntries      PointsLedger[]
   voucherRedemptions       VoucherRedemption[]
+  stockMovementsCreated    StockMovement[]
+  purchasesCreated         Purchase[]           @relation("PurchaseCreatedBy")
 }
 
 // ─────────────────────────────────────────────
@@ -277,6 +279,7 @@ model Clinic {
   revenueLedgerReferrals     RevenueLedger[]     @relation("RevenueLedgerReferralClinic")
   referredProgramEnrollments ProgramEnrollment[] @relation("ProgramEnrollmentReferralClinic")
   vouchers                   Voucher[]
+  stores                     Store[]
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -500,10 +503,13 @@ model Product {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  clinics     ClinicProduct[]
-  favoritedBy FavoriteProduct[]
-  orderItems  OrderItem[]
-  vouchers    Voucher[]
+  clinics        ClinicProduct[]
+  favoritedBy    FavoriteProduct[]
+  orderItems     OrderItem[]
+  vouchers       Voucher[]
+  stocks         ProductStock[]
+  stockMovements StockMovement[]
+  purchaseItems  PurchaseItem[]
 }
 
 // ─────────────────────────────────────────────
@@ -1366,4 +1372,145 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Inventory: Suppliers, Purchases, Stock Ledger
+// ─────────────────────────────────────────────
+
+enum StockMovementType {
+  PURCHASE_RECEIVE // stock in from a received Purchase line
+  ADJUSTMENT // manual correction, +/-, reason required
+  SALE // reserved for the future checkout-register phase — unused for now
+  RETURN_TO_STOCK // reserved for future transfers/order-cancel wiring — unused for now
+}
+
+enum PurchaseStatus {
+  ORDERED
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String
+  nameEn    String?
+  code      String   @unique
+  address   String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  isDefault Boolean  @default(false) // the store that owns the pre-migration Product.stock balance
+  clinicId  String? // nullable forward-compat tag; stays null for all Medihug-owned locations for now
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinic         Clinic?         @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  productStocks  ProductStock[]
+  stockMovements StockMovement[]
+  purchases      Purchase[]
+
+  @@index([clinicId])
+}
+
+model Supplier {
+  id            String   @id @default(cuid())
+  name          String
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  taxId         String?
+  note          String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchases Purchase[]
+
+  @@index([isActive])
+}
+
+model ProductStock {
+  id           String   @id @default(cuid())
+  productId    String
+  storeId      String
+  quantity     Int      @default(0)
+  reorderLevel Int      @default(0) // inert for now; feeds a low-stock report later
+  updatedAt    DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, storeId])
+  @@index([storeId])
+}
+
+model StockMovement {
+  id            String            @id @default(cuid())
+  productId     String
+  storeId       String
+  type          StockMovementType
+  quantity      Int // signed: + in, - out
+  balanceAfter  Int // ProductStock.quantity snapshot right after this row
+  reference     String? // e.g. the Purchase.id this movement came from
+  note          String?
+  createdById   String?
+  createdByName String?
+  createdAt     DateTime          @default(now())
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([productId, storeId])
+  @@index([storeId])
+  @@index([createdAt])
+}
+
+model Purchase {
+  id                 String         @id @default(cuid())
+  supplierId         String
+  storeId            String
+  status             PurchaseStatus @default(ORDERED)
+  purchaseDate       DateTime       @default(now())
+  expectedDate       DateTime?
+  subtotal           Int            @default(0)
+  discountAmount     Int            @default(0)
+  taxAmount          Int            @default(0)
+  shippingCost       Int            @default(0)
+  totalAmount        Int            @default(0)
+  note               String?
+  createdById        String
+  createdByName      String
+  lastReceivedById   String?
+  lastReceivedByName String?
+  lastReceivedAt     DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  supplier  Supplier       @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  store     Store          @relation(fields: [storeId], references: [id], onDelete: Restrict)
+  createdBy User           @relation("PurchaseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  items     PurchaseItem[]
+
+  @@index([supplierId])
+  @@index([storeId])
+  @@index([status])
+}
+
+model PurchaseItem {
+  id          String @id @default(cuid())
+  purchaseId  String
+  productId   String
+  orderedQty  Int
+  receivedQty Int    @default(0)
+  unitCost    Int // Ks paid to supplier, independent of Product.price
+  lineTotal   Int // orderedQty * unitCost snapshot
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([purchaseId])
+  @@index([productId])
 }

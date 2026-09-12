@@ -2,7 +2,8 @@
 
 import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Loader2, Package, Search, X, ChevronDown, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, Loader2, Package, Search, X, ChevronDown, Plus, MapPin, ArrowUpRight } from 'lucide-react';
 import ImageDropzoneMulti from '@/components/admin/ImageDropzoneMulti';
 import ClinicMultiSelect, { type ClinicOption } from '@/components/admin/ClinicMultiSelect';
 
@@ -18,6 +19,7 @@ interface Product {
   packSize: string | null; tags: string[]; keyBenefits: string[];
   rating: number; reviewCount: number;
   clinics?: { clinicId: string }[];
+  stocks?: { id: string; quantity: number; store: { id: string; name: string; code: string } }[];
 }
 interface Category { id: string; name: string; nameEn: string | null; }
 
@@ -341,9 +343,28 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </div>
             <p className="text-xs text-gray-400 -mt-1">Baht/USD are set independently for reference — Ks is the real price used at checkout.</p>
             <div>
-              <label className={lbl}>Stock Quantity</label>
+              <label className={lbl}>Stock Quantity (aggregate, across all locations)</label>
               <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
+          </Section>
+
+          <Section title="Stock by Location">
+            {product.stocks && product.stocks.length > 0 ? (
+              <div className="divide-y divide-gray-50">
+                {product.stocks.map(s => (
+                  <div key={s.id} className="flex items-center justify-between py-2 text-sm">
+                    <span className="flex items-center gap-1.5 text-gray-600"><MapPin size={13} className="text-gray-300" /> {s.store.name} <span className="text-gray-300">· {s.store.code}</span></span>
+                    <span className="font-semibold text-gray-700">{s.quantity}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">No per-location stock recorded yet.</p>
+            )}
+            <Link href={`/admin/inventory/stock-ledger?productId=${product.id}`}
+              className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: PRIMARY }}>
+              View Stock Ledger <ArrowUpRight size={13} />
+            </Link>
           </Section>
         </div>
 

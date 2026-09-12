@@ -37,6 +37,25 @@ async function executeDelete(entityType: string, entityId: string): Promise<unkn
       await db.refund.delete({ where: { id: entityId } });
       return before;
     }
+    case 'Supplier': {
+      const before = await db.supplier.findUnique({ where: { id: entityId } });
+      await db.supplier.delete({ where: { id: entityId } });
+      return before;
+    }
+    case 'Store': {
+      const before = await db.store.findUnique({ where: { id: entityId } });
+      if (before?.isDefault) throw new Error('The default store cannot be deleted.');
+      await db.store.delete({ where: { id: entityId } });
+      return before;
+    }
+    case 'Purchase': {
+      const before = await db.purchase.findUnique({ where: { id: entityId }, include: { items: true } });
+      if (before && (before.status !== 'ORDERED' || before.items.some(i => i.receivedQty > 0))) {
+        throw new Error('This purchase has receiving history and cannot be deleted — cancel it instead.');
+      }
+      await db.purchase.delete({ where: { id: entityId } });
+      return before;
+    }
     default:
       throw new Error(`Unsupported entityType: ${entityType}`);
   }
