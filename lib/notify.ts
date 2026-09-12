@@ -31,3 +31,23 @@ export async function notify(input: NotifyInput): Promise<void> {
     console.error(`notify() failed (userId=${input.userId}, type=${input.type}):`, err);
   }
 }
+
+/** Medi Record step-change push — notifies a single clinic's owner (partner login),
+ * a silent no-op if the clinic has no ownerId (no partner account set up yet). */
+export async function notifyClinicOwner(clinicId: string, input: Omit<NotifyInput, 'userId'>): Promise<void> {
+  const clinic = await db.clinic.findUnique({ where: { id: clinicId }, select: { ownerId: true } });
+  if (!clinic?.ownerId) return;
+  await notify({ ...input, userId: clinic.ownerId });
+}
+
+/** Medi Record step-change push for an Order — an order can mix products from several
+ * partner clinics (no clinicId on Order itself), so this resolves every distinct clinic
+ * touching the given products and notifies each owner once. */
+export async function notifyClinicOwnersForProducts(productIds: string[], input: Omit<NotifyInput, 'userId'>): Promise<void> {
+  if (productIds.length === 0) return;
+  const links = await db.clinicProduct.findMany({ where: { productId: { in: productIds } }, select: { clinicId: true }, distinct: ['clinicId'] });
+  if (links.length === 0) return;
+  const clinics = await db.clinic.findMany({ where: { id: { in: links.map(l => l.clinicId) } }, select: { ownerId: true } });
+  const ownerIds = new Set(clinics.map(c => c.ownerId).filter((id): id is string => !!id));
+  await Promise.all([...ownerIds].map(userId => notify({ ...input, userId })));
+}

@@ -13,6 +13,7 @@ import Testimonials from '../components/Testimonials';
 import HealthcarePrograms from '../components/HealthcarePrograms';
 import PartnerClinics from '../components/PartnerClinics';
 import BlogArticles from '../components/BlogArticles';
+import CommunityPartners from '../components/CommunityPartners';
 import SpecialOffersBanner from '../components/SpecialOffersBanner';
 import { useLang } from '../lib/LanguageContext';
 
@@ -223,6 +224,7 @@ export default function Home() {
     <SpecialOffersBanner />
     <PartnerClinics />
     <BlogArticles />
+    <CommunityPartners />
     </>
   );
 }

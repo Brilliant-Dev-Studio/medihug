@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
 import { logAudit } from '@/lib/audit';
-import { notify } from '@/lib/notify';
+import { notify, notifyClinicOwner } from '@/lib/notify';
 import { recordRevenueLedger } from '@/lib/revenueLedger';
 import { awardPoints } from '@/lib/pointsLedger';
 
@@ -95,6 +95,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         actionUrl: `/doctor/appointments`,
         actorName: appointment.user.name,
         actorAvatar: appointment.user.profileImage,
+      });
+    }
+
+    // Medi Record: live-push any real status transition to the clinic this appointment
+    // belongs to, so the partner's step tracker updates without a manual refresh.
+    if (appointment.clinicId && before?.status !== status) {
+      const title = status === 'CANCELLED' ? 'Appointment cancelled' : status === 'COMPLETED' ? 'Consultation completed' : 'Appointment confirmed';
+      notifyClinicOwner(appointment.clinicId, {
+        type: 'medi-record-appointment-step', title,
+        body: `An appointment for one of your doctors is now ${status.toLowerCase()}.`,
+        actionUrl: '/partner/medi-record',
       });
     }
 

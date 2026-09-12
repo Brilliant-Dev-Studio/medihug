@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { notify } from '@/lib/notify';
+import { notify, notifyClinicOwner, notifyClinicOwnersForProducts } from '@/lib/notify';
 import { verifyCallbackSignatureBestEffort } from '@/lib/cbpay';
 
 // Doc's §4.2 parameter table names this field "responseMsg"; its §4.4 JSON example shows
@@ -33,8 +33,12 @@ export async function POST(req: NextRequest) {
     if (!sigOk) console.warn(`CBPay callback signature mismatch (best-effort check, non-blocking): orderId=${orderId}`);
 
     if (kind === 'order') {
-      const order = await db.order.findUnique({ where: { id }, select: { id: true, userId: true, paymentMethod: true, totalAmount: true, cbPayRefOrder: true } });
+      const order = await db.order.findUnique({
+        where: { id },
+        select: { id: true, userId: true, paymentMethod: true, totalAmount: true, cbPayRefOrder: true, items: { select: { productId: true } } },
+      });
       if (!order || order.paymentMethod !== 'cb' || order.cbPayRefOrder !== generateRefOrder) return NextResponse.json(OK);
+      const productIds = order.items.map(i => i.productId);
 
       if (transactionStatus === 'S') {
         await db.order.update({
@@ -46,12 +50,13 @@ export async function POST(req: NextRequest) {
           },
         });
         notify({ userId: order.userId, type: 'cbpay-payment-confirmed', title: 'Payment confirmed', body: 'Your CB Pay payment was successful. Your order is now confirmed.', actionUrl: `/patient/records` });
+        notifyClinicOwnersForProducts(productIds, { type: 'medi-record-order-step', title: 'Payment confirmed', body: 'Payment confirmed for an order containing your products.', actionUrl: '/partner/medi-record' });
       } else if (transactionStatus === 'F' || transactionStatus === 'E') {
         await db.order.update({ where: { id }, data: { cbPayStatus: 'FAILED' } });
         notify({ userId: order.userId, type: 'cbpay-payment-failed', title: 'Payment not completed', body: 'Your CB Pay payment did not go through. Please try again.', actionUrl: `/patient/records` });
       }
     } else {
-      const appt = await db.appointment.findUnique({ where: { id }, select: { id: true, userId: true, paymentMethod: true, fee: true, cbPayRefOrder: true } });
+      const appt = await db.appointment.findUnique({ where: { id }, select: { id: true, userId: true, clinicId: true, paymentMethod: true, fee: true, cbPayRefOrder: true } });
       if (!appt || appt.paymentMethod !== 'cb' || appt.cbPayRefOrder !== generateRefOrder) return NextResponse.json(OK);
 
       if (transactionStatus === 'S') {
@@ -64,6 +69,7 @@ export async function POST(req: NextRequest) {
           },
         });
         notify({ userId: appt.userId, type: 'cbpay-payment-confirmed', title: 'Payment confirmed', body: 'Your CB Pay payment was successful. Your appointment is now confirmed.', actionUrl: `/patient/appointments/${id}` });
+        if (appt.clinicId) notifyClinicOwner(appt.clinicId, { type: 'medi-record-appointment-step', title: 'Payment confirmed', body: 'Payment confirmed for one of your doctors’ appointments.', actionUrl: '/partner/medi-record' });
       } else if (transactionStatus === 'F' || transactionStatus === 'E') {
         await db.appointment.update({ where: { id }, data: { cbPayStatus: 'FAILED' } });
         notify({ userId: appt.userId, type: 'cbpay-payment-failed', title: 'Payment not completed', body: 'Your CB Pay payment did not go through. Please try again.', actionUrl: `/patient/appointments/${id}` });

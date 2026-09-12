@@ -826,6 +826,28 @@ model Testimonial {
   updatedAt DateTime @updatedAt
 }
 
+// Landing-page directory of government hospitals and charity/social-welfare associations —
+// a simple admin-curated listing, unrelated to the Clinic/Partner portal (no login, no
+// doctors/products/booking).
+model CommunityPartner {
+  id            String   @id @default(cuid())
+  name          String
+  nameEn        String?
+  descriptionMm String?
+  descriptionEn String?
+  contactPerson String?
+  phone         String?
+  viber         String?
+  location      String? // short area/township label shown under the name, distinct from the full address
+  address       String?
+  addressEn     String?
+  imageUrl      String?
+  order         Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 // ─────────────────────────────────────────────
 // Customer Support Chat (patient ↔ super admin)
 // ─────────────────────────────────────────────

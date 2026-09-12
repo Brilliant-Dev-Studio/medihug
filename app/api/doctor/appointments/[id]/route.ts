@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyDoctorToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
 import { generateReferralCode } from '@/lib/referral';
-import { notify } from '@/lib/notify';
+import { notify, notifyClinicOwner } from '@/lib/notify';
 import { recordRevenueLedger } from '@/lib/revenueLedger';
 import { awardPoints } from '@/lib/pointsLedger';
 
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const existing = await db.appointment.findUnique({
     where: { id },
-    select: { doctorId: true, status: true, userId: true, referredDoctorId: true, referredClinicId: true, fee: true, paymentMethod: true, doctorPayoutAmount: true, doctor: { select: { name: true, nameEn: true, imageUrl: true } } },
+    select: { doctorId: true, status: true, userId: true, clinicId: true, referredDoctorId: true, referredClinicId: true, fee: true, paymentMethod: true, doctorPayoutAmount: true, doctor: { select: { name: true, nameEn: true, imageUrl: true } } },
   });
   if (!existing || existing.doctorId !== doctorId || !['CONFIRMED', 'COMPLETED'].includes(existing.status)) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -115,6 +115,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const appointment = await db.appointment.update({ where: { id }, data });
+
+  // Medi Record: live-push the step change to the clinic partner owns this doctor's
+  // appointment through, so the doctor-confirmed/completed steps update in real time.
+  if (existing.clinicId && (data.doctorApproved === true || (data.status === 'COMPLETED' && existing.status !== 'COMPLETED'))) {
+    notifyClinicOwner(existing.clinicId, {
+      type: 'medi-record-appointment-step',
+      title: data.status === 'COMPLETED' ? 'Consultation completed' : 'Doctor confirmed',
+      body: data.status === 'COMPLETED' ? 'One of your doctors marked an appointment as completed.' : 'One of your doctors confirmed an appointment.',
+      actionUrl: '/partner/medi-record',
+    });
+  }
 
   if (data.status === 'COMPLETED' && existing.status !== 'COMPLETED' && existing.fee != null) {
     recordRevenueLedger({
