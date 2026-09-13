@@ -19,8 +19,8 @@ interface Program {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl bg-white border border-gray-100 overflow-hidden">
-      <div className="h-40 bg-gray-100 animate-pulse" />
+    <div className="shrink-0 w-64 sm:w-auto rounded-xl bg-white border border-gray-100 overflow-hidden">
+      <div className="aspect-square bg-gray-100 animate-pulse" />
       <div className="p-5 flex flex-col gap-2">
         <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
         <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-full" />
@@ -103,7 +103,7 @@ function ProgramsListPageInner() {
           </div>
         )}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-5 sm:overflow-x-visible sm:pb-0" style={{ scrollbarWidth: 'none' }}>
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : filteredPrograms.length === 0 ? (
@@ -112,7 +112,7 @@ function ProgramsListPageInner() {
             <p className="text-sm text-gray-400">{mm ? 'အစီအစဉ် မရှိသေးပါ' : 'No programs yet'}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-5 sm:overflow-x-visible sm:pb-0" style={{ scrollbarWidth: 'none' }}>
             {filteredPrograms.map(p => {
               const name = mm ? p.titleMm : (p.titleEn ?? p.titleMm);
               const rawDesc = mm ? (p.descMm ?? p.descEn) : (p.descEn ?? p.descMm);
@@ -120,9 +120,9 @@ function ProgramsListPageInner() {
               const href = p.ctaLink || `/programs/${p.id}`;
 
               return (
-                <Link key={p.id} href={href} className="group rounded-xl bg-white border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-                  <div className="relative w-full h-40 overflow-hidden bg-gray-50">
-                    <Image src={p.imageUrl} alt={name} fill className="object-contain transition-transform duration-300 group-hover:scale-105" />
+                <Link key={p.id} href={href} className="shrink-0 w-64 sm:w-auto group rounded-xl bg-white border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                  <div className="relative w-full aspect-square overflow-hidden bg-gray-50">
+                    <Image src={p.imageUrl} alt={name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                     {p.price > 0 && (
                       <span className="absolute top-2 right-2 text-xs font-bold px-2 py-1 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>
                         {p.price.toLocaleString()} MMK

@@ -21,7 +21,7 @@ interface Program {
 function SkeletonCard() {
   return (
     <div className="rounded-xl bg-white border border-gray-100 overflow-hidden">
-      <div className="h-32 sm:h-40 bg-gray-100 animate-pulse" />
+      <div className="aspect-square bg-gray-100 animate-pulse" />
       <div className="p-3 sm:p-5 flex flex-col gap-2">
         <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
         <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-full" />
@@ -76,9 +76,9 @@ export default function HealthcarePrograms() {
 
             const inner = (
               <>
-                <div className="relative w-full h-32 sm:h-40 overflow-hidden bg-gray-50">
+                <div className="relative w-full aspect-square overflow-hidden bg-gray-50">
                   {p.imageUrl && (
-                    <Image src={p.imageUrl} alt={name} fill className="object-contain transition-transform duration-300 group-hover:scale-105" />
+                    <Image src={p.imageUrl} alt={name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                   )}
                   {p.price > 0 && (
                     <span className="absolute top-2 right-2 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>
