@@ -78,7 +78,7 @@ export default function HealthcarePrograms() {
               <>
                 <div className="relative w-full h-32 sm:h-40 overflow-hidden bg-gray-50">
                   {p.imageUrl && (
-                    <Image src={p.imageUrl} alt={name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <Image src={p.imageUrl} alt={name} fill className="object-contain transition-transform duration-300 group-hover:scale-105" />
                   )}
                   {p.price > 0 && (
                     <span className="absolute top-2 right-2 text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>

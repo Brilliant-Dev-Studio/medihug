@@ -68,7 +68,7 @@ export default function HealthcareProgramsSlider() {
                 <Link key={p.id} href={`/patient/programs/${p.id}`}
                   className="shrink-0 w-52 rounded-2xl overflow-hidden border border-gray-100 bg-white flex flex-col active:scale-95 transition-all shadow-sm">
                   <div className="relative w-full h-32 overflow-hidden bg-gray-100">
-                    <Image src={p.imageUrl} alt={name} fill className="object-cover" />
+                    <Image src={p.imageUrl} alt={name} fill className="object-contain" />
                   </div>
                   <div className="px-3 py-2.5 flex flex-col gap-1">
                     <p className="text-xs font-bold text-gray-800 leading-snug line-clamp-2">{name}</p>
@@ -90,7 +90,7 @@ export default function HealthcareProgramsSlider() {
                 <Link key={p.id} href={`/patient/programs/${p.id}`}
                   className="group rounded-2xl overflow-hidden border border-gray-100 bg-white flex flex-col active:scale-[0.98] transition-all hover:shadow-lg">
                   <div className="relative w-full overflow-hidden bg-gray-100" style={{ height: 160 }}>
-                    <Image src={p.imageUrl} alt={name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <Image src={p.imageUrl} alt={name} fill className="object-contain group-hover:scale-105 transition-transform duration-300" />
                   </div>
                   <div className="px-4 py-3.5 flex flex-col gap-1.5">
                     <p className="text-sm font-bold text-gray-800 leading-snug line-clamp-2">{name}</p>
