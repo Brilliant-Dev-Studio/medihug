@@ -58,7 +58,7 @@ export default function SpecialOffersBanner() {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-sm sm:text-2xl font-bold mb-3" style={{ color: '#0d2b6e' }}>{tr.specialOffersTitle}</h2>
 
-        <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: '260px' }}>
+        <div className="relative overflow-hidden rounded-2xl" style={{ minHeight: '420px' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={offer.id}
@@ -68,8 +68,8 @@ export default function SpecialOffersBanner() {
               transition={{ duration: 0.5 }}
               className="absolute inset-0"
             >
-              <Image src={offer.imageUrl} alt="offer" fill className="object-cover" />
-              <div className="absolute inset-0 bg-black/40" />
+              <Image src={offer.imageUrl} alt="offer" fill className="object-contain" />
+              <div className="absolute inset-0 bg-black/20" />
             </motion.div>
           </AnimatePresence>
 
