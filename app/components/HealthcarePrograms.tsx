@@ -20,7 +20,7 @@ interface Program {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl bg-white border border-gray-100 overflow-hidden">
+    <div className="shrink-0 w-64 sm:w-auto rounded-xl bg-white border border-gray-100 overflow-hidden">
       <div className="aspect-square bg-gray-100 animate-pulse" />
       <div className="p-3 sm:p-5 flex flex-col gap-2">
         <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-3/4" />
@@ -62,7 +62,7 @@ export default function HealthcarePrograms() {
         )}
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="relative z-10 max-w-6xl mx-auto px-6 flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-5 sm:overflow-x-visible sm:pb-0" style={{ scrollbarWidth: 'none' }}>
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)
         ) : (
@@ -99,7 +99,7 @@ export default function HealthcarePrograms() {
               </>
             );
 
-            const cardClass = 'group rounded-xl bg-white border border-gray-100 overflow-hidden flex flex-col';
+            const cardClass = 'shrink-0 w-64 sm:w-auto group rounded-xl bg-white border border-gray-100 overflow-hidden flex flex-col';
 
             return href ? (
               <Link key={p.id} href={href} className={cardClass}>{inner}</Link>
