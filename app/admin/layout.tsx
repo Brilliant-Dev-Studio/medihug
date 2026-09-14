@@ -11,7 +11,8 @@ import {
   Bell, CalendarClock, Headset, HeartPulse, Store, ClipboardCheck,
   Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
   ArrowLeftRight, History, Trash2, ClipboardList, MessageSquareQuote, Coins, Ticket, Globe, HeartHandshake,
-  Truck, PackagePlus,
+  Truck, PackagePlus, ShoppingCart,
+  type LucideIcon,
 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
@@ -20,33 +21,29 @@ import { hasPermission, type Permission } from '@/lib/permissions';
 const PRIMARY = '#2ab5ad';
 const DARK    = '#1a9990';
 
-const navGroups = [
+interface NavChild {
+  href: string;
+  icon: LucideIcon;
+  mm: string;
+  en: string;
+  perm?: Permission;
+}
+
+interface NavItem extends NavChild {
+  children?: NavChild[];
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
   {
     label: 'Main',
     items: [
       { href: '/admin/dashboard', icon: LayoutDashboard, mm: 'Dashboard',       en: 'Dashboard', perm: 'dashboard.view' as Permission },
       { href: '/admin/reports',  icon: BarChart2,       mm: 'အစီရင်ခံစာ',       en: 'Reports', perm: 'dashboard.view' as Permission },
-      { href: '/admin/pos',      icon: Store,           mm: 'POS',              en: 'POS', perm: 'pos.manage' as Permission,
-        children: [
-          { href: '/admin/finance/revenue-ledger',  icon: Layers,     mm: 'ဝင်ငွေ Ledger',       en: 'Revenue Ledger' },
-          { href: '/admin/finance/pnl',             icon: PieChart,   mm: 'အမြတ်/အရှုံး',        en: 'P&L' },
-          { href: '/admin/finance/rules',           icon: Percent,    mm: 'ကော်မရှင်စည်းမျဉ်း',   en: 'Commission Rules' },
-          { href: '/admin/finance/payment-methods', icon: CreditCard, mm: 'ငွေပေးချေမှုနည်းလမ်း', en: 'Payment Methods' },
-          { href: '/admin/finance/expenses',        icon: Receipt,    mm: 'အသုံးစရိတ်',          en: 'Expenses' },
-          { href: '/admin/finance/refunds',         icon: Undo2,      mm: 'ငွေပြန်အမ်း',          en: 'Refunds' },
-          { href: '/admin/finance/reconciliation',  icon: Scale,      mm: 'ငွေစာရင်းချိန်ညှိခြင်း', en: 'Reconciliation' },
-          { href: '/admin/finance/budget',          icon: Target,     mm: 'ဘတ်ဂျက်',              en: 'Budget vs Actual' },
-          { href: '/admin/finance/forecast',        icon: TrendingUp, mm: 'ခန့်မှန်းချက်',         en: 'Forecast' },
-          { href: '/admin/finance/revenue',         icon: Megaphone,  mm: 'Program/Ads ဝင်ငွေ',   en: 'Program/Ads Revenue' },
-          { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',  en: 'Cash Flow' },
-          { href: '/admin/suppliers',               icon: Truck,       mm: 'ပေးသွင်းသူများ',      en: 'Suppliers' },
-          { href: '/admin/stores',                  icon: Store,       mm: 'စတိုလ်များ',          en: 'Stores' },
-          { href: '/admin/purchases',               icon: PackagePlus, mm: 'ဝယ်ယူမှုများ',        en: 'Purchases' },
-          { href: '/admin/inventory/stock-ledger',  icon: History,     mm: 'ကုန်ပစ္စည်း မှတ်တမ်း', en: 'Stock Ledger' },
-          { href: '/admin/finance/audit-log',       icon: History,    mm: 'မှတ်တမ်း Log',         en: 'Audit Log' },
-          { href: '/admin/deletion-requests',       icon: Trash2,     mm: 'ဖျက်ရန် တောင်းဆိုမှုများ', en: 'Deletion Requests', perm: 'pos.delete' as Permission },
-        ],
-      },
       { href: '/admin/notifications', icon: Bell,        mm: 'အသိပေးချက်များ',   en: 'Notifications' },
       { href: '/admin/support',   icon: Headset,         mm: 'Customer Support',  en: 'Customer Support', perm: 'support.manage' as Permission },
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients', perm: 'dashboard.view' as Permission },
@@ -64,9 +61,44 @@ const navGroups = [
     ],
   },
   {
+    label: 'POS',
+    items: [
+      { href: '/admin/pos',                     icon: LayoutDashboard, mm: 'ခြုံငုံကြည့်ရှုမှု',    en: 'Overview',     perm: 'pos.manage' as Permission },
+      { href: '/admin/sales',                   icon: ShoppingCart,    mm: 'ရောင်းချမှုများ',       en: 'Sales',        perm: 'pos.manage' as Permission },
+      { href: '/admin/products',                icon: ShoppingBag,     mm: 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ', en: 'Products', perm: 'dashboard.view' as Permission },
+      { href: '/admin/purchases',               icon: PackagePlus,     mm: 'ဝယ်ယူမှုများ',         en: 'Purchases',    perm: 'pos.manage' as Permission },
+      { href: '/admin/suppliers',               icon: Truck,           mm: 'ပေးသွင်းသူများ',       en: 'Suppliers',    perm: 'pos.manage' as Permission },
+      { href: '/admin/stores',                  icon: Store,           mm: 'စတိုလ်များ',           en: 'Stores',       perm: 'pos.manage' as Permission },
+      { href: '/admin/inventory/stock-ledger',  icon: History,         mm: 'ကုန်ပစ္စည်း မှတ်တမ်း', en: 'Stock Ledger', perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/expenses',        icon: Receipt,         mm: 'အသုံးစရိတ်',          en: 'Expenses',     perm: 'pos.manage' as Permission },
+      { href: '/admin/points', icon: Coins, mm: 'ပွိုင့်များ', en: 'Points', perm: 'dashboard.view' as Permission,
+        children: [
+          { href: '/admin/points/report',   icon: Users,    mm: 'အစီရင်ခံစာ', en: 'Report' },
+          { href: '/admin/points/settings', icon: Settings, mm: 'ဆက်တင်',    en: 'Settings', perm: 'settings.manage' as Permission },
+        ],
+      },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { href: '/admin/finance/revenue-ledger',  icon: Layers,         mm: 'ဝင်ငွေ Ledger',         en: 'Revenue Ledger',      perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/rules',           icon: Percent,        mm: 'ကော်မရှင်စည်းမျဉ်း',     en: 'Commission Rules',    perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/pnl',             icon: PieChart,       mm: 'အမြတ်/အရှုံး',          en: 'P&L',                 perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/refunds',         icon: Undo2,          mm: 'ငွေပြန်အမ်း',           en: 'Refunds',             perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/reconciliation',  icon: Scale,          mm: 'ငွေစာရင်းချိန်ညှိခြင်း', en: 'Reconciliation',      perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',      en: 'Cash Flow',           perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/payment-methods', icon: CreditCard,     mm: 'ငွေပေးချေမှုနည်းလမ်း',   en: 'Payment Methods',     perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/budget',          icon: Target,         mm: 'ဘတ်ဂျက်',               en: 'Budget vs Actual',    perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/forecast',        icon: TrendingUp,     mm: 'ခန့်မှန်းချက်',          en: 'Forecast',            perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/revenue',         icon: Megaphone,      mm: 'Program/Ads ဝင်ငွေ',    en: 'Program/Ads Revenue', perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/audit-log',       icon: History,        mm: 'မှတ်တမ်း Log',          en: 'Audit Log',           perm: 'pos.manage' as Permission },
+      { href: '/admin/deletion-requests',       icon: Trash2,         mm: 'ဖျက်ရန် တောင်းဆိုမှုများ', en: 'Deletion Requests', perm: 'pos.delete' as Permission },
+    ],
+  },
+  {
     label: 'Content',
     items: [
-      { href: '/admin/products',            icon: ShoppingBag, mm: 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ', en: 'Product and Services', perm: 'dashboard.view' as Permission },
       { href: '/admin/product-categories', icon: Layers,      mm: 'Category',           en: 'Categories', perm: 'dashboard.view' as Permission },
       { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs', perm: 'dashboard.view' as Permission },
       { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories', perm: 'dashboard.view' as Permission },
@@ -82,12 +114,6 @@ const navGroups = [
   {
     label: 'System',
     items: [
-      { href: '/admin/points',    icon: Coins,           mm: 'ပွိုင့်များ',       en: 'Points', perm: 'dashboard.view' as Permission,
-        children: [
-          { href: '/admin/points/report',   icon: Users,    mm: 'အစီရင်ခံစာ', en: 'Report' },
-          { href: '/admin/points/settings', icon: Settings, mm: 'ဆက်တင်',    en: 'Settings', perm: 'settings.manage' as Permission },
-        ],
-      },
       { href: '/admin/settings',  icon: Settings,        mm: 'ဆက်တင်',           en: 'Settings', perm: 'admins.manage' as Permission },
     ],
   },
