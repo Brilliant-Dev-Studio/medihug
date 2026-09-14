@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
 import { logAudit } from '@/lib/audit';
+import { SYSTEM_VOUCHER_CODES } from '@/lib/systemVouchers';
 
-/* ── GET /api/admin/vouchers — list all vouchers, platform-wide and partner-issued ── */
+/* ── GET /api/admin/vouchers — list all vouchers, platform-wide and partner-issued.
+ * Excludes the two fixed system codes, which are managed at /admin/system-vouchers. ── */
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     const vouchers = await db.voucher.findMany({
+      where: { code: { notIn: SYSTEM_VOUCHER_CODES } },
       orderBy: { createdAt: 'desc' },
       include: {
         clinic:  { select: { id: true, name: true } },

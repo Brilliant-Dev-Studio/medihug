@@ -25,7 +25,7 @@ export default function DiscountBox({
 }) {
   const [pointsBalance, setPointsBalance] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [mode, setMode] = useState<'points' | 'voucher' | null>(null);
+  const [mode, setMode] = useState<'points' | 'voucher' | null>('voucher');
 
   useEffect(() => {
     if (!phone) { setLoaded(true); return; }
@@ -55,14 +55,14 @@ export default function DiscountBox({
     <div className="flex flex-col gap-2.5">
       <div className="flex gap-2">
         <button type="button" onClick={() => switchMode('points')}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border-2 transition-all"
           style={{ borderColor: mode === 'points' ? PRIMARY : '#e5e7eb', backgroundColor: mode === 'points' ? `${PRIMARY}0d` : '#fff', color: mode === 'points' ? PRIMARY : '#6b7280' }}>
-          <Coins className="w-3.5 h-3.5" /> {mm ? 'Points သုံးမည်' : 'Use Points'}
+          <Coins className="w-4.5 h-4.5" /> {mm ? 'Points သုံးမည်' : 'Use Points'}
         </button>
         <button type="button" onClick={() => switchMode('voucher')}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border-2 transition-all"
           style={{ borderColor: mode === 'voucher' ? PRIMARY : '#e5e7eb', backgroundColor: mode === 'voucher' ? `${PRIMARY}0d` : '#fff', color: mode === 'voucher' ? PRIMARY : '#6b7280' }}>
-          <Ticket className="w-3.5 h-3.5" /> {mm ? 'Voucher သုံးမည်' : 'Use Voucher'}
+          <Ticket className="w-4.5 h-4.5" /> {mm ? 'Voucher သုံးမည်' : 'Use Voucher'}
         </button>
       </div>
 

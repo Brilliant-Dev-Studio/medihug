@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ChevronLeft, Calendar, Clock, User, Stethoscope,
   Upload, Image as ImageIcon, CheckCircle2, X, FileText,
-  CreditCard, Smartphone, Building2, CalendarClock, RotateCcw,
+  CreditCard, Smartphone, Building2, CalendarClock, RotateCcw, Tag,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import IntakeForm, { IntakeData } from './IntakeForm';
@@ -612,20 +612,28 @@ function PaymentMethodCard({ mm, payMethod, setPayMethod, fee, cbDeeplink, cbApp
 
       {/* Amount reminder */}
       <div
-        className="flex flex-col gap-1 px-4 py-3 rounded-xl"
+        className="flex flex-col gap-2 px-4 py-3 rounded-xl"
         style={{ background: `linear-gradient(135deg, ${PRIMARY}08 0%, ${SECONDARY}12 100%)`, border: `1px solid ${PRIMARY}15` }}
       >
         {discount.discountAmount > 0 && (
-          <div className="flex items-center justify-between text-xs text-amber-600">
-            <span>{discount.voucherCode ? (mm ? 'Voucher လျှော့ငွေ' : 'Voucher discount') : (mm ? 'Points လျှော့ငွေ' : 'Points discount')}</span>
-            <span>-{discount.discountAmount.toLocaleString()} Ks</span>
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-white px-2.5 py-1 rounded-full" style={{ backgroundColor: '#16a34a' }}>
+              <Tag className="w-3.5 h-3.5" />
+              {discount.voucherCode ?? (mm ? 'Points လျှော့ဈေး' : 'Points discount')}
+            </span>
+            <span className="text-sm font-bold text-green-600">-{discount.discountAmount.toLocaleString()} Ks</span>
           </div>
         )}
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">{mm ? 'ပေးရမည့်ငွေ' : 'Amount to pay'}</span>
-          <span className="text-xl font-bold" style={{ color: PRIMARY }}>
-            {discount.discountAmount > 0 ? finalAmount.toLocaleString() : fee} <span className="text-xs font-semibold text-gray-400">MMK</span>
-          </span>
+          <div className="flex items-baseline gap-2">
+            {discount.discountAmount > 0 && (
+              <span className="text-xs text-gray-400 line-through">{purchaseAmount.toLocaleString()} Ks</span>
+            )}
+            <span className="text-xl font-bold" style={{ color: PRIMARY }}>
+              {discount.discountAmount > 0 ? finalAmount.toLocaleString() : fee} <span className="text-xs font-semibold text-gray-400">MMK</span>
+            </span>
+          </div>
         </div>
       </div>
 
