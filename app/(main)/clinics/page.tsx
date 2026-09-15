@@ -136,7 +136,7 @@ function PartnerTypePicker({ onPick }: { onPick: (name: string) => void }) {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
             {Array.from({ length: 12 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)}
           </div>
         ) : filtered.length === 0 ? (
@@ -145,7 +145,7 @@ function PartnerTypePicker({ onPick }: { onPick: (name: string) => void }) {
             <p className="text-sm">{mm ? 'အမျိုးအစား မတွေ့ပါ' : 'No categories found'}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
             {filtered.map((t, i) => {
               const label = mm ? t.name : (t.nameEn ?? t.name);
               const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];

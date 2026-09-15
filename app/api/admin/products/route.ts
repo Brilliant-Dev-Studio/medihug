@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
 
 
     if (!name) return NextResponse.json({ error: 'name လိုအပ်သည်။' }, { status: 400 });
+    if (!Number.isInteger(price) || price <= 0) {
+      return NextResponse.json({ error: 'ဈေးနှုန်း (Ks) ကို 0 ထက်ကြီးသော ကိန်းပြည့်ဖြင့် ထည့်ရပါမည်။' }, { status: 400 });
+    }
 
     const { brand, type, strength, packSize, tags, keyBenefits, rating, reviewCount, isActive, clinicIds } = body;
     const product = await db.product.create({

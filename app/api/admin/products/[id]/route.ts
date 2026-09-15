@@ -29,6 +29,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { id: _id, createdAt, updatedAt, clinicIds, ...data } = body;
     void _id; void createdAt; void updatedAt;
 
+    if (data.price !== undefined && (!Number.isInteger(data.price) || data.price <= 0)) {
+      return NextResponse.json({ error: 'ဈေးနှုန်း (Ks) ကို 0 ထက်ကြီးသော ကိန်းပြည့်ဖြင့် ထည့်ရပါမည်။' }, { status: 400 });
+    }
+
     const product = await db.$transaction(async tx => {
       const updated = await tx.product.update({ where: { id }, data });
       if (Array.isArray(clinicIds)) {

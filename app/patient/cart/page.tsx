@@ -10,13 +10,15 @@ import {
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 import { useCart } from '../../lib/useCart';
+import { getProductPriceEntries, formatPriceEntries, sumProductPricesByCurrency } from '@/lib/productPrice';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 
 interface Product {
   id: string; name: string; nameEn: string | null;
-  imageUrl: string | null; price: number; stock: number; packSize: string | null;
+  imageUrl: string | null; price: number; priceThb: number | null; priceUsd: number | null;
+  stock: number; packSize: string | null;
 }
 
 function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -73,11 +75,10 @@ export default function CartPage() {
 
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
   const selectedCount = lines.filter(l => selected.has(l.productId)).reduce((sum, l) => sum + l.quantity, 0);
-  const selectedTotal = lines.reduce((sum, l) => {
-    if (!selected.has(l.productId)) return sum;
-    const p = products[l.productId];
-    return sum + (p ? p.price * l.quantity : 0);
-  }, 0);
+  const selectedLines = lines
+    .filter(l => selected.has(l.productId) && products[l.productId])
+    .map(l => ({ ...products[l.productId], quantity: l.quantity }));
+  const selectedTotalDisplay = formatPriceEntries(sumProductPricesByCurrency(selectedLines, { labels: { MMK: 'Ks' } }));
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -145,7 +146,7 @@ export default function CartPage() {
                     const p = products[line.productId];
                     if (!p) return null;
                     const name = mm ? p.name : (p.nameEn ?? p.name);
-                    const lineTotal = p.price * line.quantity;
+                    const lineTotal = formatPriceEntries(sumProductPricesByCurrency([{ ...p, quantity: line.quantity }], { labels: { MMK: 'Ks' } }));
                     const isSel = selected.has(line.productId);
                     return (
                       <div key={line.productId} className="flex items-center gap-3 px-4 py-4">
@@ -162,7 +163,7 @@ export default function CartPage() {
                         <div className="min-w-0 flex-1">
                           <Link href={`/patient/records/${p.id}`} className="text-sm font-semibold text-gray-800 hover:underline block truncate">{name}</Link>
                           {p.packSize && <p className="text-[11px] text-gray-400 mt-0.5">{p.packSize}</p>}
-                          <p className="text-sm font-bold mt-1" style={{ color: PRIMARY }}>{p.price.toLocaleString()} Ks</p>
+                          <p className="text-sm font-bold mt-1" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(p, { labels: { MMK: 'Ks' } }))}</p>
                           {/* Mobile: qty + subtotal + remove inline */}
                           <div className="flex lg:hidden items-center justify-between mt-2">
                             <div className="flex items-center gap-0.5 rounded-full border border-gray-200 bg-gray-50 p-0.5">
@@ -177,7 +178,7 @@ export default function CartPage() {
                               </button>
                             </div>
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold text-gray-700">{lineTotal.toLocaleString()} Ks</p>
+                              <p className="text-sm font-bold text-gray-700">{lineTotal}</p>
                               <button onClick={() => removeItem(line.productId)} className="w-7 h-7 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -199,7 +200,7 @@ export default function CartPage() {
                             </button>
                           </div>
                         </div>
-                        <p className="hidden lg:block w-24 text-right text-sm font-bold text-gray-800">{lineTotal.toLocaleString()}</p>
+                        <p className="hidden lg:block w-24 text-right text-sm font-bold text-gray-800">{lineTotal}</p>
                         <button onClick={() => removeItem(line.productId)}
                           className="hidden lg:flex w-8 h-8 rounded-full items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
                           <Trash2 className="w-4 h-4" />
@@ -217,12 +218,12 @@ export default function CartPage() {
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{mm ? 'ငွေရှင်းအကျဉ်း' : 'Order Summary'}</p>
                 <div className="flex items-center justify-between text-sm">
                   <p className="text-gray-500">{mm ? `ရွေးချယ်ထား (${selectedCount})` : `Selected (${selectedCount})`}</p>
-                  <p className="font-semibold text-gray-700">{selectedTotal.toLocaleString()} Ks</p>
+                  <p className="font-semibold text-gray-700">{selectedTotalDisplay}</p>
                 </div>
                 <div className="h-px bg-gray-100" />
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold text-gray-700">{mm ? 'စုစုပေါင်း' : 'Total'}</p>
-                  <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{selectedTotal.toLocaleString()} <span className="text-sm font-semibold text-gray-400">Ks</span></p>
+                  <p className="text-2xl font-bold" style={{ color: PRIMARY }}>{selectedTotalDisplay}</p>
                 </div>
                 <button onClick={goToCheckout} disabled={selectedCount === 0}
                   className="w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-opacity mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -241,7 +242,7 @@ export default function CartPage() {
           <Checkbox checked={allSelected} onChange={toggleAll} />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-gray-400 leading-none">{mm ? 'စုစုပေါင်း' : 'Total'}</p>
-            <p className="text-base font-bold leading-tight" style={{ color: PRIMARY }}>{selectedTotal.toLocaleString()} Ks</p>
+            <p className="text-base font-bold leading-tight" style={{ color: PRIMARY }}>{selectedTotalDisplay}</p>
           </div>
           <button onClick={goToCheckout} disabled={selectedCount === 0}
             className="px-6 py-3 rounded-2xl text-sm font-bold text-white transition-opacity shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"

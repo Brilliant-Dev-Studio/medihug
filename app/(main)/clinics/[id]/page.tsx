@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { FaFacebook, FaTiktok } from 'react-icons/fa6';
 import { useLang } from '@/app/lib/LanguageContext';
+import { getProductPriceEntries, formatPriceEntries } from '@/lib/productPrice';
 
 const PRIMARY = '#0d2b6e';
 
@@ -22,7 +23,7 @@ interface ClinicDoctor {
 }
 interface ClinicProduct {
   id: string;
-  product: { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; packSize: string | null };
+  product: { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; priceThb: number | null; priceUsd: number | null; packSize: string | null };
 }
 interface Clinic {
   id: string;
@@ -366,7 +367,7 @@ export default function PublicClinicDetailPage() {
                     <div className="p-3">
                       <p className="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{pName}</p>
                       {p.packSize && <p className="text-[10px] text-gray-400 mt-0.5">{p.packSize}</p>}
-                      <p className="text-sm font-extrabold mt-2" style={{ color: PRIMARY }}>{p.price.toLocaleString()} Ks</p>
+                      <p className="text-sm font-extrabold mt-2" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(p, { labels: { MMK: 'Ks' } }))}</p>
                     </div>
                   </Link>
                 );

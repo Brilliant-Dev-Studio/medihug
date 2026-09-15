@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { ChevronLeft, Star, Package, Loader2, ShoppingCart } from 'lucide-react';
 import { useLang } from '@/app/lib/LanguageContext';
+import { getProductPriceEntries, formatPriceEntries } from '@/lib/productPrice';
 
 const PRIMARY = '#0d2b6e';
 
@@ -18,6 +19,8 @@ type Product = {
   packSize: string | null;
   brand: string | null;
   price: number;
+  priceThb: number | null;
+  priceUsd: number | null;
   stock: number;
   rating: number;
   reviewCount: number;
@@ -106,7 +109,7 @@ export default function PublicProductDetailPage() {
             </div>
 
             <p className="text-3xl font-extrabold" style={{ color: PRIMARY }}>
-              {product.price.toLocaleString()} <span className="text-base font-semibold text-gray-400">MMK</span>
+              {formatPriceEntries(getProductPriceEntries(product))}
             </p>
 
             <button

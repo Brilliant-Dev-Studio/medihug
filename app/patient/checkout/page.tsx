@@ -17,11 +17,15 @@ import DiscountBox from '@/components/DiscountBox';
 import DeliveryAddressSection from '@/components/DeliveryAddressSection';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
+import { formatPriceEntries, sumProductPricesByCurrency } from '@/lib/productPrice';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 
-interface Product { id: string; name: string; nameEn: string | null; imageUrl: string | null; price: number; packSize: string | null; }
+interface Product {
+  id: string; name: string; nameEn: string | null; imageUrl: string | null;
+  price: number; priceThb: number | null; priceUsd: number | null; packSize: string | null;
+}
 
 function getPatient(): { name: string; phone: string } | null {
   if (typeof window === 'undefined') return null;
@@ -62,7 +66,7 @@ function CheckoutContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState('');
   const [done,       setDone]       = useState(false);
-  const [placedOrder, setPlacedOrder] = useState<{ id: string; total: number } | null>(null);
+  const [placedOrder, setPlacedOrder] = useState<{ id: string; total: number; items: { quantity: number; product: Product }[] } | null>(null);
   const [copied,     setCopied]     = useState(false);
   const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
   const [cbAppMissing, setCbAppMissing] = useState(false);
@@ -85,6 +89,10 @@ function CheckoutContent() {
     return sum + (p ? p.price * l.quantity : 0);
   }, 0);
   const finalTotal = Math.max(0, total - discount.discountAmount);
+  const priceBreakdown = sumProductPricesByCurrency(
+    checkoutLines.filter(l => products[l.productId]).map(l => ({ ...products[l.productId], quantity: l.quantity })),
+    { labels: { MMK: 'Ks' } }
+  );
 
   function handleFile(file: File) {
     if (!file.type.startsWith('image/')) return;
@@ -139,7 +147,7 @@ function CheckoutContent() {
         return;
       }
 
-      setPlacedOrder({ id: data.order.id, total: data.order.totalAmount });
+      setPlacedOrder({ id: data.order.id, total: data.order.totalAmount, items: data.order.items });
       setSubmitting(false);
       setDone(true);
     } catch (err) {
@@ -202,6 +210,18 @@ function CheckoutContent() {
                 <span className="text-xs font-semibold text-gray-500">{mm ? 'ပေးချေပြီးငွေ' : 'Amount Paid'}</span>
                 <span className="text-lg font-bold" style={{ color: PRIMARY }}>{placedOrder.total.toLocaleString()} <span className="text-xs font-semibold text-gray-400">MMK</span></span>
               </div>
+              {(() => {
+                const otherCurrencies = sumProductPricesByCurrency(
+                  placedOrder.items.map(i => ({ ...i.product, quantity: i.quantity }))
+                ).filter(e => e.code !== 'MMK');
+                if (otherCurrencies.length === 0) return null;
+                return (
+                  <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100">
+                    <span className="text-[11px] text-gray-400">{mm ? 'အခြားငွေကြေးဖြင့်' : 'Also priced at'}</span>
+                    <span className="text-xs font-semibold text-gray-500">{formatPriceEntries(otherCurrencies)}</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -262,14 +282,14 @@ function CheckoutContent() {
                       <p className="text-sm font-semibold text-gray-800 truncate">{pname}</p>
                       <p className="text-xs text-gray-400">x{l.quantity}</p>
                     </div>
-                    <p className="text-sm font-bold text-gray-700 shrink-0">{(p.price * l.quantity).toLocaleString()} Ks</p>
+                    <p className="text-sm font-bold text-gray-700 shrink-0">{formatPriceEntries(sumProductPricesByCurrency([{ ...p, quantity: l.quantity }], { labels: { MMK: 'Ks' } }))}</p>
                   </div>
                 );
               })}
               <div className="h-px bg-gray-100" />
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-gray-700">{mm ? 'စုစုပေါင်း' : 'Total'}</p>
-                <p className="text-lg font-bold" style={{ color: PRIMARY }}>{total.toLocaleString()} <span className="text-xs font-semibold text-gray-400">Ks</span></p>
+                <p className="text-lg font-bold" style={{ color: PRIMARY }}>{formatPriceEntries(priceBreakdown)}</p>
               </div>
             </div>
 

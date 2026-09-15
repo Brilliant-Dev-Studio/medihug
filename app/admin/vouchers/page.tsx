@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, Check, X, Loader2, Ticket, Trash2, Ban, Search } from 'lucide-react';
+import { Plus, Check, X, Loader2, Ticket, Trash2, Ban, Search, Pencil } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
@@ -72,6 +72,11 @@ export default function AdminVouchersPage() {
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDiscountType, setEditDiscountType] = useState<DiscountType>('PERCENT');
+  const [editDiscountValue, setEditDiscountValue] = useState('');
+  const [editError, setEditError] = useState('');
 
   const [code, setCode] = useState('');
   const [label, setLabel] = useState('');
@@ -181,6 +186,24 @@ export default function AdminVouchersPage() {
       body: JSON.stringify({ active: !v.active }),
     });
     setBusyId(null); load();
+  };
+
+  const startEdit = (v: Voucher) => {
+    setEditingId(v.id); setEditDiscountType(v.discountType); setEditDiscountValue(String(v.discountValue)); setEditError('');
+  };
+  const cancelEdit = () => { setEditingId(null); setEditError(''); };
+
+  const saveEdit = async (v: Voucher) => {
+    const n = Number(editDiscountValue);
+    if (Number.isNaN(n) || n <= 0) { setEditError('Must be a positive number.'); return; }
+    setBusyId(v.id);
+    const res = await fetch(`/api/admin/vouchers/${v.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ discountType: editDiscountType, discountValue: n }),
+    });
+    setBusyId(null);
+    if (!res.ok) { const data = await res.json(); setEditError(data.error ?? 'Server error'); return; }
+    setEditingId(null); load();
   };
 
   const handleDelete = async (v: Voucher) => {
@@ -303,7 +326,22 @@ export default function AdminVouchersPage() {
                   <td className="px-5 py-3.5 text-sm text-gray-700">{SERVICE_LABEL[v.serviceType]}</td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{scopeLabel(v)}</td>
                   <td className="px-5 py-3.5 text-sm font-semibold text-gray-700">
-                    {v.discountType === 'PERCENT' ? `${v.discountValue}%` : `${v.discountValue.toLocaleString()} Ks`}
+                    {editingId === v.id ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <select value={editDiscountType} onChange={e => setEditDiscountType(e.target.value as DiscountType)}
+                            className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 outline-none focus:border-teal-400">
+                            <option value="PERCENT">%</option>
+                            <option value="FIXED">Ks</option>
+                          </select>
+                          <input type="number" min={0} value={editDiscountValue} onChange={e => setEditDiscountValue(e.target.value)}
+                            className="w-20 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-700 outline-none focus:border-teal-400" />
+                        </div>
+                        {editError && <p className="text-[10px] text-red-500">{editError}</p>}
+                      </div>
+                    ) : (
+                      v.discountType === 'PERCENT' ? `${v.discountValue}%` : `${v.discountValue.toLocaleString()} Ks`
+                    )}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{v.usedCount} / {v.maxUses ?? '∞'}</td>
                   <td className="px-5 py-3.5">
@@ -313,14 +351,33 @@ export default function AdminVouchersPage() {
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-1.5 justify-end">
-                      <button onClick={() => toggleActive(v)} disabled={busyId === v.id} title={v.active ? 'Disable' : 'Enable'}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30">
-                        {busyId === v.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
-                      </button>
-                      <button onClick={() => handleDelete(v)} disabled={busyId === v.id}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-400 disabled:opacity-30">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {editingId === v.id ? (
+                        <>
+                          <button onClick={() => saveEdit(v)} disabled={busyId === v.id} title="Save"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-white disabled:opacity-30" style={{ backgroundColor: PRIMARY }}>
+                            {busyId === v.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                          </button>
+                          <button onClick={cancelEdit} disabled={busyId === v.id}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => startEdit(v)} disabled={busyId === v.id} title="Edit discount"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => toggleActive(v)} disabled={busyId === v.id} title={v.active ? 'Disable' : 'Enable'}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-30">
+                            {busyId === v.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                          </button>
+                          <button onClick={() => handleDelete(v)} disabled={busyId === v.id}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-400 disabled:opacity-30">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

@@ -15,6 +15,7 @@ import { useLang } from '../../lib/LanguageContext';
 import { useFavorites } from '../../lib/useFavorites';
 import { useCart } from '../../lib/useCart';
 import IdentifyModal from '../../components/IdentifyModal';
+import { getProductPriceEntries, formatPriceEntries } from '@/lib/productPrice';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -27,6 +28,8 @@ type Product = {
   category: string | null;
   packSize: string | null;
   price: number;
+  priceThb: number | null;
+  priceUsd: number | null;
   rating: number;
   reviewCount: number;
   isActive: boolean;
@@ -98,7 +101,7 @@ function ProductSearchBox({ products, value, onChange, mm, placeholder, pillClas
                   <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
                   <p className="text-xs text-gray-400 truncate">{p.category ?? ''}</p>
                 </div>
-                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{p.price.toLocaleString()} Ks</span>
+                <span className="text-xs font-bold shrink-0" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(p, { labels: { MMK: 'Ks' } }))}</span>
               </Link>
             );
           })}
@@ -166,7 +169,7 @@ function ProductCard({ product, mm, catLabel, favorited, onToggleFav }: {
           <span className="text-[10px] text-gray-400">({product.reviewCount})</span>
         </div>
         <div className="mt-auto pt-1 flex items-center justify-between gap-2">
-          <span className="text-sm font-bold" style={{ color: PRIMARY }}>{product.price.toLocaleString()} Ks</span>
+          <span className="text-sm font-bold" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(product, { labels: { MMK: 'Ks' } }))}</span>
           <button onClick={e => {
             e.preventDefault(); e.stopPropagation();
             addToCart(product.id, 1);

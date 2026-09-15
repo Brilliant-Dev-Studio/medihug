@@ -1,6 +1,8 @@
-/** The two permanent, platform-wide discount codes Super Admin can Activate/Deactivate
- * and set a Valid-until date for, distinct from partner-issued vouchers created via the
- * generic app/admin/vouchers form. Code and discount amount are fixed by design. */
+/** The two permanent, platform-wide discount codes Super Admin can Activate/Deactivate,
+ * set a Valid-until date for, and edit the discount percent of — distinct from
+ * partner-issued vouchers created via the generic app/admin/vouchers form. These
+ * defaults only seed the row on first creation (see the GET route's upsert); the
+ * live discountValue lives in the DB from then on. Code stays fixed by design. */
 export const SYSTEM_VOUCHERS = [
   {
     code: 'MEDIHUG10',

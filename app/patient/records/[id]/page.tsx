@@ -14,6 +14,7 @@ import { useLang } from '../../../lib/LanguageContext';
 import { useFavorites } from '../../../lib/useFavorites';
 import { useCart } from '../../../lib/useCart';
 import IdentifyModal from '../../../components/IdentifyModal';
+import { getProductPriceEntries, formatPriceEntries } from '@/lib/productPrice';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
@@ -29,6 +30,8 @@ type Product = {
   type: string | null;
   strength: string | null;
   price: number;
+  priceThb: number | null;
+  priceUsd: number | null;
   stock: number;
   rating: number;
   reviewCount: number;
@@ -221,8 +224,7 @@ export default function ProductDetailPage() {
 
       {/* Price */}
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold" style={{ color: PRIMARY }}>{product.price.toLocaleString()}</span>
-        <span className="text-sm font-semibold text-gray-400">Ks</span>
+        <span className="text-2xl font-bold" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(product, { labels: { MMK: 'Ks' } }))}</span>
         {product.stock <= 0 && (
           <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full ml-2">
             {mm ? 'ကုန်သွားပြီ' : 'Out of stock'}
@@ -327,7 +329,7 @@ export default function ProductDetailPage() {
                 <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                 <span className="text-[10px] text-gray-500">{p.rating.toFixed(1)}</span>
               </div>
-              <p className="text-xs font-extrabold" style={{ color: PRIMARY }}>{p.price.toLocaleString()} Ks</p>
+              <p className="text-xs font-extrabold" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(p, { labels: { MMK: 'Ks' } }))}</p>
             </div>
           </Link>
         ))}
@@ -363,8 +365,7 @@ export default function ProductDetailPage() {
               <div className="px-5 pt-5 pb-4" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
                 <p className="text-white/60 text-xs mb-1">{mm ? 'တန်ဖိုး' : 'Price'}</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-white">{product.price.toLocaleString()}</span>
-                  <span className="text-sm font-semibold text-white/60">Ks</span>
+                  <span className="text-3xl font-bold text-white">{formatPriceEntries(getProductPriceEntries(product, { labels: { MMK: 'Ks' } }))}</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-3">
                   <div className="flex items-center gap-1">

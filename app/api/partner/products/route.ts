@@ -32,6 +32,9 @@ export async function POST(req: NextRequest) {
       brand, type, strength, packSize, tags, keyBenefits, isActive } = body;
 
     if (!name) return NextResponse.json({ error: 'name လိုအပ်သည်။' }, { status: 400 });
+    if (!Number.isInteger(price) || price <= 0) {
+      return NextResponse.json({ error: 'ဈေးနှုန်း (Ks) ကို 0 ထက်ကြီးသော ကိန်းပြည့်ဖြင့် ထည့်ရပါမည်။' }, { status: 400 });
+    }
 
     const product = await db.product.create({
       data: {

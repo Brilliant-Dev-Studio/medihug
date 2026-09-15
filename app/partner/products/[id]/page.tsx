@@ -201,6 +201,10 @@ export default function PartnerEditProductPage({ params }: { params: Promise<{ i
 
   const handleSave = async () => {
     if (!form.name.trim()) { setError('Product name is required.'); return; }
+    if (!Number.isInteger(Number(form.price)) || Number(form.price) <= 0) {
+      setError("Price (Ks) must be a whole number greater than 0 — it's the amount actually charged at checkout.");
+      return;
+    }
     setSaving(true); setError('');
     try {
       const res = await fetch(`/api/partner/products/${id}`, {

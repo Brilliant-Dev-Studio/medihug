@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Search, Star, Package, SlidersHorizontal, ChevronDown, Check, X } from 'lucide-react';
 import { useLang } from '@/app/lib/LanguageContext';
 import ContactSupportInline from '@/components/ContactSupportInline';
+import { getProductPriceEntries, formatPriceEntries } from '@/lib/productPrice';
 
 const PRIMARY = '#0d2b6e';
 const ACCENT = '#2ab5ad';
@@ -16,7 +17,7 @@ interface Category { id: string; name: string; nameEn: string | null; }
 interface Product {
   id: string; name: string; nameEn: string | null;
   imageUrl: string | null; category: string | null;
-  price: number; rating: number; reviewCount: number;
+  price: number; priceThb: number | null; priceUsd: number | null; rating: number; reviewCount: number;
 }
 
 function SkeletonCard() {
@@ -318,7 +319,7 @@ function PublicProductsPageInner() {
                           <span className="text-[10px] lg:text-xs text-gray-500">{p.rating.toFixed(1)} ({p.reviewCount})</span>
                         </div>
                         <p className="text-sm sm:text-base lg:text-lg font-extrabold mt-1" style={{ color: PRIMARY }}>
-                          {p.price.toLocaleString()} <span className="text-[10px] lg:text-xs font-semibold text-gray-400">MMK</span>
+                          {formatPriceEntries(getProductPriceEntries(p))}
                         </p>
                       </div>
                     </Link>

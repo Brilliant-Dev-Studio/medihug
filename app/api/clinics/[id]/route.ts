@@ -17,7 +17,7 @@ const INCLUDE = {
   products: {
     include: {
       product: {
-        select: { id: true, name: true, nameEn: true, imageUrl: true, price: true, packSize: true },
+        select: { id: true, name: true, nameEn: true, imageUrl: true, price: true, priceThb: true, priceUsd: true, packSize: true },
       },
     },
   },

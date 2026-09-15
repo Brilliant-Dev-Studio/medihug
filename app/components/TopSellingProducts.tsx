@@ -7,12 +7,13 @@ import { ChevronLeft, ChevronRight, Bookmark, ShoppingBag, Star, Pill } from 'lu
 import { useLang } from '../lib/LanguageContext';
 import { useFavorites } from '../lib/useFavorites';
 import IdentifyModal from './IdentifyModal';
+import { getProductPriceEntries, formatPriceEntries } from '@/lib/productPrice';
 
 const PRIMARY = '#0d2b6e';
 
 interface Product {
   id: string; name: string; nameEn: string | null;
-  imageUrl: string | null; price: number;
+  imageUrl: string | null; price: number; priceThb: number | null; priceUsd: number | null;
   rating: number; reviewCount: number; category: string | null;
 }
 
@@ -130,7 +131,7 @@ export default function TopSellingProducts() {
 
                   <div className="flex items-center justify-between gap-2 mt-auto pt-1.5 sm:pt-2">
                     <p className="text-sm sm:text-lg font-extrabold" style={{ color: PRIMARY }}>
-                      {p.price.toLocaleString()}<span className="text-[10px] sm:text-xs font-semibold text-gray-400 ml-1">MMK</span>
+                      {formatPriceEntries(getProductPriceEntries(p))}
                     </p>
                     <span
                       className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-full flex items-center justify-center transition-transform group-hover:scale-105"

@@ -37,6 +37,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       brand, type, strength, packSize, tags, keyBenefits, isActive,
     } = body;
 
+    if (price !== undefined && (!Number.isInteger(price) || price <= 0)) {
+      return NextResponse.json({ error: 'ဈေးနှုန်း (Ks) ကို 0 ထက်ကြီးသော ကိန်းပြည့်ဖြင့် ထည့်ရပါမည်။' }, { status: 400 });
+    }
+
     const data: Record<string, unknown> = {};
     if (name        !== undefined) data.name = name;
     if (nameEn       !== undefined) data.nameEn = nameEn || null;

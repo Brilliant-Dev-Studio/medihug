@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Check, Ticket, Copy } from 'lucide-react';
+import { Loader2, Check, Ticket, Copy, Pencil, X } from 'lucide-react';
 import { SYSTEM_VOUCHERS } from '@/lib/systemVouchers';
 import ConfirmModal from '@/components/admin/ConfirmModal';
 
@@ -23,6 +23,10 @@ function VoucherCard({ voucher, onSaved }: { voucher: Voucher; onSaved: (v: Vouc
   const [busy, setBusy] = useState(false);
   const [confirmingDeactivate, setConfirmingDeactivate] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [editingValue, setEditingValue] = useState(false);
+  const [discountValue, setDiscountValue] = useState(String(voucher.discountValue));
+  const [savingValue, setSavingValue] = useState(false);
+  const [valueError, setValueError] = useState('');
 
   const isExpired = voucher.expiresAt ? new Date(voucher.expiresAt) < new Date() : false;
 
@@ -51,6 +55,24 @@ function VoucherCard({ voucher, onSaved }: { voucher: Voucher; onSaved: (v: Vouc
     } catch {}
   };
 
+  const startEditValue = () => { setDiscountValue(String(voucher.discountValue)); setValueError(''); setEditingValue(true); };
+  const cancelEditValue = () => { setEditingValue(false); setValueError(''); };
+
+  const saveDiscountValue = async () => {
+    const n = Number(discountValue);
+    if (Number.isNaN(n) || n <= 0) { setValueError('Must be a positive number.'); return; }
+    setSavingValue(true);
+    const res = await fetch(`/api/admin/vouchers/${voucher.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ discountValue: n }),
+    });
+    const data = await res.json();
+    setSavingValue(false);
+    if (!res.ok) { setValueError(data.error ?? 'Server error'); return; }
+    onSaved(data.voucher);
+    setEditingValue(false);
+  };
+
   const saveExpiry = async () => {
     setSaving(true);
     const res = await fetch(`/api/admin/vouchers/${voucher.id}`, {
@@ -74,7 +96,29 @@ function VoucherCard({ voucher, onSaved }: { voucher: Voucher; onSaved: (v: Vouc
             <p className="text-[11px] text-gray-400">{def.enLabel}</p>
           </div>
         </div>
-        <span className="text-sm font-bold shrink-0" style={{ color: PRIMARY }}>{voucher.discountValue}% Off</span>
+        {editingValue ? (
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <input type="number" min={0} value={discountValue} onChange={e => setDiscountValue(e.target.value)} autoFocus
+                className="w-16 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-sm text-gray-700 outline-none focus:border-teal-400" />
+              <span className="text-sm font-bold text-gray-400">%</span>
+              <button onClick={saveDiscountValue} disabled={savingValue} title="Save"
+                className="w-6 h-6 rounded-md flex items-center justify-center text-white disabled:opacity-50" style={{ backgroundColor: PRIMARY }}>
+                {savingValue ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              </button>
+              <button onClick={cancelEditValue} disabled={savingValue}
+                className="w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:bg-gray-100 disabled:opacity-50">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {valueError && <p className="text-[10px] text-red-500">{valueError}</p>}
+          </div>
+        ) : (
+          <button onClick={startEditValue} className="flex items-center gap-1.5 shrink-0 group">
+            <span className="text-sm font-bold" style={{ color: PRIMARY }}>{voucher.discountValue}% Off</span>
+            <Pencil className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors" />
+          </button>
+        )}
       </div>
 
       <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-gray-50">
