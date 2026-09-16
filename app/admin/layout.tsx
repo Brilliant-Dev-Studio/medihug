@@ -12,6 +12,8 @@ import {
   Percent, CreditCard, Receipt, PieChart, Undo2, Scale, Target, TrendingUp,
   ArrowLeftRight, History, Trash2, ClipboardList, MessageSquareQuote, Coins, Globe, HeartHandshake,
   Truck, PackagePlus, ShoppingCart,
+  Shield, Package, UserCog, UserPlus, DollarSign, SlidersHorizontal,
+  Building, Users2, MessageCircle, GraduationCap, Network, FolderOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
@@ -38,6 +40,8 @@ interface NavGroup {
   items: NavItem[];
 }
 
+const CS = '/admin/coming-soon';
+
 const navGroups: NavGroup[] = [
   {
     label: 'Main',
@@ -47,30 +51,44 @@ const navGroups: NavGroup[] = [
       { href: '/admin/notifications', icon: Bell,        mm: 'အသိပေးချက်များ',   en: 'Notifications' },
       { href: '/admin/support',   icon: Headset,         mm: 'Customer Support',  en: 'Customer Support', perm: 'support.manage' as Permission },
       { href: '/admin/users',     icon: Users,           mm: 'လူနာများ',         en: 'Patients', perm: 'dashboard.view' as Permission },
-      { href: '/admin/doctors',   icon: Stethoscope,     mm: 'ဆရာဝန်များ',       en: 'Doctors', perm: 'partners.manage' as Permission },
-      { href: '/admin/appointments', icon: Calendar,     mm: 'ချိန်းဆိုမှုများ',  en: 'Appointments', perm: 'dashboard.view' as Permission },
-      { href: '/admin/program-enrollments', icon: ClipboardCheck, mm: 'အစီအစဉ် ဆေးမှတ်တမ်းများ', en: 'Program Enrollments', perm: 'dashboard.view' as Permission },
-      { href: '/admin/medical-records', icon: ClipboardList, mm: 'ဆေးမှတ်တမ်းများ', en: 'Medical Records', perm: 'dashboard.view' as Permission },
-      { href: '/admin/orders',       icon: ShoppingBag,  mm: 'အော်ဒါများ',       en: 'Orders', perm: 'pos.manage' as Permission },
-      { href: '/admin/system-vouchers', icon: Percent,   mm: 'လျှော့စျေး ကုဒ်များ', en: 'Discount Codes', perm: 'pos.manage' as Permission },
-      { href: '/admin/custom-time-requests', icon: CalendarClock, mm: 'အထူးအချိန်တောင်းဆိုမှုများ', en: 'Custom Time Requests', perm: 'dashboard.view' as Permission },
-      { href: '/admin/clinics',       icon: Building2,    mm: 'မိတ်ဖက်များ', en: 'Partners', perm: 'partners.manage' as Permission },
-      { href: '/admin/international-partners', icon: Globe, mm: 'နိုင်ငံတကာ မိတ်ဖက်များ', en: 'International Partners', perm: 'partners.manage' as Permission },
-      { href: '/admin/partner-types', icon: Tags,         mm: 'မိတ်ဖက် အမျိုးအစားများ',    en: 'Partner Types', perm: 'partners.manage' as Permission },
-      { href: '/admin/specialties',   icon: Tags,         mm: 'အထူးကုဌာနများ',              en: 'Specialties', perm: 'partners.manage' as Permission },
     ],
   },
   {
-    label: 'POS',
+    label: 'POS & Inventory',
     items: [
       { href: '/admin/pos',                     icon: LayoutDashboard, mm: 'ခြုံငုံကြည့်ရှုမှု',    en: 'Overview',     perm: 'pos.manage' as Permission },
       { href: '/admin/sales',                   icon: ShoppingCart,    mm: 'ရောင်းချမှုများ',       en: 'Sales',        perm: 'pos.manage' as Permission },
+      { href: '/admin/orders',                  icon: ShoppingBag,     mm: 'အော်ဒါများ',           en: 'Orders',       perm: 'pos.manage' as Permission },
       { href: '/admin/products',                icon: ShoppingBag,     mm: 'ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ', en: 'Products', perm: 'dashboard.view' as Permission },
+      { href: '/admin/product-categories',      icon: Layers,          mm: 'Category',              en: 'Categories',   perm: 'dashboard.view' as Permission },
       { href: '/admin/purchases',               icon: PackagePlus,     mm: 'ဝယ်ယူမှုများ',         en: 'Purchases',    perm: 'pos.manage' as Permission },
       { href: '/admin/suppliers',               icon: Truck,           mm: 'ပေးသွင်းသူများ',       en: 'Suppliers',    perm: 'pos.manage' as Permission },
       { href: '/admin/stores',                  icon: Store,           mm: 'စတိုလ်များ',           en: 'Stores',       perm: 'pos.manage' as Permission },
       { href: '/admin/inventory/stock-ledger',  icon: History,         mm: 'ကုန်ပစ္စည်း မှတ်တမ်း', en: 'Stock Ledger', perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/expenses',        icon: Receipt,         mm: 'အသုံးစရိတ်',          en: 'Expenses',     perm: 'pos.manage' as Permission },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { href: '/admin/finance/revenue-ledger',  icon: Layers,         mm: 'ဝင်ငွေ Ledger',         en: 'Revenue Ledger',      perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/rules',           icon: Percent,        mm: 'ကော်မရှင်စည်းမျဉ်း',     en: 'Commission Rules',    perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/expenses',        icon: Receipt,        mm: 'အသုံးစရိတ်',           en: 'Expenses',            perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/pnl',             icon: PieChart,       mm: 'အမြတ်/အရှုံး',          en: 'P&L',                 perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/refunds',         icon: Undo2,          mm: 'ငွေပြန်အမ်း',           en: 'Refunds',             perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/reconciliation',  icon: Scale,          mm: 'ငွေစာရင်းချိန်ညှိခြင်း', en: 'Reconciliation',      perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',      en: 'Cash Flow',           perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/payment-methods', icon: CreditCard,     mm: 'ငွေပေးချေမှုနည်းလမ်း',   en: 'Payment Methods',     perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/budget',          icon: Target,         mm: 'ဘတ်ဂျက်',               en: 'Budget vs Actual',    perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/forecast',        icon: TrendingUp,     mm: 'ခန့်မှန်းချက်',          en: 'Forecast',            perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/revenue',         icon: Megaphone,      mm: 'Program/Ads ဝင်ငွေ',    en: 'Program/Ads Revenue', perm: 'pos.manage' as Permission },
+    ],
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { href: '/admin/system-vouchers', icon: Percent,   mm: 'လျှော့စျေး ကုဒ်များ',  en: 'Discount Codes', perm: 'pos.manage' as Permission },
+      { href: '/admin/special-offers',  icon: Megaphone, mm: 'အထူးပရိုမိုးရှင်း',    en: 'Special Offers', perm: 'dashboard.view' as Permission },
+      { href: '/admin/ads',             icon: ImageIcon, mm: 'ကြော်ငြာများ',        en: 'Ads', perm: 'dashboard.view' as Permission },
       { href: '/admin/points', icon: Coins, mm: 'ပွိုင့်များ', en: 'Points', perm: 'dashboard.view' as Permission,
         children: [
           { href: '/admin/points/report',   icon: Users,    mm: 'အစီရင်ခံစာ', en: 'Report' },
@@ -80,41 +98,64 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Finance',
+    label: 'Medihug Services',
     items: [
-      { href: '/admin/finance/revenue-ledger',  icon: Layers,         mm: 'ဝင်ငွေ Ledger',         en: 'Revenue Ledger',      perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/rules',           icon: Percent,        mm: 'ကော်မရှင်စည်းမျဉ်း',     en: 'Commission Rules',    perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/pnl',             icon: PieChart,       mm: 'အမြတ်/အရှုံး',          en: 'P&L',                 perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/refunds',         icon: Undo2,          mm: 'ငွေပြန်အမ်း',           en: 'Refunds',             perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/reconciliation',  icon: Scale,          mm: 'ငွေစာရင်းချိန်ညှိခြင်း', en: 'Reconciliation',      perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',      en: 'Cash Flow',           perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/payment-methods', icon: CreditCard,     mm: 'ငွေပေးချေမှုနည်းလမ်း',   en: 'Payment Methods',     perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/budget',          icon: Target,         mm: 'ဘတ်ဂျက်',               en: 'Budget vs Actual',    perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/forecast',        icon: TrendingUp,     mm: 'ခန့်မှန်းချက်',          en: 'Forecast',            perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/revenue',         icon: Megaphone,      mm: 'Program/Ads ဝင်ငွေ',    en: 'Program/Ads Revenue', perm: 'pos.manage' as Permission },
-      { href: '/admin/finance/audit-log',       icon: History,        mm: 'မှတ်တမ်း Log',          en: 'Audit Log',           perm: 'pos.manage' as Permission },
-      { href: '/admin/deletion-requests',       icon: Trash2,         mm: 'ဖျက်ရန် တောင်းဆိုမှုများ', en: 'Deletion Requests', perm: 'pos.delete' as Permission },
+      { href: '/admin/healthcare-programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်များ', en: 'Healthcare Programs', perm: 'dashboard.view' as Permission },
+      { href: '/admin/program-categories',  icon: Layers,     mm: 'Program Category',       en: 'Program Categories', perm: 'dashboard.view' as Permission },
+      { href: CS,                           icon: Package,    mm: 'ဝန်ဆောင်မှု အစုံ',       en: 'Service Packages', perm: 'dashboard.view' as Permission },
+    ],
+  },
+  {
+    label: 'Medical',
+    items: [
+      { href: '/admin/doctors',              icon: Stethoscope,    mm: 'ဆရာဝန်များ',              en: 'Doctors', perm: 'partners.manage' as Permission },
+      { href: '/admin/specialties',          icon: Tags,           mm: 'အထူးကုဌာနများ',           en: 'Specialties', perm: 'partners.manage' as Permission },
+      { href: '/admin/appointments',         icon: Calendar,       mm: 'ချိန်းဆိုမှုများ',        en: 'Appointments', perm: 'dashboard.view' as Permission },
+      { href: '/admin/custom-time-requests', icon: CalendarClock,  mm: 'အထူးအချိန်တောင်းဆိုမှုများ', en: 'Custom Time Requests', perm: 'dashboard.view' as Permission },
+      { href: '/admin/medical-records',      icon: ClipboardList,  mm: 'ဆေးမှတ်တမ်းများ',          en: 'Medical Records', perm: 'dashboard.view' as Permission },
+      { href: '/admin/program-enrollments',  icon: ClipboardCheck, mm: 'အစီအစဉ် ဆေးမှတ်တမ်းများ', en: 'Program Enrollments', perm: 'dashboard.view' as Permission },
+    ],
+  },
+  {
+    label: 'Partner Management',
+    items: [
+      { href: '/admin/clinics',                icon: Building2, mm: 'မိတ်ဖက်များ',              en: 'Partners', perm: 'partners.manage' as Permission },
+      { href: '/admin/international-partners', icon: Globe,     mm: 'နိုင်ငံတကာ မိတ်ဖက်များ',   en: 'International Partners', perm: 'partners.manage' as Permission },
+      { href: '/admin/partner-types',          icon: Tags,      mm: 'မိတ်ဖက် အမျိုးအစားများ',   en: 'Partner Types', perm: 'partners.manage' as Permission },
+      { href: CS,                              icon: UserCog,   mm: 'မိတ်ဖက် ရာထူးများ',        en: 'Partner Roles', perm: 'partners.manage' as Permission },
+      { href: CS,                              icon: UserPlus,  mm: 'ညွှန်းဆိုမှုများ',         en: 'Referrals', perm: 'partners.manage' as Permission },
+      { href: CS,                              icon: DollarSign, mm: 'ဝင်ငွေများ',              en: 'Earnings', perm: 'partners.manage' as Permission },
+      { href: CS,                              icon: SlidersHorizontal, mm: 'ကော်မရှင် ဆက်တင်', en: 'Commission Settings', perm: 'partners.manage' as Permission },
+    ],
+  },
+  {
+    label: 'Community',
+    items: [
+      { href: CS, icon: Building,       mm: 'အသင်းအဖွဲ့များ',        en: 'Community Organizations', perm: 'dashboard.view' as Permission },
+      { href: CS, icon: MessageCircle,  mm: 'အုပ်စုများ',             en: 'Groups / Group Chats', perm: 'dashboard.view' as Permission },
+      { href: CS, icon: Users2,         mm: 'လူနာ အသိုင်းအဝိုင်းများ', en: 'Patient Communities', perm: 'dashboard.view' as Permission },
+      { href: CS, icon: Network,        mm: 'အသိုင်းအဝိုင်း စီမံခန့်ခွဲမှု', en: 'Community Management', perm: 'dashboard.view' as Permission },
     ],
   },
   {
     label: 'Content',
     items: [
-      { href: '/admin/product-categories', icon: Layers,      mm: 'Category',           en: 'Categories', perm: 'dashboard.view' as Permission },
-      { href: '/admin/blogs',              icon: FileText,    mm: 'ဆောင်းပါးများ',      en: 'Blogs', perm: 'dashboard.view' as Permission },
-      { href: '/admin/blog-categories',    icon: BookOpen,    mm: 'Blog Categories',    en: 'Blog Categories', perm: 'dashboard.view' as Permission },
-      { href: '/admin/healthcare-programs', icon: HeartPulse, mm: 'ကျန်းမာရေး အစီအစဉ်များ', en: 'Healthcare Programs', perm: 'dashboard.view' as Permission },
-      { href: '/admin/program-categories', icon: Layers,      mm: 'Program Category',   en: 'Program Categories', perm: 'dashboard.view' as Permission },
-      { href: '/admin/special-offers',     icon: Megaphone,   mm: 'အထူးပရိုမိုးရှင်း',  en: 'Special Offers', perm: 'dashboard.view' as Permission },
-      { href: '/admin/ads',                icon: ImageIcon,   mm: 'ကြော်ငြာများ',       en: 'Ads', perm: 'dashboard.view' as Permission },
+      { href: '/admin/blogs',              icon: FileText,        mm: 'ဆောင်းပါးများ',      en: 'Blogs', perm: 'dashboard.view' as Permission },
+      { href: '/admin/blog-categories',    icon: BookOpen,        mm: 'Blog Categories',    en: 'Blog Categories', perm: 'dashboard.view' as Permission },
+      { href: CS,                          icon: GraduationCap,   mm: 'ကျန်းမာရေး ပညာပေး', en: 'Health Education', perm: 'dashboard.view' as Permission },
+      { href: CS,                          icon: FolderOpen,      mm: 'မီဒီယာ',             en: 'Media / Resources', perm: 'dashboard.view' as Permission },
+      { href: '/admin/community-partners', icon: HeartHandshake,  mm: 'အစိုးရဆေးရုံ၊ အသင်းများ', en: 'Government Hospitals & Charities', perm: 'dashboard.view' as Permission },
       { href: '/admin/testimonials',       icon: MessageSquareQuote, mm: 'သုံးသပ်ချက်များ', en: 'Testimonials', perm: 'settings.manage' as Permission },
-      { href: '/admin/community-partners', icon: HeartHandshake, mm: 'အစိုးရဆေးရုံ၊ အသင်းများ', en: 'Government Hospitals & Charities', perm: 'dashboard.view' as Permission },
-      { href: '/admin/records',          icon: FileText,   mm: 'မှတ်တမ်းများ',           en: 'Records', perm: 'dashboard.view' as Permission },
+      { href: '/admin/records',            icon: FileText,        mm: 'မှတ်တမ်းများ',       en: 'Records', perm: 'dashboard.view' as Permission },
     ],
   },
   {
     label: 'System',
     items: [
-      { href: '/admin/settings',  icon: Settings,        mm: 'ဆက်တင်',           en: 'Settings', perm: 'admins.manage' as Permission },
+      { href: CS,                         icon: Shield,   mm: 'အခန်းကဏ္ဍနှင့် ခွင့်ပြုချက်', en: 'Roles & Permissions', perm: 'admins.manage' as Permission },
+      { href: '/admin/finance/audit-log', icon: History,  mm: 'မှတ်တမ်း Log',              en: 'Audit Log', perm: 'pos.manage' as Permission },
+      { href: '/admin/deletion-requests', icon: Trash2,   mm: 'ဖျက်ရန် တောင်းဆိုမှုများ',  en: 'Deletion Requests', perm: 'pos.delete' as Permission },
+      { href: '/admin/settings',          icon: Settings, mm: 'ဆက်တင်',                    en: 'Settings', perm: 'admins.manage' as Permission },
     ],
   },
 ];
@@ -211,7 +252,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               if (!children) {
                 return (
                   <Link
-                    key={href}
+                    key={`${group.label}-${en}`}
                     href={href}
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all mb-0.5"
@@ -233,7 +274,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               }
 
               return (
-                <div key={href} className="mb-0.5">
+                <div key={`${group.label}-${en}`} className="mb-0.5">
                   <div
                     className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
                     style={{
