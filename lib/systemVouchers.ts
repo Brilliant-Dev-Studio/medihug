@@ -1,4 +1,4 @@
-/** The two permanent, platform-wide discount codes Super Admin can Activate/Deactivate,
+/** The permanent, platform-wide discount codes Super Admin can Activate/Deactivate,
  * set a Valid-until date for, and edit the discount percent of — distinct from
  * partner-issued vouchers created via the generic app/admin/vouchers form. These
  * defaults only seed the row on first creation (see the GET route's upsert); the
@@ -17,6 +17,14 @@ export const SYSTEM_VOUCHERS = [
     mmLabel: 'Program ဝယ်ယူမှု လျှော့စျေး',
     enLabel: 'Program Purchase Discount',
     serviceType: 'PROGRAM' as const,
+    discountType: 'PERCENT' as const,
+    discountValue: 5,
+  },
+  {
+    code: 'MEDIHUGDISUSER',
+    mmLabel: 'ဆရာဝန်ချိန်းဆိုမှု (User) လျှော့စျေး',
+    enLabel: 'Doctor Appointment User Discount',
+    serviceType: 'CONSULTATION' as const,
     discountType: 'PERCENT' as const,
     discountValue: 5,
   },

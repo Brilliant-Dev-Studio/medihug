@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck, QrCode, HeartPulse, Bell, Wallet, Ticket, Globe, ListChecks } from 'lucide-react';
+import { LayoutDashboard, Calendar, LogOut, Menu, X, Building2, Stethoscope, ShoppingBag, Receipt, ShieldCheck, QrCode, HeartPulse, Bell, Wallet, Ticket, Globe, ListChecks, Share2 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
 import { NotificationBellButton } from '@/components/NotificationBell';
 
@@ -36,6 +36,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     { href: '/partner/vouchers',     icon: Ticket,          label: 'Vouchers' },
     { href: '/partner/earnings',     icon: Wallet,          label: 'Earnings' },
     { href: '/partner/notifications', icon: Bell,           label: 'Notifications' },
+    { href: '/partner/referral-qr',  icon: Share2,          label: 'Referral QR' },
     { href: '/partner/referrals',    icon: QrCode,          label: 'Verify Referral' },
     { href: '/partner/login-history', icon: ShieldCheck,    label: 'Login History' },
     { href: '/partner/profile',      icon: Building2,       label: 'Clinic Profile' },

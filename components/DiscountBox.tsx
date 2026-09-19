@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Coins, Ticket } from 'lucide-react';
+import { Coins, Ticket, QrCode } from 'lucide-react';
 import PointsRedeemBox from './PointsRedeemBox';
 import VoucherRedeemBox from './VoucherRedeemBox';
 
 const PRIMARY = 'var(--color-primary)';
 
-/** Mutually-exclusive Points-vs-Voucher discount picker for checkout — a purchase can use
- * one or the other, never both (server enforces this regardless; this is just the UI
- * reflecting it). Skips the tab chooser entirely when the patient has no points, since
- * PointsRedeemBox itself would render nothing anyway. */
+/** Mutually-exclusive Points / Voucher / Partner-code discount picker for checkout — a
+ * purchase can use one of them, never several (server enforces this regardless; this is just
+ * the UI reflecting it). Points appears only when the patient has a balance, Partner Code only
+ * for doctor bookings; the tab chooser is skipped when just Voucher is left. */
 export default function DiscountBox({
   mm, phone, purchaseAmount, sourceType, doctorId, programId, productIds, onChange,
 }: {
@@ -25,7 +25,7 @@ export default function DiscountBox({
 }) {
   const [pointsBalance, setPointsBalance] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [mode, setMode] = useState<'points' | 'voucher' | null>('voucher');
+  const [mode, setMode] = useState<'points' | 'voucher' | 'partner'>('voucher');
 
   useEffect(() => {
     if (!phone) { setLoaded(true); return; }
@@ -36,14 +36,20 @@ export default function DiscountBox({
       .finally(() => setLoaded(true));
   }, [phone]);
 
-  const switchMode = (next: 'points' | 'voucher') => {
+  const switchMode = (next: 'points' | 'voucher' | 'partner') => {
     setMode(next);
     onChange({ pointsToRedeem: 0, voucherCode: null, discountAmount: 0 });
   };
 
   if (!loaded) return null;
 
-  if (pointsBalance <= 0) {
+  const modes = [
+    ...(pointsBalance > 0 ? ['points' as const] : []),
+    'voucher' as const,
+    ...(sourceType === 'CONSULTATION' ? ['partner' as const] : []),
+  ];
+
+  if (modes.length === 1) {
     return (
       <VoucherRedeemBox mm={mm} sourceType={sourceType} doctorId={doctorId} programId={programId} productIds={productIds}
         purchaseAmount={purchaseAmount}
@@ -51,27 +57,33 @@ export default function DiscountBox({
     );
   }
 
+  const TAB_META = {
+    points:  { Icon: Coins,  mm: 'Points သုံးမည်',      en: 'Use Points' },
+    voucher: { Icon: Ticket, mm: 'Voucher သုံးမည်',     en: 'Use Voucher' },
+    partner: { Icon: QrCode, mm: 'Partner Code ထည့်မည်', en: 'Partner Code' },
+  } as const;
+
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex gap-2">
-        <button type="button" onClick={() => switchMode('points')}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border-2 transition-all"
-          style={{ borderColor: mode === 'points' ? PRIMARY : '#e5e7eb', backgroundColor: mode === 'points' ? `${PRIMARY}0d` : '#fff', color: mode === 'points' ? PRIMARY : '#6b7280' }}>
-          <Coins className="w-4.5 h-4.5" /> {mm ? 'Points သုံးမည်' : 'Use Points'}
-        </button>
-        <button type="button" onClick={() => switchMode('voucher')}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold border-2 transition-all"
-          style={{ borderColor: mode === 'voucher' ? PRIMARY : '#e5e7eb', backgroundColor: mode === 'voucher' ? `${PRIMARY}0d` : '#fff', color: mode === 'voucher' ? PRIMARY : '#6b7280' }}>
-          <Ticket className="w-4.5 h-4.5" /> {mm ? 'Voucher သုံးမည်' : 'Use Voucher'}
-        </button>
+        {modes.map(m => {
+          const { Icon, ...label } = TAB_META[m];
+          return (
+            <button key={m} type="button" onClick={() => switchMode(m)}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border-2 transition-all"
+              style={{ borderColor: mode === m ? PRIMARY : '#e5e7eb', backgroundColor: mode === m ? `${PRIMARY}0d` : '#fff', color: mode === m ? PRIMARY : '#6b7280' }}>
+              <Icon className="w-4.5 h-4.5 shrink-0" /> {mm ? label.mm : label.en}
+            </button>
+          );
+        })}
       </div>
 
       {mode === 'points' && (
         <PointsRedeemBox mm={mm} phone={phone} purchaseAmount={purchaseAmount}
           onChange={state => onChange({ pointsToRedeem: state.pointsToRedeem, voucherCode: null, discountAmount: state.discountAmount })} />
       )}
-      {mode === 'voucher' && (
-        <VoucherRedeemBox mm={mm} sourceType={sourceType} doctorId={doctorId} programId={programId} productIds={productIds}
+      {(mode === 'voucher' || mode === 'partner') && (
+        <VoucherRedeemBox key={mode} mm={mm} variant={mode} sourceType={sourceType} doctorId={doctorId} programId={programId} productIds={productIds}
           purchaseAmount={purchaseAmount}
           onChange={state => onChange({ pointsToRedeem: 0, voucherCode: state.voucherCode, discountAmount: state.discountAmount })} />
       )}

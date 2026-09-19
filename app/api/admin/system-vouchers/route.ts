@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
 import { SYSTEM_VOUCHERS } from '@/lib/systemVouchers';
 
-/* ── GET /api/admin/system-vouchers — the two fixed platform-wide discount codes.
+/* ── GET /api/admin/system-vouchers — the fixed platform-wide discount codes.
  * Lazily creates them on first access (idempotent — `update: {}` never overwrites an
  * admin's existing active/expiresAt choice); saving is done via the existing
  * PATCH /api/admin/vouchers/[id]. ── */

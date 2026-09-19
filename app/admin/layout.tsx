@@ -123,7 +123,7 @@ const navGroups: NavGroup[] = [
       { href: '/admin/international-partners', icon: Globe,     mm: 'နိုင်ငံတကာ မိတ်ဖက်များ',   en: 'International Partners', perm: 'partners.manage' as Permission },
       { href: '/admin/partner-types',          icon: Tags,      mm: 'မိတ်ဖက် အမျိုးအစားများ',   en: 'Partner Types', perm: 'partners.manage' as Permission },
       { href: CS,                              icon: UserCog,   mm: 'မိတ်ဖက် ရာထူးများ',        en: 'Partner Roles', perm: 'partners.manage' as Permission },
-      { href: CS,                              icon: UserPlus,  mm: 'ညွှန်းဆိုမှုများ',         en: 'Referrals', perm: 'partners.manage' as Permission },
+      { href: '/admin/partner-qr',              icon: UserPlus,  mm: 'ညွှန်းဆိုမှုများ',         en: 'Referrals', perm: 'partners.manage' as Permission },
       { href: CS,                              icon: DollarSign, mm: 'ဝင်ငွေများ',              en: 'Earnings', perm: 'partners.manage' as Permission },
       { href: CS,                              icon: SlidersHorizontal, mm: 'ကော်မရှင် ဆက်တင်', en: 'Commission Settings', perm: 'partners.manage' as Permission },
     ],

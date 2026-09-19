@@ -7,6 +7,7 @@ import { notify } from '@/lib/notify';
 import { checkCbPayStatus } from '@/lib/cbpay';
 import { redeemPoints } from '@/lib/pointsLedger';
 import { redeemVoucher, VoucherRedemptionError } from '@/lib/voucherLedger';
+import { isPartnerQrCode, redeemPartnerQr } from '@/lib/partnerQr';
 
 /* ── POST /api/patient/bookings ── */
 export async function POST(req: NextRequest) {
@@ -128,9 +129,11 @@ export async function POST(req: NextRequest) {
       let voucherApplied: string | null = null;
       let discountAmount = 0;
       if (voucherCode) {
-        const result = await redeemVoucher(tx, user.id, created.id, {
-          code: voucherCode, sourceType: 'CONSULTATION', doctorId, purchaseAmount: fee,
-        });
+        const result = isPartnerQrCode(voucherCode)
+          ? await redeemPartnerQr(tx, user.id, created.id, { code: voucherCode, doctorId, purchaseAmount: fee })
+          : await redeemVoucher(tx, user.id, created.id, {
+              code: voucherCode, sourceType: 'CONSULTATION', doctorId, purchaseAmount: fee,
+            });
         voucherApplied = result.voucherCode;
         discountAmount = result.discountAmount;
       } else {

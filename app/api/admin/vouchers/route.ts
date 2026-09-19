@@ -5,7 +5,7 @@ import { logAudit } from '@/lib/audit';
 import { SYSTEM_VOUCHER_CODES } from '@/lib/systemVouchers';
 
 /* ── GET /api/admin/vouchers — list all vouchers, platform-wide and partner-issued.
- * Excludes the two fixed system codes, which are managed at /admin/system-vouchers. ── */
+ * Excludes the fixed system codes, which are managed at /admin/system-vouchers. ── */
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin(req, 'pos.manage');
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

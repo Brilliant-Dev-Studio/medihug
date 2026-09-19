@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateVoucher } from '@/lib/voucherLedger';
+import { isPartnerQrCode, validatePartnerQr } from '@/lib/partnerQr';
 
 /* ── GET /api/patient/vouchers/validate — live "Apply" preview at checkout. Read-only;
  * the actual redemption is re-validated from scratch inside the purchase's own transaction,
@@ -16,6 +17,12 @@ export async function GET(req: NextRequest) {
 
     if (!sourceType || !['CONSULTATION', 'PROGRAM', 'PRODUCT'].includes(sourceType)) {
       return NextResponse.json({ error: 'sourceType is required.' }, { status: 400 });
+    }
+
+    if (isPartnerQrCode(code)) {
+      const qr = await validatePartnerQr({ code, sourceType, purchaseAmount });
+      if (!qr.ok) return NextResponse.json({ ok: false, reason: qr.reason });
+      return NextResponse.json({ ok: true, discountAmount: qr.discountAmount, partnerName: qr.clinicName, percent: qr.percent });
     }
 
     const result = await validateVoucher({
