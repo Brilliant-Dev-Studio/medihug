@@ -26,6 +26,8 @@ interface Doctor {
   isAvailable: boolean; slots: Slot[];
 }
 
+interface Specialty { id: string; name: string; nameEn: string | null; }
+
 type ExpRange = 'all' | '0-10' | '11-20' | '21+';
 
 /* ─── Skeleton shimmer ─── */
@@ -167,10 +169,10 @@ function DoctorSearchBox({ doctors, value, onChange, mm, placeholder, pillClassN
 }
 
 /* ─── Radio row ─── */
-function RadioRow({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+function RadioRow({ active, label, count, onClick, disabled = false }: { active: boolean; label: string; count: number; onClick: () => void; disabled?: boolean }) {
   return (
-    <button onClick={onClick}
-      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all"
+    <button onClick={onClick} disabled={disabled}
+      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all ${disabled ? 'opacity-40 cursor-default' : ''}`}
       style={{ backgroundColor: active ? `${PRIMARY}08` : 'transparent' }}>
       <span className="shrink-0 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all"
         style={{ borderColor: active ? PRIMARY : '#d1d5db', backgroundColor: active ? PRIMARY : 'transparent' }}>
@@ -312,40 +314,43 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
   const mm = lang === 'mm';
 
   const [allDoctors,  setAllDoctors]  = useState<Doctor[]>([]);
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [loading,     setLoading]     = useState(true);
   const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('doctor');
   const [search,      setSearch]      = useState('');
   const [filterExp,   setFilterExp]   = useState<ExpRange>('all');
   const [filterSpec,  setFilterSpec]  = useState<string>(initialSpec);
   const [priceMin,    setPriceMin]    = useState(0);
-  const [priceMax,    setPriceMax]    = useState(50000);
+  const [priceMax,    setPriceMax]    = useState<number | null>(null); // null = no upper cap
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [openExp,  setOpenExp]  = useState(true);
   const [openSpec, setOpenSpec] = useState(true);
   const [openFee,  setOpenFee]  = useState(true);
 
   useEffect(() => {
-    fetch('/api/doctors?limit=1000')
-      .then(r => r.json())
-      .then(d => { setAllDoctors(d.doctors ?? []); setLoading(false); })
+    Promise.all([
+      fetch('/api/doctors?limit=1000').then(r => r.json()),
+      fetch('/api/admin/specialties').then(r => r.json()).catch(() => ({})),
+    ])
+      .then(([d, sp]) => { setAllDoctors(d.doctors ?? []); setSpecialties(sp.specialties ?? []); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
   /* ── derived filter counts ── */
-  const allSpecs = [...new Set(allDoctors.map(d => d.specialty))].sort();
 
-  const expCount = (r: ExpRange) => {
-    if (r === 'all')  return allDoctors.length;
-    if (r === '0-10') return allDoctors.filter(d => d.experience <= 10).length;
-    if (r === '11-20') return allDoctors.filter(d => d.experience >= 11 && d.experience <= 20).length;
-    return allDoctors.filter(d => d.experience >= 21).length;
-  };
+  // Fee slider tops out at the priciest doctor (rounded up), never a fixed number — a hard
+  // cap silently hid every doctor above it from the list while the sidebar still counted them.
+  const priceCeil = Math.max(10000, Math.ceil(Math.max(0, ...allDoctors.map(d => d.patientPrice)) / 1000) * 1000);
+  const effMax = priceMax === null ? priceCeil : Math.min(priceMax, priceCeil);
 
-  const specCount = (s: string) =>
-    s === 'all' ? allDoctors.length : allDoctors.filter(d => d.specialty === s).length;
+  const inExp = (d: Doctor, r: ExpRange) =>
+    r === '0-10' ? d.experience <= 10
+    : r === '11-20' ? d.experience >= 11 && d.experience <= 20
+    : r === '21+' ? d.experience >= 21
+    : true;
+  const inSpec = (d: Doctor, sp: string) => sp === 'all' || d.specialty === sp;
 
-  /* ── filtered list ── */
-  const filtered = allDoctors
+  const base = allDoctors
     .filter(d => {
       if (!search.trim()) return true;
       const q = search.toLowerCase();
@@ -353,19 +358,33 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
              (d.nameEn ?? '').toLowerCase().includes(q) ||
              d.specialty.toLowerCase().includes(q);
     })
-    .filter(d => {
-      if (filterExp === '0-10')  return d.experience <= 10;
-      if (filterExp === '11-20') return d.experience >= 11 && d.experience <= 20;
-      if (filterExp === '21+')   return d.experience >= 21;
-      return true;
-    })
-    .filter(d => filterSpec === 'all' ? true : d.specialty === filterSpec)
-    .filter(d => d.patientPrice >= priceMin && d.patientPrice <= priceMax);
+    .filter(d => d.patientPrice >= priceMin && d.patientPrice <= effMax);
 
-  const hasFilter  = filterExp !== 'all' || filterSpec !== 'all' || priceMin > 0 || priceMax < 50000;
-  const activeCount = (filterExp !== 'all' ? 1 : 0) + (filterSpec !== 'all' ? 1 : 0) + (priceMin > 0 || priceMax < 50000 ? 1 : 0);
+  /* ── filtered list ── */
+  const filtered = base.filter(d => inExp(d, filterExp) && inSpec(d, filterSpec));
 
-  const resetFilters = () => { setFilterExp('all'); setFilterSpec('all'); setPriceMin(0); setPriceMax(50000); };
+  // Each facet's count = what picking it would show with the *other* filters still applied,
+  // so the sidebar numbers always agree with the list and the "N doctors" line.
+  const expCount = (r: ExpRange) => base.filter(d => inSpec(d, filterSpec) && inExp(d, r)).length;
+  const specCount = (sp: string) => base.filter(d => inExp(d, filterExp) && inSpec(d, sp)).length;
+
+  // Specialty options come from the SuperAdmin-managed Specialty list (its names and order),
+  // plus any doctor specialty string not in that list so no doctor is unreachable. Ones with
+  // no doctor sink to the bottom.
+  const specOptions = (() => {
+    const known = new Set(specialties.map(sp => sp.name));
+    const opts = [
+      ...specialties.map(sp => ({ value: sp.name, label: mm ? sp.name : (sp.nameEn ?? sp.name) })),
+      ...[...new Set(allDoctors.map(d => d.specialty))].filter(n => !known.has(n)).sort().map(n => ({ value: n, label: n })),
+    ];
+    const has = (v: string) => allDoctors.some(d => d.specialty === v);
+    return [...opts.filter(o => has(o.value)), ...opts.filter(o => !has(o.value))];
+  })();
+
+  const hasFilter  = filterExp !== 'all' || filterSpec !== 'all' || priceMin > 0 || effMax < priceCeil;
+  const activeCount = (filterExp !== 'all' ? 1 : 0) + (filterSpec !== 'all' ? 1 : 0) + (priceMin > 0 || effMax < priceCeil ? 1 : 0);
+
+  const resetFilters = () => { setFilterExp('all'); setFilterSpec('all'); setPriceMin(0); setPriceMax(null); };
 
   /* ── shared filter panel inner ── */
   const filterInner = (mobile = false) => (
@@ -410,12 +429,16 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
         </button>
         {openSpec && (
           <div className={`px-${mobile?4:3} pb-3`}>
-            {(['all', ...allSpecs]).map(spec => (
-              <RadioRow key={spec} active={filterSpec === spec}
-                label={spec === 'all' ? (mm ? 'အားလုံး' : 'All specialties') : spec}
-                count={specCount(spec)}
-                onClick={() => setFilterSpec(spec)} />
-            ))}
+            <RadioRow active={filterSpec === 'all'} label={mm ? 'အားလုံး' : 'All specialties'}
+              count={specCount('all')} onClick={() => setFilterSpec('all')} />
+            {specOptions.map(o => {
+              const count = specCount(o.value);
+              return (
+                <RadioRow key={o.value} active={filterSpec === o.value} label={o.label} count={count}
+                  disabled={count === 0 && filterSpec !== o.value}
+                  onClick={() => setFilterSpec(o.value)} />
+              );
+            })}
           </div>
         )}
       </div>
@@ -432,7 +455,7 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
               style={{ backgroundColor: `${PRIMARY}10`, color: PRIMARY }}>
-              {priceMin > 0 || priceMax < 50000 ? `${(priceMin/1000).toFixed(0)}K–${(priceMax/1000).toFixed(0)}K` : (mm ? 'အားလုံး' : 'Any')}
+              {priceMin > 0 || effMax < priceCeil ? `${(priceMin/1000).toFixed(0)}K–${(effMax/1000).toFixed(0)}K` : (mm ? 'အားလုံး' : 'Any')}
             </span>
             <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openFee ? 'rotate-180' : ''}`} />
           </div>
@@ -442,23 +465,23 @@ function DoctorsContent({ initialSpec }: { initialSpec: string }) {
             <div className="relative py-2.5 px-1">
               <div className="h-1 bg-gray-200 rounded-full relative">
                 <div className="absolute h-full rounded-full"
-                  style={{ left: `${(priceMin/50000)*100}%`, right: `${100-(priceMax/50000)*100}%`, backgroundColor: PRIMARY }} />
+                  style={{ left: `${(priceMin/priceCeil)*100}%`, right: `${100-(effMax/priceCeil)*100}%`, backgroundColor: PRIMARY }} />
               </div>
-              <input type="range" min={0} max={50000} step={1000} value={priceMin}
-                onChange={e => { const v = Number(e.target.value); if (v < priceMax - 2000) setPriceMin(v); }}
+              <input type="range" min={0} max={priceCeil} step={1000} value={priceMin}
+                onChange={e => { const v = Number(e.target.value); if (v < effMax - 2000) setPriceMin(v); }}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                style={{ zIndex: priceMin > 44000 ? 5 : 3 }} />
-              <input type="range" min={0} max={50000} step={1000} value={priceMax}
-                onChange={e => { const v = Number(e.target.value); if (v > priceMin + 2000) setPriceMax(v); }}
+                style={{ zIndex: priceMin > priceCeil - 6000 ? 5 : 3 }} />
+              <input type="range" min={0} max={priceCeil} step={1000} value={effMax}
+                onChange={e => { const v = Number(e.target.value); if (v > priceMin + 2000) setPriceMax(v >= priceCeil ? null : v); }}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" style={{ zIndex: 4 }} />
               <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
-                style={{ left: `calc(${(priceMin/50000)*100}% - 6px)`, backgroundColor: PRIMARY }} />
+                style={{ left: `calc(${(priceMin/priceCeil)*100}% - 6px)`, backgroundColor: PRIMARY }} />
               <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
-                style={{ left: `calc(${(priceMax/50000)*100}% - 6px)`, backgroundColor: PRIMARY }} />
+                style={{ left: `calc(${(effMax/priceCeil)*100}% - 6px)`, backgroundColor: PRIMARY }} />
             </div>
             <div className="flex justify-between px-1">
               <span className="text-[10px] text-gray-400">0</span>
-              <span className="text-[10px] text-gray-400">50,000 Ks</span>
+              <span className="text-[10px] text-gray-400">{priceCeil.toLocaleString()} Ks</span>
             </div>
           </div>
         )}

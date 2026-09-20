@@ -24,9 +24,45 @@ function SkeletonCard() {
   return (
     <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden">
       <div className="h-48 bg-gray-100 animate-pulse" />
-      <div className="p-4 flex flex-col gap-2">
+      <div className="p-4 flex flex-col gap-3">
         <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-4/5" />
-        <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-1/2" />
+        <div className="flex items-center justify-between">
+          <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-16" />
+          <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-10" />
+        </div>
+        <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+          <div className="h-4 bg-gray-100 rounded-lg animate-pulse w-24" />
+          <div className="h-3 bg-gray-100 rounded-lg animate-pulse w-12" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Stand-in for the "N doctors" count line while the list is still loading. */
+function CountSkeleton() {
+  return <span className="inline-block h-4 w-24 rounded-md bg-gray-200 animate-pulse align-middle" />;
+}
+
+function SpecialtyGridSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
+      {Array.from({ length: 12 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)}
+    </div>
+  );
+}
+
+/** Suspense fallback for the whole page. useSearchParams() makes the statically-rendered page
+ * client-render everything inside the boundary, so on a direct visit this is all the server
+ * HTML contains until JS hydrates — it must look like the page, not be empty. */
+function DoctorsPageSkeleton() {
+  return (
+    <div className="w-full bg-gray-50 min-h-screen" aria-busy="true">
+      <div className="max-w-6xl mx-auto px-6 py-10 sm:py-14">
+        <div className="h-8 w-44 rounded-lg bg-gray-200 animate-pulse" />
+        <div className="h-4 w-72 max-w-full rounded-lg bg-gray-100 animate-pulse mt-3" />
+        <div className="h-11 max-w-sm rounded-xl bg-gray-100 animate-pulse mt-6" />
+        <SpecialtyGridSkeleton />
       </div>
     </div>
   );
@@ -70,9 +106,7 @@ function SpecialtyPicker({ onPick }: { onPick: (name: string) => void }) {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
-            {Array.from({ length: 12 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)}
-          </div>
+          <SpecialtyGridSkeleton />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-3">
             <Stethoscope className="w-10 h-10 text-gray-200" />
@@ -110,7 +144,7 @@ function DoctorsBySpecialty({ spec, highlight, onBack }: { spec: string; highlig
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/doctors?limit=60&specialty=${encodeURIComponent(spec)}`)
+    fetch(`/api/doctors?limit=500&specialty=${encodeURIComponent(spec)}`)
       .then(r => r.json())
       .then(d => { setDoctors(d.doctors ?? []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -129,7 +163,7 @@ function DoctorsBySpecialty({ spec, highlight, onBack }: { spec: string; highlig
         </button>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{spec}</h1>
         <p className="text-sm text-gray-500 mt-1.5">
-          {loading ? (mm ? 'ရှာနေသည်...' : 'Loading...') : `${doctors.length} ${mm ? 'ဆရာဝန်' : doctors.length === 1 ? 'doctor' : 'doctors'}`}
+          {loading ? <CountSkeleton /> : `${doctors.length} ${mm ? 'ဆရာဝန်' : doctors.length === 1 ? 'doctor' : 'doctors'}`}
         </p>
 
         <div className="mt-8">
@@ -196,13 +230,12 @@ function DoctorsBySpecialty({ spec, highlight, onBack }: { spec: string; highlig
 }
 
 type CatExpRange = 'all' | '0-10' | '11-20' | '21+';
-const CAT_PRICE_MAX = 50000;
 
 /* ── Radio row (filter option) ── */
-function CatRadioRow({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+function CatRadioRow({ active, label, count, onClick, disabled = false }: { active: boolean; label: string; count: number; onClick: () => void; disabled?: boolean }) {
   return (
-    <button onClick={onClick}
-      className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all"
+    <button onClick={onClick} disabled={disabled}
+      className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg transition-all ${disabled ? 'opacity-40 cursor-default' : ''}`}
       style={{ backgroundColor: active ? `${PRIMARY}08` : 'transparent' }}>
       <span className="shrink-0 w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center transition-all"
         style={{ borderColor: active ? PRIMARY : '#d1d5db', backgroundColor: active ? PRIMARY : 'transparent' }}>
@@ -304,7 +337,8 @@ function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack:
   const [filterExp, setFilterExp] = useState<CatExpRange>('all');
   const [filterSpec, setFilterSpec] = useState('all');
   const [priceMin, setPriceMin] = useState(0);
-  const [priceMax, setPriceMax] = useState(CAT_PRICE_MAX);
+  const [priceMax, setPriceMax] = useState<number | null>(null); // null = no upper cap
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [openExp, setOpenExp] = useState(true);
   const [openSpec, setOpenSpec] = useState(true);
@@ -312,40 +346,59 @@ function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack:
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/doctors?limit=60&categoryId=${encodeURIComponent(categoryId)}`)
-      .then(r => r.json())
-      .then(d => { setAllDoctors(d.doctors ?? []); setLoading(false); })
+    // limit is generous on purpose: the page filters/counts client-side, so a silent cap
+    // would make every count wrong once a category outgrows it.
+    Promise.all([
+      fetch(`/api/doctors?limit=500&categoryId=${encodeURIComponent(categoryId)}`).then(r => r.json()),
+      fetch('/api/admin/specialties').then(r => r.json()).catch(() => ({})),
+    ])
+      .then(([d, sp]) => { setAllDoctors(d.doctors ?? []); setSpecialties(sp.specialties ?? []); setLoading(false); })
       .catch(() => setLoading(false));
   }, [categoryId]);
 
-  const allSpecs = [...new Set(allDoctors.map(d => d.specialty))].sort();
+  // Fee slider tops out at the priciest doctor in this category (rounded up), never a fixed
+  // number — a hard cap silently hid every doctor above it from the list.
+  const priceCeil = Math.max(10000, Math.ceil(Math.max(0, ...allDoctors.map(d => d.patientPrice)) / 1000) * 1000);
+  const effMax = priceMax === null ? priceCeil : Math.min(priceMax, priceCeil);
 
-  const expCount = (r: CatExpRange) => {
-    if (r === 'all') return allDoctors.length;
-    if (r === '0-10') return allDoctors.filter(d => d.experience <= 10).length;
-    if (r === '11-20') return allDoctors.filter(d => d.experience >= 11 && d.experience <= 20).length;
-    return allDoctors.filter(d => d.experience >= 21).length;
-  };
-  const specCount = (s: string) => s === 'all' ? allDoctors.length : allDoctors.filter(d => d.specialty === s).length;
+  const inExp = (d: Doctor, r: CatExpRange) =>
+    r === '0-10' ? d.experience <= 10
+    : r === '11-20' ? d.experience >= 11 && d.experience <= 20
+    : r === '21+' ? d.experience >= 21
+    : true;
+  const inSpec = (d: Doctor, sp: string) => sp === 'all' || d.specialty === sp;
 
-  const doctors = allDoctors
+  const base = allDoctors
     .filter(d => {
       if (!search.trim()) return true;
       const q = search.toLowerCase();
       return d.name.toLowerCase().includes(q) || (d.nameEn ?? '').toLowerCase().includes(q) || d.specialty.toLowerCase().includes(q);
     })
-    .filter(d => {
-      if (filterExp === '0-10') return d.experience <= 10;
-      if (filterExp === '11-20') return d.experience >= 11 && d.experience <= 20;
-      if (filterExp === '21+') return d.experience >= 21;
-      return true;
-    })
-    .filter(d => filterSpec === 'all' ? true : d.specialty === filterSpec)
-    .filter(d => d.patientPrice >= priceMin && d.patientPrice <= priceMax);
+    .filter(d => d.patientPrice >= priceMin && d.patientPrice <= effMax);
 
-  const hasFilter = filterExp !== 'all' || filterSpec !== 'all' || priceMin > 0 || priceMax < CAT_PRICE_MAX;
-  const activeCount = (filterExp !== 'all' ? 1 : 0) + (filterSpec !== 'all' ? 1 : 0) + (priceMin > 0 || priceMax < CAT_PRICE_MAX ? 1 : 0);
-  const resetFilters = () => { setFilterExp('all'); setFilterSpec('all'); setPriceMin(0); setPriceMax(CAT_PRICE_MAX); };
+  const doctors = base.filter(d => inExp(d, filterExp) && inSpec(d, filterSpec));
+
+  // Each facet's count = what you'd get by picking it with the *other* filters still applied,
+  // so the numbers always agree with the list and the "N doctors" line.
+  const expCount = (r: CatExpRange) => base.filter(d => inSpec(d, filterSpec) && inExp(d, r)).length;
+  const specCount = (sp: string) => base.filter(d => inExp(d, filterExp) && inSpec(d, sp)).length;
+
+  // Specialty options come from the SuperAdmin-managed Specialty list (its names and order),
+  // plus any doctor specialty string not in that list so no doctor is unreachable. Ones with
+  // no doctor in this category sink to the bottom.
+  const specOptions = (() => {
+    const known = new Set(specialties.map(sp => sp.name));
+    const opts = [
+      ...specialties.map(sp => ({ value: sp.name, label: mm ? sp.name : (sp.nameEn ?? sp.name) })),
+      ...[...new Set(allDoctors.map(d => d.specialty))].filter(n => !known.has(n)).sort().map(n => ({ value: n, label: n })),
+    ];
+    const has = (v: string) => allDoctors.some(d => d.specialty === v);
+    return [...opts.filter(o => has(o.value)), ...opts.filter(o => !has(o.value))];
+  })();
+
+  const hasFilter = filterExp !== 'all' || filterSpec !== 'all' || priceMin > 0 || effMax < priceCeil;
+  const activeCount = (filterExp !== 'all' ? 1 : 0) + (filterSpec !== 'all' ? 1 : 0) + (priceMin > 0 || effMax < priceCeil ? 1 : 0);
+  const resetFilters = () => { setFilterExp('all'); setFilterSpec('all'); setPriceMin(0); setPriceMax(null); };
 
   const filterInner = (mobilePad = false) => (
     <>
@@ -383,12 +436,16 @@ function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack:
         </button>
         {openSpec && (
           <div className={`${mobilePad ? 'px-4' : 'px-3'} pb-3`}>
-            {(['all', ...allSpecs]).map(spec => (
-              <CatRadioRow key={spec} active={filterSpec === spec}
-                label={spec === 'all' ? (mm ? 'အားလုံး' : 'All specialties') : spec}
-                count={specCount(spec)}
-                onClick={() => setFilterSpec(spec)} />
-            ))}
+            <CatRadioRow active={filterSpec === 'all'} label={mm ? 'အားလုံး' : 'All specialties'}
+              count={specCount('all')} onClick={() => setFilterSpec('all')} />
+            {specOptions.map(o => {
+              const count = specCount(o.value);
+              return (
+                <CatRadioRow key={o.value} active={filterSpec === o.value} label={o.label} count={count}
+                  disabled={count === 0 && filterSpec !== o.value}
+                  onClick={() => setFilterSpec(o.value)} />
+              );
+            })}
           </div>
         )}
       </div>
@@ -401,7 +458,7 @@ function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack:
           </div>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${PRIMARY}10`, color: PRIMARY }}>
-              {priceMin > 0 || priceMax < CAT_PRICE_MAX ? `${(priceMin / 1000).toFixed(0)}K–${(priceMax / 1000).toFixed(0)}K` : (mm ? 'အားလုံး' : 'Any')}
+              {priceMin > 0 || effMax < priceCeil ? `${(priceMin / 1000).toFixed(0)}K–${(effMax / 1000).toFixed(0)}K` : (mm ? 'အားလုံး' : 'Any')}
             </span>
             <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openFee ? 'rotate-180' : ''}`} />
           </div>
@@ -411,23 +468,23 @@ function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack:
             <div className="relative py-2.5 px-1">
               <div className="h-1 bg-gray-200 rounded-full relative">
                 <div className="absolute h-full rounded-full"
-                  style={{ left: `${(priceMin / CAT_PRICE_MAX) * 100}%`, right: `${100 - (priceMax / CAT_PRICE_MAX) * 100}%`, backgroundColor: PRIMARY }} />
+                  style={{ left: `${(priceMin / priceCeil) * 100}%`, right: `${100 - (effMax / priceCeil) * 100}%`, backgroundColor: PRIMARY }} />
               </div>
-              <input type="range" min={0} max={CAT_PRICE_MAX} step={1000} value={priceMin}
-                onChange={e => { const v = Number(e.target.value); if (v < priceMax - 2000) setPriceMin(v); }}
+              <input type="range" min={0} max={priceCeil} step={1000} value={priceMin}
+                onChange={e => { const v = Number(e.target.value); if (v < effMax - 2000) setPriceMin(v); }}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                style={{ zIndex: priceMin > CAT_PRICE_MAX - 6000 ? 5 : 3 }} />
-              <input type="range" min={0} max={CAT_PRICE_MAX} step={1000} value={priceMax}
-                onChange={e => { const v = Number(e.target.value); if (v > priceMin + 2000) setPriceMax(v); }}
+                style={{ zIndex: priceMin > priceCeil - 6000 ? 5 : 3 }} />
+              <input type="range" min={0} max={priceCeil} step={1000} value={effMax}
+                onChange={e => { const v = Number(e.target.value); if (v > priceMin + 2000) setPriceMax(v >= priceCeil ? null : v); }}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" style={{ zIndex: 4 }} />
               <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
-                style={{ left: `calc(${(priceMin / CAT_PRICE_MAX) * 100}% - 6px)`, backgroundColor: PRIMARY }} />
+                style={{ left: `calc(${(priceMin / priceCeil) * 100}% - 6px)`, backgroundColor: PRIMARY }} />
               <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-white shadow pointer-events-none"
-                style={{ left: `calc(${(priceMax / CAT_PRICE_MAX) * 100}% - 6px)`, backgroundColor: PRIMARY }} />
+                style={{ left: `calc(${(effMax / priceCeil) * 100}% - 6px)`, backgroundColor: PRIMARY }} />
             </div>
             <div className="flex justify-between px-1">
               <span className="text-[10px] text-gray-400">0</span>
-              <span className="text-[10px] text-gray-400">{CAT_PRICE_MAX.toLocaleString()} Ks</span>
+              <span className="text-[10px] text-gray-400">{priceCeil.toLocaleString()} Ks</span>
             </div>
           </div>
         )}
@@ -506,7 +563,7 @@ function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack:
         </div>
 
         <p className="text-sm text-gray-500 mt-3">
-          {loading ? (mm ? 'ရှာနေသည်...' : 'Loading...') : `${doctors.length} ${mm ? 'ဆရာဝန်' : doctors.length === 1 ? 'doctor' : 'doctors'}`}
+          {loading ? <CountSkeleton /> : `${doctors.length} ${mm ? 'ဆရာဝန်' : doctors.length === 1 ? 'doctor' : 'doctors'}`}
         </p>
 
         <div className="mt-6 flex gap-6">
@@ -620,7 +677,7 @@ function DoctorsPageInner() {
 
 export default function DoctorsPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<DoctorsPageSkeleton />}>
       <DoctorsPageInner />
     </Suspense>
   );

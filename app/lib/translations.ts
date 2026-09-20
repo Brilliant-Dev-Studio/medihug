@@ -12,7 +12,8 @@ export const t = {
     navBlog: 'ဆောင်းပါးများ',
     navDoctors: 'ဆရာဝန်များ',
     navPartners: 'မိတ်ဖက်များ',
-    navTourism: 'ခရီးသွား ကျန်းမာရေး',
+    navTourism: 'နိုင်ငံခြားကျန်းမာရေး ဝန်ဆောင်မှု',
+    navMore: 'နောက်ထပ်',
 
     // Hero
     heroBadge: 'Medihug — Your Digital Healthcare Ecosystem',
@@ -99,7 +100,8 @@ export const t = {
     navBlog: 'Blog',
     navDoctors: 'Doctors',
     navPartners: 'Partners',
-    navTourism: 'Medical Tourism',
+    navTourism: 'International Healthcare Services',
+    navMore: 'More',
 
     // Hero
     heroBadge: 'Medihug — Your Digital Healthcare Ecosystem',

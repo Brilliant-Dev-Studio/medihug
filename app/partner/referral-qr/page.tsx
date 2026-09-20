@@ -2,9 +2,132 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type QRCodeStyling from 'qr-code-styling';
-import { Download, Share2, Copy, Check, Loader2, QrCode, Users, Pencil, X } from 'lucide-react';
+import { Download, Share2, Copy, Check, Loader2, QrCode, Users, Pencil, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PRIMARY = '#3b5bdb';
+
+interface UsageRow {
+  id: string; createdAt: string; percent: number; discountAmount: number;
+  patient: { name: string; phone: string };
+  doctor: { name: string; nameEn: string | null };
+  appointment: { date: string; time: string | null; status: string; fee: number };
+}
+
+const STATUS_STYLE: Record<string, string> = {
+  PENDING: 'bg-amber-50 text-amber-600',
+  CONFIRMED: 'bg-blue-50 text-blue-600',
+  COMPLETED: 'bg-green-50 text-green-600',
+  CANCELLED: 'bg-red-50 text-red-400',
+};
+
+function fmtDateTime(iso: string) {
+  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+/** Bookings that came in through this clinic's referral QR — who, when, which doctor. */
+function UsageHistory() {
+  const [rows, setRows] = useState<UsageRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalDiscount, setTotalDiscount] = useState(0);
+  const [pageSize, setPageSize] = useState(15);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const params = new URLSearchParams({ page: String(page) });
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      try {
+        const res = await fetch(`/api/partner/referral-qr/usage?${params}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (res.ok) {
+          setRows(data.usage);
+          setTotal(data.total);
+          setTotalDiscount(data.totalDiscount);
+          setPageSize(data.pageSize);
+        }
+      } catch { /* leave the previous rows in place */ }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [page, from, to]);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const dateInp = 'bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-700 outline-none focus:border-blue-400';
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-gray-800">Referral history</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Bookings that used your QR</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="date" value={from} onChange={e => { setFrom(e.target.value); setPage(1); }} className={dateInp} title="From" />
+          <span className="text-xs text-gray-300">–</span>
+          <input type="date" value={to} onChange={e => { setTo(e.target.value); setPage(1); }} className={dateInp} title="To" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-gray-50 px-4 py-3">
+          <p className="text-[11px] text-gray-400 uppercase tracking-widest">Bookings</p>
+          <p className="text-xl font-bold text-gray-800 mt-0.5">{total.toLocaleString()}</p>
+        </div>
+        <div className="rounded-xl bg-gray-50 px-4 py-3">
+          <p className="text-[11px] text-gray-400 uppercase tracking-widest">Discount given</p>
+          <p className="text-xl font-bold text-gray-800 mt-0.5">{totalDiscount.toLocaleString()} <span className="text-xs font-semibold text-gray-400">Ks</span></p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="py-10 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-300" /></div>
+      ) : rows.length === 0 ? (
+        <p className="py-10 text-center text-sm text-gray-400">No bookings have used your QR yet.</p>
+      ) : (
+        <div className="flex flex-col">
+          {rows.map(r => (
+            <div key={r.id} className="flex items-start justify-between gap-3 py-3 border-t border-gray-50 first:border-t-0">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate">
+                  {r.patient.name} <span className="text-xs font-normal text-gray-400 font-mono">{r.patient.phone}</span>
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5 truncate">Dr. {r.doctor.nameEn ?? r.doctor.name}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Used {fmtDateTime(r.createdAt)} · Appt {new Date(r.appointment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}{r.appointment.time ? ` ${r.appointment.time}` : ''}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-sm font-bold text-gray-800">−{r.discountAmount.toLocaleString()} Ks</p>
+                <p className="text-[11px] text-gray-400">{r.percent}% off</p>
+                <span className={`inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[r.appointment.status] ?? 'bg-gray-50 text-gray-400'}`}>
+                  {r.appointment.status}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-xs text-gray-400">Page {page} of {totalPages}</p>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
+              className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-40"><ChevronLeft className="w-4 h-4" /></button>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+              className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-40"><ChevronRight className="w-4 h-4" /></button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function PartnerReferralQrPage() {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -100,7 +223,7 @@ export default function PartnerReferralQrPage() {
   };
 
   return (
-    <div className="p-4 lg:p-6 max-w-lg mx-auto flex flex-col gap-5">
+    <div className="p-4 lg:p-6 max-w-3xl mx-auto flex flex-col gap-5">
       <div>
         <h1 className="text-lg font-bold text-gray-800">Referral QR</h1>
         <p className="text-xs text-gray-400 mt-0.5">
@@ -113,7 +236,8 @@ export default function PartnerReferralQrPage() {
       ) : !info ? (
         <div className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" /></div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col items-center gap-4">
+        <>
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col items-center gap-4 w-full max-w-lg mx-auto">
           {editing ? (
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center gap-1.5">
@@ -170,6 +294,9 @@ export default function PartnerReferralQrPage() {
             <Users className="w-3.5 h-3.5" /> Used on {info.usageCount} booking{info.usageCount === 1 ? '' : 's'}
           </p>
         </div>
+
+        <UsageHistory />
+        </>
       )}
     </div>
   );

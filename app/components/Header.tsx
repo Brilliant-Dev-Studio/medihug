@@ -17,7 +17,7 @@ function LangDropdown({ lang, setLang, langOpen, setLangOpen, langRef }: {
     <div className="relative" ref={langRef}>
       <button
         onClick={() => setLangOpen(!langOpen)}
-        className="flex items-center gap-1.5 text-base font-semibold px-3 py-2 rounded-full border border-gray-200 transition-colors hover:bg-gray-50"
+        className="flex items-center gap-1.5 text-[15px] xl:text-base font-semibold px-3 py-2 rounded-full border border-gray-200 transition-colors hover:bg-gray-50 whitespace-nowrap"
         style={{ color: '#0d2b6e' }}
       >
         <Image src={lang === 'mm' ? '/flags/myanmar.png' : '/flags/english.jpg'} alt={lang} width={16} height={16} className="w-4 h-4 rounded-full object-cover" />
@@ -56,24 +56,47 @@ export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const { lang, setLang, tr } = useLang();
   const langRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click / Escape
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (langRef.current && !langRef.current.contains(e.target as Node)) {
-        setLangOpen(false);
-      }
+    const onMouseDown = (e: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) setLangOpen(false);
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setLangOpen(false); setMoreOpen(false); }
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, []);
+
+  // Primary links stay in the bar; the rest live under "More" so the bar fits on laptop widths.
+  const mainLinks = [
+    { href: '/', label: tr.home },
+    { href: '/doctors', label: tr.navDoctors },
+    { href: '/clinics', label: tr.navPartners },
+    { href: '/medihug-tourism', label: tr.navTourism },
+  ];
+  const moreLinks = [
+    { href: '/blog', label: tr.navBlog },
+    { href: '/contact', label: tr.contact },
+    { href: '/privacy', label: tr.privacy },
+  ];
+  const isActive = (href: string) => href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const moreActive = moreLinks.some(l => isActive(l.href));
 
   return (
     <div className="w-full sticky top-0 z-50">
       <header className="w-full bg-white border-b border-gray-100" style={{ height: '75px' }}>
-        <div className="w-full h-full px-5 sm:px-8 lg:px-25 flex items-center justify-between">
+        <div className="w-full h-full px-5 sm:px-8 lg:px-6 xl:px-16 2xl:px-25 flex items-center justify-between">
 
         {/* Logo */}
         <Link href="/" className="shrink-0 flex items-center">
@@ -81,22 +104,14 @@ export default function Header() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6">
-          {[
-            { href: '/', label: tr.home },
-            { href: '/doctors', label: tr.navDoctors },
-            { href: '/clinics', label: tr.navPartners },
-            { href: '/medihug-tourism', label: tr.navTourism },
-            { href: '/blog', label: tr.navBlog },
-            { href: '/contact', label: tr.contact },
-            { href: '/privacy', label: tr.privacy },
-          ].map(({ href, label }) => {
-            const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+        <nav className="hidden lg:flex items-center gap-4 xl:gap-6">
+          {mainLinks.map(({ href, label }) => {
+            const active = isActive(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className="relative text-base font-semibold transition-colors"
+                className="relative text-[15px] xl:text-base leading-tight text-center font-semibold transition-colors lg:max-w-40 xl:max-w-none"
                 style={{ color: active ? '#0d2b6e' : '#1a1a2e' }}
               >
                 {label}
@@ -106,13 +121,50 @@ export default function Header() {
               </Link>
             );
           })}
+
+          <div className="relative" ref={moreRef}>
+            <button
+              onClick={() => setMoreOpen(o => !o)}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              className="relative flex items-center gap-1 text-[15px] xl:text-base leading-tight font-semibold transition-colors whitespace-nowrap"
+              style={{ color: moreActive || moreOpen ? '#0d2b6e' : '#1a1a2e' }}
+            >
+              {tr.navMore}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+              {moreActive && (
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: '#0d2b6e' }} />
+              )}
+            </button>
+
+            {moreOpen && (
+              <div role="menu" className="absolute right-0 top-full mt-3 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50 min-w-52 py-1">
+                {moreLinks.map(({ href, label }) => {
+                  const active = isActive(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      role="menuitem"
+                      onClick={() => setMoreOpen(false)}
+                      className="flex items-center justify-between gap-3 px-4 py-3 text-base font-medium hover:bg-gray-50 transition-colors"
+                      style={{ color: active ? '#0d2b6e' : '#1a1a2e' }}
+                    >
+                      {label}
+                      {active && <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: '#0d2b6e' }} />}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-3 xl:gap-4">
           <Link
             href="/signin"
-            className="relative text-base font-semibold transition-colors"
+            className="relative text-[15px] xl:text-base font-semibold transition-colors whitespace-nowrap"
             style={{ color: '#0d2b6e' }}
           >
             {tr.signin}
@@ -122,7 +174,7 @@ export default function Header() {
           </Link>
           <Link
             href="/register"
-            className="relative text-base font-semibold transition-colors"
+            className="relative text-[15px] xl:text-base font-semibold transition-colors whitespace-nowrap"
             style={{ color: '#0d2b6e' }}
           >
             {tr.register}
@@ -134,7 +186,7 @@ export default function Header() {
         </div>
 
         {/* Mobile Hamburger */}
-        <button className="md:hidden p-2 rounded-lg" style={{ color: '#0d2b6e' }} onClick={() => setOpen(!open)}>
+        <button className="lg:hidden p-2 rounded-lg" style={{ color: '#0d2b6e' }} onClick={() => setOpen(!open)}>
           {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
         </div>
@@ -142,17 +194,9 @@ export default function Header() {
 
       {/* Mobile Sidebar */}
       {open && (
-        <div className="md:hidden w-full bg-white border-b border-gray-100 shadow-md px-6 py-6 flex flex-col gap-4">
-          {[
-            { href: '/', label: tr.home },
-            { href: '/doctors', label: tr.navDoctors },
-            { href: '/clinics', label: tr.navPartners },
-            { href: '/medihug-tourism', label: tr.navTourism },
-            { href: '/blog', label: tr.navBlog },
-            { href: '/contact', label: tr.contact },
-            { href: '/privacy', label: tr.privacy },
-          ].map(({ href, label }) => {
-            const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+        <div className="lg:hidden w-full bg-white border-b border-gray-100 shadow-md px-6 py-6 flex flex-col gap-4">
+          {[...mainLinks, ...moreLinks].map(({ href, label }) => {
+            const active = isActive(href);
             return (
               <Link
                 key={href}
