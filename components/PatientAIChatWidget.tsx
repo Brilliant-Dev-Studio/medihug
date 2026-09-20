@@ -25,9 +25,11 @@ interface Message { role: 'user' | 'assistant'; content: string; }
 interface Props {
   /** Set on pages that also show the human-support bubble, so this one stacks above it instead of overlapping. */
   stacked?: boolean;
+  /** Desktop `left-*` utility that clears the fixed patient sidebar (which would otherwise cover the button at lg+). Must be a full literal class so Tailwind picks it up. */
+  desktopLeftClass?: string;
 }
 
-export default function PatientAIChatWidget({ stacked = false }: Props) {
+export default function PatientAIChatWidget({ stacked = false, desktopLeftClass = 'lg:left-5' }: Props) {
   const { lang } = useLang();
   const mm = lang === 'mm';
   const suggestions = mm ? SUGGESTIONS_MM : SUGGESTIONS_EN;
@@ -107,7 +109,7 @@ export default function PatientAIChatWidget({ stacked = false }: Props) {
           the two floating buttons never overlap; elsewhere it's a normal standalone FAB. */}
       <button
         onClick={() => setOpen(o => !o)}
-        className={`fixed ${stacked ? 'bottom-40 lg:bottom-6 left-5' : 'bottom-6 right-5'} z-50 w-14 h-14 rounded-full flex items-center justify-center text-white transition-transform hover:scale-105`}
+        className={`fixed ${stacked ? `bottom-40 lg:bottom-6 left-5 ${desktopLeftClass}` : 'bottom-6 right-5'} z-50 w-14 h-14 rounded-full flex items-center justify-center text-white transition-[transform,left] hover:scale-105`}
         style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%)', boxShadow: '0 0 0 4px rgba(139,92,246,0.15), 0 4px 20px rgba(139,92,246,0.5)' }}
       >
         {open ? <X className="w-5 h-5" /> : <Bot className="w-6 h-6" strokeWidth={2} />}
@@ -120,7 +122,7 @@ export default function PatientAIChatWidget({ stacked = false }: Props) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className={`fixed ${stacked ? 'bottom-56 lg:bottom-24 left-5' : 'bottom-24 right-5'} z-50 w-[calc(100vw-2.5rem)] max-w-sm h-[48vh] lg:h-[60vh] max-h-96 lg:max-h-130 bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden`}
+            className={`fixed ${stacked ? `bottom-56 lg:bottom-24 left-5 ${desktopLeftClass}` : 'bottom-24 right-5'} z-50 w-[calc(100vw-2.5rem)] max-w-sm h-[48vh] lg:h-[60vh] max-h-96 lg:max-h-130 bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden`}
           >
             <div className="px-4 py-3.5 flex items-center gap-2.5 text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
               <Bot className="w-4.5 h-4.5" />

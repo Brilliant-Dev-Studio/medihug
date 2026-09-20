@@ -157,7 +157,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
     {pathname !== '/patient/booking' && !pathname.startsWith('/patient/doctors/') && (
       <>
         <SupportChatWidget />
-        <PatientAIChatWidget stacked />
+        <PatientAIChatWidget stacked desktopLeftClass={collapsed ? 'lg:left-24' : 'lg:left-72'} />
       </>
     )}
     {/* <DebugLogPanel /> — temporarily hidden, re-enable later */}
