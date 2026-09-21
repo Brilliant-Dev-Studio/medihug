@@ -93,14 +93,17 @@ export default function DoctorDetailPage() {
   const [lightbox,      setLightbox]      = useState<number | null>(null);
   const [selectedDay,   setSelectedDay]   = useState(0);
   const [hasPickedDate, setHasPickedDate] = useState(false);
+  const [scrollToSlots, setScrollToSlots] = useState(0);
   const slotsSectionRef = useRef<HTMLDivElement>(null);
-  const dateSelectorRef = useRef<HTMLDivElement>(null);
   const [selectionMode, setSelectionMode] = useState<'single' | 'range'>('single');
   const [selectedSlot,  setSelectedSlot]  = useState<string | null>(null);
   const [rangeStart,    setRangeStart]    = useState<string | null>(null);
   const [rangeEnd,      setRangeEnd]      = useState<string | null>(null);
   const [hoveredSlot,   setHoveredSlot]   = useState<string | null>(null);
   const [fullSlots,     setFullSlots]     = useState<Set<string>>(new Set());
+  // Which day's booked-slots response has landed — slots for any other day show as skeletons
+  // instead of flashing "available" and then flipping to "booked".
+  const [slotsLoadedFor, setSlotsLoadedFor] = useState<number | null>(null);
   const [showCustomRequest,   setShowCustomRequest]   = useState(false);
   const [submittingCustom,    setSubmittingCustom]    = useState(false);
   const mobileBarRef = useRef<HTMLDivElement>(null);
@@ -116,12 +119,21 @@ export default function DoctorDetailPage() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
     const d = new Date(); d.setDate(d.getDate() + selectedDay);
     fetch(`/api/doctors/${id}/booked-slots?date=${d.toISOString()}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => setFullSlots(new Set<string>(data.fullTimes ?? [])))
-      .catch(() => setFullSlots(new Set()));
+      .then(data => { if (!cancelled) setFullSlots(new Set<string>(data.fullTimes ?? [])); })
+      .catch(() => { if (!cancelled) setFullSlots(new Set()); })
+      .finally(() => { if (!cancelled) setSlotsLoadedFor(selectedDay); });
+    return () => { cancelled = true; };
   }, [id, selectedDay]);
+
+  // Runs after the slots section has rendered for the picked date, so the ref is always set.
+  useEffect(() => {
+    if (scrollToSlots === 0) return;
+    slotsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [scrollToSlots]);
 
   useEffect(() => {
     const el = mobileBarRef.current;
@@ -178,6 +190,7 @@ export default function DoctorDetailPage() {
     }
   }
   const allSlots = [...morningSlots, ...afternoonSlots, ...eveningSlots];
+  const slotsLoading = slotsLoadedFor !== selectedDay;
   const nowMin = selectedDay === 0 ? today.getHours() * 60 + today.getMinutes() : -1;
   const isPastSlot = (slot: string) => selectedDay === 0 && toMin(slot) <= nowMin;
 
@@ -456,15 +469,15 @@ export default function DoctorDetailPage() {
       </div>
 
       {/* Date selector */}
-      <div ref={dateSelectorRef} className="flex gap-2 overflow-x-auto pb-1 scroll-mt-4" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {days.map((d, i) => {
-          const active    = i === selectedDay;
+          const active    = hasPickedDate && i === selectedDay;
           const isToday   = i === 0;
           const hasDrSlot = doctor.slots.some(s => s.dayOfWeek === d.getDay());
           return (
             <button key={i} onClick={() => {
                 setSelectedDay(i); resetAll(); setHasPickedDate(true);
-                setTimeout(() => dateSelectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                setScrollToSlots(n => n + 1);
               }}
               className="shrink-0 flex flex-col items-center px-3.5 py-2.5 rounded-2xl transition-all"
               style={{ minWidth: 60, backgroundColor: active ? PRIMARY : '#fff', border: `1.5px solid ${active ? PRIMARY : (hasDrSlot ? '#bbf7d0' : '#e5e7eb')}`, boxShadow: active ? `0 4px 14px ${PRIMARY}30` : 'none', opacity: hasDrSlot ? 1 : 0.5 }}>
@@ -490,7 +503,7 @@ export default function DoctorDetailPage() {
           <p className="text-sm text-gray-400">{mm ? 'အချိန်ဇယား ကြည့်ရှုရန် ရက်စွဲတစ်ခု ရွေးချယ်ပါ' : 'Select a date above to see available times'}</p>
         </div>
       ) : (
-      <div ref={slotsSectionRef} className="flex flex-col gap-4 scroll-mt-4">
+      <div ref={slotsSectionRef} className="flex flex-col gap-4 scroll-mt-24 lg:scroll-mt-4">
       {/* Legend */}
       {allSlots.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
@@ -523,8 +536,10 @@ export default function DoctorDetailPage() {
               <p className="text-sm font-bold" style={{ color: PRIMARY }}>{mm ? period.label_mm : period.label_en}</p>
               <span className="ml-auto text-[11px] text-gray-400">{period.slots[0]} – {period.slots[period.slots.length - 1]}</span>
             </div>
-            <div className="p-3 grid grid-cols-4 lg:grid-cols-6 gap-2">
-              {period.slots.map(slot => {
+            <div className="p-3 grid grid-cols-4 lg:grid-cols-6 gap-2" aria-busy={slotsLoading}>
+              {slotsLoading ? period.slots.map(slot => (
+                <div key={slot} className="h-[39px] rounded-xl bg-gray-100 animate-pulse" />
+              )) : period.slots.map(slot => {
                 const idx           = allSlots.indexOf(slot);
                 const isFull        = fullSlots.has(slot);
                 const isPast        = isPastSlot(slot);
