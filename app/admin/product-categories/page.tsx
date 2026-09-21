@@ -11,6 +11,7 @@ interface Category {
   id: string; name: string; nameEn: string | null;
   descriptionMm: string | null; descriptionEn: string | null;
   iconUrl: string | null; bgImageUrl: string | null; order: number; createdAt: string;
+  showAllDoctors?: boolean;
   doctors?: { doctorId: string }[];
   programs?: { programId: string }[];
 }
@@ -19,12 +20,20 @@ interface ProgramOption { id: string; titleMm: string; titleEn: string | null; i
 
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
-function DoctorChecklist({ doctorOptions, selected, onToggle }: {
+function DoctorChecklist({ doctorOptions, selected, onToggle, showAll, onShowAllChange }: {
   doctorOptions: DoctorOption[]; selected: string[]; onToggle: (id: string) => void;
+  showAll: boolean; onShowAllChange: (v: boolean) => void;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-[11px] font-semibold text-gray-500">Assigned Doctors (optional — link this category to doctors instead of products)</p>
+      <label className="flex items-start gap-2 px-3 py-2 rounded-xl bg-teal-50/60 border border-teal-100 cursor-pointer">
+        <input type="checkbox" checked={showAll} onChange={e => onShowAllChange(e.target.checked)} className="accent-teal-500 shrink-0 mt-0.5" />
+        <span className="text-xs text-gray-700">
+          <span className="font-semibold">Show all doctors</span> — list every active doctor here, including ones added later.
+          {showAll && <span className="text-gray-400"> Doctors ticked below are shown first, in their assigned order.</span>}
+        </span>
+      </label>
       {doctorOptions.length === 0 ? (
         <p className="text-xs text-gray-400">No doctors available.</p>
       ) : (
@@ -101,6 +110,7 @@ export default function ProductCategoriesPage() {
   const [newBgUrl,    setNewBgUrl]    = useState<string | null>(null);
   const [newDoctorIds, setNewDoctorIds] = useState<string[]>([]);
   const [newProgramIds, setNewProgramIds] = useState<string[]>([]);
+  const [newShowAll, setNewShowAll] = useState(false);
   const [createError, setCreateError] = useState('');
   const [savingNew,   setSavingNew]   = useState(false);
 
@@ -113,6 +123,7 @@ export default function ProductCategoriesPage() {
   const [editBgUrl,   setEditBgUrl]   = useState<string | null>(null);
   const [editDoctorIds, setEditDoctorIds] = useState<string[]>([]);
   const [editProgramIds, setEditProgramIds] = useState<string[]>([]);
+  const [editShowAll, setEditShowAll] = useState(false);
 
   const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
   const [programOptions, setProgramOptions] = useState<ProgramOption[]>([]);
@@ -161,12 +172,12 @@ export default function ProductCategoriesPage() {
       body: JSON.stringify({
         name: newName.trim(), nameEn: newNameEn.trim(),
         descriptionMm: newDescMm.trim(), descriptionEn: newDescEn.trim(),
-        iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds, programIds: newProgramIds, order: categories.length,
+        iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds, programIds: newProgramIds, showAllDoctors: newShowAll, order: categories.length,
       }),
     });
     const data = await res.json();
     if (!res.ok) { setCreateError(data.error); setSavingNew(false); return; }
-    setNewName(''); setNewNameEn(''); setNewDescMm(''); setNewDescEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setNewProgramIds([]); setCreating(false); setSavingNew(false);
+    setNewName(''); setNewNameEn(''); setNewDescMm(''); setNewDescEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setNewProgramIds([]); setNewShowAll(false); setCreating(false); setSavingNew(false);
     load(1);
   };
 
@@ -181,6 +192,7 @@ export default function ProductCategoriesPage() {
     setEditIconUrl(c.iconUrl); setEditBgUrl(c.bgImageUrl);
     setEditDoctorIds(c.doctors?.map(d => d.doctorId) ?? []);
     setEditProgramIds(c.programs?.map(p => p.programId) ?? []);
+    setEditShowAll(c.showAllDoctors ?? false);
   };
 
   const handleEdit = async (id: string) => {
@@ -190,7 +202,7 @@ export default function ProductCategoriesPage() {
       body: JSON.stringify({
         name: editName.trim(), nameEn: editNameEn.trim(),
         descriptionMm: editDescMm.trim(), descriptionEn: editDescEn.trim(),
-        iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds, programIds: editProgramIds,
+        iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds, programIds: editProgramIds, showAllDoctors: editShowAll,
       }),
     });
     if (res.ok) { setEditId(null); load(page); }
@@ -301,7 +313,7 @@ export default function ProductCategoriesPage() {
             <ImageUploadSlot label="Icon" url={newIconUrl} onChange={setNewIconUrl} />
             <ImageUploadSlot label="Background" url={newBgUrl} onChange={setNewBgUrl} />
           </div>
-          <DoctorChecklist doctorOptions={doctorOptions} selected={newDoctorIds} onToggle={toggleNewDoctor} />
+          <DoctorChecklist doctorOptions={doctorOptions} selected={newDoctorIds} onToggle={toggleNewDoctor} showAll={newShowAll} onShowAllChange={setNewShowAll} />
           <ProgramChecklist programOptions={programOptions} selected={newProgramIds} onToggle={toggleNewProgram} />
           <div className="flex gap-2">
             <button
@@ -408,7 +420,7 @@ export default function ProductCategoriesPage() {
                             <ImageUploadSlot label="Icon" url={editIconUrl} onChange={setEditIconUrl} />
                             <ImageUploadSlot label="Background" url={editBgUrl} onChange={setEditBgUrl} />
                           </div>
-                          <DoctorChecklist doctorOptions={doctorOptions} selected={editDoctorIds} onToggle={toggleEditDoctor} />
+                          <DoctorChecklist doctorOptions={doctorOptions} selected={editDoctorIds} onToggle={toggleEditDoctor} showAll={editShowAll} onShowAllChange={setEditShowAll} />
                           <ProgramChecklist programOptions={programOptions} selected={editProgramIds} onToggle={toggleEditProgram} />
                         </div>
                       </td>

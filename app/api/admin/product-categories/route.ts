@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, order } = await req.json();
+    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, order, showAllDoctors } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
     const existing = await db.productCategory.findUnique({ where: { name: name.trim() } });
     if (existing) return NextResponse.json({ error: 'Category already exists.' }, { status: 409 });
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
         descriptionMm: descriptionMm?.trim() || null, descriptionEn: descriptionEn?.trim() || null,
         iconUrl: iconUrl || null, bgImageUrl: bgImageUrl || null,
         order: order ?? 0,
+        showAllDoctors: showAllDoctors === true,
         doctors: Array.isArray(doctorIds) && doctorIds.length > 0
           ? { create: doctorIds.map((doctorId: string) => ({ doctorId })) }
           : undefined,

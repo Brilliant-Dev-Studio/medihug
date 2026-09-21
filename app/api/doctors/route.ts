@@ -22,9 +22,29 @@ export async function GET(req: NextRequest) {
       { specialty: { contains: search, mode: 'insensitive' } },
     ];
 
+    // "Show all doctors" categories list every active doctor (assigned ones first, in their
+    // assigned order) so newly added doctors appear without being re-assigned by hand.
+    const showAll = categoryId
+      ? (await db.productCategory.findUnique({ where: { id: categoryId }, select: { showAllDoctors: true } }))?.showAllDoctors ?? false
+      : false;
+
     // Ordered by this category's own DoctorCategory.order when scoped to a category — a
     // doctor's position there is specific to that category, not a global doctor-list order.
-    const fetchDoctors = categoryId
+    const fetchDoctors = categoryId && showAll
+      ? db.doctor.findMany({
+          where,
+          include: {
+            slots: { orderBy: { dayOfWeek: 'asc' } },
+            categories: { where: { categoryId }, select: { order: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        }).then(docs => docs
+          .sort((a, b) =>
+            (a.categories.length ? 0 : 1) - (b.categories.length ? 0 : 1) ||
+            (a.categories[0]?.order ?? 0) - (b.categories[0]?.order ?? 0))
+          .slice(skip, skip + limit)
+          .map(({ categories: _links, ...doctor }) => doctor))
+      : categoryId
       ? db.doctorCategory.findMany({
           where: { categoryId, doctor: where },
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],

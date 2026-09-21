@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   try {
     const { id }        = await params;
-    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, order } = await req.json();
+    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, order, showAllDoctors } = await req.json();
     if (name !== undefined && !name.trim()) {
       return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
     }
@@ -22,6 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       if (iconUrl       !== undefined) data.iconUrl        = iconUrl ?? null;
       if (bgImageUrl    !== undefined) data.bgImageUrl     = bgImageUrl ?? null;
       if (order         !== undefined) data.order          = order;
+      if (showAllDoctors !== undefined) data.showAllDoctors = showAllDoctors === true;
 
       const updated = await tx.productCategory.update({ where: { id }, data });
       if (Array.isArray(doctorIds)) {
