@@ -39,6 +39,8 @@ export const verifyPartnerToken = verifyAdminToken;
 export interface ResetTokenPayload {
   userId: string;
   phone:  string;
+  /** Which of the phone's role passwords this reset is allowed to change. */
+  role:   string;
   purpose: 'password_reset';
 }
 

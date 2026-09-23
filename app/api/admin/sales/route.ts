@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
         : Promise.resolve([]),
       entries.length
         ? db.pointsLedger.findMany({
-            where: { OR: entries.map(e => ({ sourceType: e.sourceType, sourceId: e.sourceId })) },
+            where: { voidedAt: null, OR: entries.map(e => ({ sourceType: e.sourceType, sourceId: e.sourceId })) },
             select: { sourceType: true, sourceId: true, type: true, points: true },
           })
         : Promise.resolve([]),

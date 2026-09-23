@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, X, Clock, Loader2, Check, User, CalendarClock, Copy, Minus, Plus, Images } from 'lucide-react';
 import ImageDropzone from '@/components/admin/ImageDropzone';
 import GalleryEditor, { type GalleryItem } from '@/components/admin/GalleryEditor';
+import toast from 'react-hot-toast';
 import SearchableSelect from '@/components/admin/SearchableSelect';
 
 const PRIMARY = '#3b5bdb';
@@ -102,7 +103,10 @@ export default function PartnerCreateDoctorPage() {
         body: JSON.stringify({ ...payload, slots, gallery, clinicId: targetClinicId }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? 'Error'); setLoading(false); return; }
+      if (!res.ok) { setError(data.error ?? 'Error'); toast.error(data.error ?? 'Error'); setLoading(false); return; }
+      toast.success(data.accountReused
+        ? 'Doctor created. This phone already had another account, so it now has a separate Doctor password — its other passwords are unchanged.'
+        : 'Doctor created', { duration: data.accountReused ? 8000 : 3000 });
       router.push('/partner/doctors');
     } catch { setError('Server error'); setLoading(false); }
   };

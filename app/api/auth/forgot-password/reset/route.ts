@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { verifyResetToken } from '@/lib/jwt';
+import { hasRole, setRolePassword } from '@/lib/roleAccess';
+import type { Role } from '@/app/generated/prisma/enums';
 
 /* ── POST /api/auth/forgot-password/reset ──
  * Final step: exchanges the OTP-verified reset token for a real password change.
@@ -21,8 +22,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Session သက်တမ်းကုန်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။' }, { status: 401 });
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    await db.user.update({ where: { id: payload.userId }, data: { password: passwordHash } });
+    // Only the one role the OTP was verified for changes — the phone's other roles keep theirs.
+    const user = await db.user.findUnique({ where: { id: payload.userId }, select: { id: true, role: true, password: true } });
+    const role = payload.role as Role;
+    if (!user || !payload.role || role === 'PATIENT' || !(await hasRole(user, role))) {
+      return NextResponse.json({ error: 'Session သက်တမ်းကုန်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။' }, { status: 401 });
+    }
+    await setRolePassword(user.id, role, newPassword);
 
     return NextResponse.json({ success: true });
   } catch (e) {

@@ -8,6 +8,13 @@ import toast from 'react-hot-toast';
 import { useLang } from '../../lib/LanguageContext';
 
 type Step = 'phone' | 'otp' | 'reset' | 'done';
+type AccountType = 'DOCTOR' | 'PARTNER' | 'ADMIN';
+
+const ACCOUNT_TYPES: { value: AccountType; mm: string; en: string }[] = [
+  { value: 'DOCTOR',  mm: 'ဆရာဝန်',   en: 'Doctor' },
+  { value: 'PARTNER', mm: 'မိတ်ဖက်',   en: 'Partner' },
+  { value: 'ADMIN',   mm: 'Admin',     en: 'Admin' },
+];
 
 export default function ForgotPasswordPage() {
   const { lang } = useLang();
@@ -16,6 +23,8 @@ export default function ForgotPasswordPage() {
 
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
+  // Each role on a phone number has its own password, so say which one is being reset.
+  const [accountType, setAccountType] = useState<AccountType>('DOCTOR');
   const [submitting, setSubmitting] = useState(false);
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -41,7 +50,7 @@ export default function ForgotPasswordPage() {
   const requestOtp = async () => {
     const res = await fetch('/api/auth/forgot-password/request', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phone.trim() }),
+      body: JSON.stringify({ phone: phone.trim(), role: accountType }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -114,7 +123,7 @@ export default function ForgotPasswordPage() {
     try {
       const res = await fetch('/api/auth/forgot-password/verify', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.trim(), code: entered }),
+        body: JSON.stringify({ phone: phone.trim(), code: entered, role: accountType }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -151,6 +160,11 @@ export default function ForgotPasswordPage() {
         toast.error(data.error ?? (mm ? 'အမှားတစ်ခု ဖြစ်ပွားသည်' : 'Something went wrong'));
         return;
       }
+      const roleLabel = ACCOUNT_TYPES.find(t => t.value === accountType);
+      toast.success(mm
+        ? `${roleLabel?.mm ?? ''} အကောင့်၏ စကားဝှက်ကိုသာ ပြောင်းပြီးပါပြီ။ ဤဖုန်းနံပါတ်ရှိ တခြား Role များ၏ စကားဝှက်များ မပြောင်းပါ။`
+        : `Only the ${roleLabel?.en ?? ''} password was changed. This phone's other roles keep their own passwords.`,
+        { duration: 6000 });
       setStep('done');
       setTimeout(() => router.push('/signin'), 2000);
     } finally {
@@ -225,6 +239,24 @@ export default function ForgotPasswordPage() {
               </div>
 
               <form onSubmit={handlePhoneSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 flex flex-col gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold" style={{ color: '#0d2b6e' }}>
+                    {mm ? 'ဘယ်အကောင့်၏ စကားဝှက်ကို ပြောင်းမလဲ' : 'Which account\'s password?'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ACCOUNT_TYPES.map(t => (
+                      <button key={t.value} type="button" onClick={() => setAccountType(t.value)}
+                        className="py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+                        style={{
+                          backgroundColor: accountType === t.value ? '#0d2b6e' : '#fff',
+                          color: accountType === t.value ? '#fff' : '#6b7280',
+                          borderColor: accountType === t.value ? '#0d2b6e' : '#e5e7eb',
+                        }}>
+                        {mm ? t.mm : t.en}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold" style={{ color: '#0d2b6e' }}>
                     {mm ? 'ဖုန်းနံပါတ်' : 'Phone Number'}

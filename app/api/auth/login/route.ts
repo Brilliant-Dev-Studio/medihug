@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signDoctorToken } from '@/lib/jwt';
+import { hasRole, verifyRolePassword } from '@/lib/roleAccess';
 
 /* ── POST /api/auth/login ──
  * Used by the landing sign-in form. Only enforces real credential checks
@@ -17,17 +17,20 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await db.user.findUnique({ where: { phone } });
-    if (!user || user.role !== 'DOCTOR') {
+    if (!user || !(await hasRole(user, 'DOCTOR'))) {
       return NextResponse.json({ matched: false });
     }
 
     if (!user.isActive) {
-      return NextResponse.json({ error: 'ဤ account ကို ပိတ်ထားသည်။' }, { status: 403 });
+      return NextResponse.json({ error: 'ဤ account ကို ပိတ်ထားသည်။', code: 'ACCOUNT_DISABLED' }, { status: 403 });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return NextResponse.json({ error: 'Password မှားနေပါသည်။ ထပ်မံ ကြိုးစားပါ။' }, { status: 401 });
+    // Each role has its own password. A phone that is also a patient may still be signing in
+    // as that patient (patient sign-in doesn't check this password), so only a doctor-only
+    // phone gets the wrong-password error.
+    if (!(await verifyRolePassword(user, 'DOCTOR', password))) {
+      if (await hasRole(user, 'PATIENT')) return NextResponse.json({ matched: false, code: 'DOCTOR_PASSWORD_MISMATCH_PATIENT' });
+      return NextResponse.json({ error: 'Password မှားနေပါသည်။ ထပ်မံ ကြိုးစားပါ။', code: 'WRONG_PASSWORD' }, { status: 401 });
     }
 
     const doctor = await db.doctor.findUnique({ where: { userId: user.id }, select: { id: true } });
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = await signDoctorToken({
-      id: user.id, name: user.name, phone: user.phone, role: user.role, doctorId: doctor.id,
+      id: user.id, name: user.name, phone: user.phone, role: 'DOCTOR', doctorId: doctor.id,
     });
 
     const res = NextResponse.json({ matched: true, role: 'DOCTOR', name: user.name, phone: user.phone });

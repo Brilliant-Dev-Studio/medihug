@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, X, Loader2, Coins, ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { Search, X, Loader2, Coins, ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
 
@@ -34,14 +35,19 @@ export default function PointsReportPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center gap-2.5">
-        <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#fef3c7' }}>
-          <Coins className="w-4.5 h-4.5" style={{ color: '#d97706' }} />
-        </span>
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">Points Report</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Patient တစ်ဦးချင်းစီ ရရှိထားသော Points</p>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#fef3c7' }}>
+            <Coins className="w-4.5 h-4.5" style={{ color: '#d97706' }} />
+          </span>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Points Report</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Patient တစ်ဦးချင်းစီ ရရှိထားသော Points — နှိပ်ပြီး အသေးစိတ်ကြည့်ရန်၊ Points ပြင်ရန်</p>
+          </div>
         </div>
+        <Link href="/admin/points/ledger" className="flex items-center gap-1.5 text-sm font-semibold px-3.5 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50">
+          <ListOrdered className="w-4 h-4" /> All transactions
+        </Link>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -82,20 +88,23 @@ export default function PointsReportPage() {
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Phone</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
                 <th className="px-5 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Balance</th>
+                <th className="px-5 py-3 w-24" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={5} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" /></td></tr>
+                <tr><td colSpan={6} className="py-16 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" /></td></tr>
               ) : patients.length === 0 ? (
-                <tr><td colSpan={5} className="py-16 text-center">
+                <tr><td colSpan={6} className="py-16 text-center">
                   <Coins className="w-8 h-8 mx-auto text-gray-200 mb-2" />
                   <p className="text-sm text-gray-400">No patients found.</p>
                 </td></tr>
               ) : patients.map((p, i) => (
                 <tr key={p.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-5 py-3.5 text-xs text-gray-400">{(page - 1) * pageSize + i + 1}</td>
-                  <td className="px-5 py-3.5 text-sm font-semibold text-gray-700">{p.name}</td>
+                  <td className="px-5 py-3.5 text-sm font-semibold text-gray-700">
+                    <Link href={`/admin/points/users/${p.id}`} className="hover:underline">{p.name}</Link>
+                  </td>
                   <td className="px-5 py-3.5 text-sm text-gray-500">{p.phone}</td>
                   <td className="px-5 py-3.5">
                     <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full ${p.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-400'}`}>
@@ -103,6 +112,9 @@ export default function PointsReportPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-right text-sm font-bold text-amber-600">{p.balance.toLocaleString()}</td>
+                  <td className="px-5 py-3.5 text-right">
+                    <Link href={`/admin/points/users/${p.id}`} className="text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-teal-50" style={{ color: PRIMARY }}>Manage</Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { patientWhere } from '@/lib/roleAccess';
 import { requireAdmin } from '@/lib/adminAuth';
 
 /* ── GET /api/admin/users — list PATIENT accounts ── */
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     const page     = parseInt(searchParams.get('page')     ?? '1');
     const pageSize = parseInt(searchParams.get('pageSize') ?? '10');
 
-    const where: Record<string, unknown> = { role: 'PATIENT' };
+    const where: Record<string, unknown> = { AND: [patientWhere] };
     if (search) {
       where.OR = [
         { name:  { contains: search, mode: 'insensitive' } },

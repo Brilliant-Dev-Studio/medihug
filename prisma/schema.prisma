@@ -116,6 +116,7 @@ model User {
   pointsLedgerEntries      PointsLedger[]
   voucherRedemptions       VoucherRedemption[]
   partnerQrRedemptions     PartnerQrRedemption[]
+  roleCredentials          RoleCredential[]
   stockMovementsCreated    StockMovement[]
   purchasesCreated         Purchase[]            @relation("PurchaseCreatedBy")
 }
@@ -936,31 +937,56 @@ model PlatformSettings {
 enum PointsTransactionType {
   EARNED
   REDEEMED
+  ADJUSTED // manual credit/debit by a SuperAdmin (signed points, no purchase behind it)
+}
+
+enum PointsExpiryUnit {
+  DAYS
+  MONTHS
 }
 
 model PointsSettings {
-  id                 String   @id @default("singleton")
-  kyatPerPointEarn   Int      @default(1000)
-  kyatPerPointRedeem Int      @default(1000)
-  isActive           Boolean  @default(true)
-  updatedAt          DateTime @updatedAt
+  id                 String           @id @default("singleton")
+  kyatPerPointEarn   Int              @default(1000)
+  kyatPerPointRedeem Int              @default(1000)
+  isActive           Boolean          @default(true)
+  // Points expire `expiryValue` days/months after they were earned (oldest are spent first).
+  // Computed from the earn date and these live settings, so changing them applies to all points.
+  expiryEnabled      Boolean          @default(false)
+  expiryValue        Int              @default(12)
+  expiryUnit         PointsExpiryUnit @default(MONTHS)
+  updatedAt          DateTime         @updatedAt
 }
 
 model PointsLedger {
   id         String                @id @default(cuid())
   userId     String
   type       PointsTransactionType
-  points     Int // signed: positive EARNED, negative REDEEMED
-  sourceType RevenueSourceType // reuse RevenueLedger's enum — no new taxonomy
-  sourceId   String // Order.id / Appointment.id / ProgramEnrollment.id
-  amountKs   Int // EARNED: net Ks it was computed from. REDEEMED: Ks discount granted.
+  points     Int // signed: positive EARNED / credit, negative REDEEMED / debit
+  sourceType RevenueSourceType? // reuse RevenueLedger's enum — null for a manual ADJUSTED entry
+  sourceId   String? // Order.id / Appointment.id / ProgramEnrollment.id — null for a manual ADJUSTED entry
+  amountKs   Int // EARNED: net Ks it was computed from. REDEEMED: Ks discount granted. ADJUSTED: 0.
+  rateKs     Int? // Ks-per-point rate in force when the entry was written (null on older rows)
+  noExpiry   Boolean               @default(false) // a manual credit a SuperAdmin marked as never expiring
+  note       String? // SuperAdmin's reason for an adjustment / edit
   createdAt  DateTime              @default(now())
+
+  createdByAdminId   String?
+  createdByAdminName String?
+  editedAt           DateTime?
+  editedByAdminName  String?
+  // "Deleting" an entry voids it: it stops counting toward the balance but stays on record, so
+  // the history is auditable and an already-earned purchase can never be re-awarded.
+  voidedAt           DateTime?
+  voidedByAdminName  String?
+  voidReason         String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([sourceType, sourceId, type])
   @@index([userId])
   @@index([userId, createdAt])
+  @@index([createdAt])
 }
 
 // ─────────────────────────────────────────────
@@ -1020,6 +1046,22 @@ model VoucherRedemption {
   @@unique([sourceType, sourceId]) // one redemption per purchase — idempotent guard, mirrors PointsLedger
   @@index([voucherId])
   @@index([userId])
+}
+
+// A separate password for one extra role on an existing phone number (e.g. a patient who also
+// runs a partner clinic). The role a User row was first created with keeps using User.password;
+// roles added later live here. See lib/roleAccess.ts.
+model RoleCredential {
+  id        String   @id @default(cuid())
+  userId    String
+  role      Role
+  password  String // bcrypt hash
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
 }
 
 // One row per doctor booking that used a partner's referral QR — the admin-facing "who used

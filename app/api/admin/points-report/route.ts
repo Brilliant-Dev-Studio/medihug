@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { patientWhere } from '@/lib/roleAccess';
 import { requireAdmin } from '@/lib/adminAuth';
+import { getBalances } from '@/lib/pointsLedger';
 
 /* ── GET /api/admin/points-report — which patient has how many points ── */
 export async function GET(req: NextRequest) {
@@ -13,7 +15,7 @@ export async function GET(req: NextRequest) {
     const page     = Math.max(1, parseInt(searchParams.get('page')     ?? '1'));
     const pageSize = parseInt(searchParams.get('pageSize') ?? '15');
 
-    const where: Record<string, unknown> = { role: 'PATIENT' };
+    const where: Record<string, unknown> = { AND: [patientWhere] };
     if (search) {
       where.OR = [
         { name:  { contains: search, mode: 'insensitive' } },
@@ -32,12 +34,7 @@ export async function GET(req: NextRequest) {
       db.user.count({ where }),
     ]);
 
-    const balances = await db.pointsLedger.groupBy({
-      by: ['userId'],
-      where: { userId: { in: users.map(u => u.id) } },
-      _sum: { points: true },
-    });
-    const balanceMap = new Map(balances.map(b => [b.userId, b._sum.points ?? 0]));
+    const balanceMap = await getBalances(users.map(u => u.id));
 
     const patients = users.map(u => ({ ...u, balance: balanceMap.get(u.id) ?? 0 }));
 

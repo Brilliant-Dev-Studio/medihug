@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signPartnerToken } from '@/lib/jwt';
+import { hasRole, verifyRolePassword } from '@/lib/roleAccess';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,17 +12,16 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await db.user.findUnique({ where: { phone } });
-    if (!user || user.role !== 'PARTNER') {
-      return NextResponse.json({ error: 'ဖုန်းနံပါတ် (သို့) စကားဝှက် မှားနေပါသည်။' }, { status: 401 });
+    if (!user || !(await hasRole(user, 'PARTNER'))) {
+      return NextResponse.json({ error: 'ဖုန်းနံပါတ် (သို့) စကားဝှက် မှားနေပါသည်။', code: 'INVALID_CREDENTIALS' }, { status: 401 });
     }
 
     if (!user.isActive) {
-      return NextResponse.json({ error: 'ဤ account ကို ပိတ်ထားသည်။' }, { status: 403 });
+      return NextResponse.json({ error: 'ဤ account ကို ပိတ်ထားသည်။', code: 'ACCOUNT_DISABLED' }, { status: 403 });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      return NextResponse.json({ error: 'ဖုန်းနံပါတ် (သို့) စကားဝှက် မှားနေပါသည်။' }, { status: 401 });
+    if (!(await verifyRolePassword(user, 'PARTNER', password))) {
+      return NextResponse.json({ error: 'ဖုန်းနံပါတ် (သို့) စကားဝှက် မှားနေပါသည်။', code: 'INVALID_CREDENTIALS' }, { status: 401 });
     }
 
     const clinic = await db.clinic.findUnique({ where: { ownerId: user.id }, select: { id: true } });
@@ -31,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     const token = await signPartnerToken({
-      id: user.id, name: user.name, phone: user.phone, role: user.role, clinicId: clinic.id,
+      id: user.id, name: user.name, phone: user.phone, role: 'PARTNER', clinicId: clinic.id,
     });
 
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';

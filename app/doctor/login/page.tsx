@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
 import { Phone, Lock, Eye, EyeOff, Stethoscope, AlertCircle, ShieldCheck, Users, Star } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
@@ -35,13 +36,23 @@ export default function DoctorLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? 'Login မအောင်မြင်ပါ။');
+        const msg = data.code === 'WRONG_PASSWORD'
+          ? 'ဆရာဝန်စကားဝှက် မှားနေပါသည်။ ထပ်မံကြိုးစားပါ (သို့) စကားဝှက်မေ့နေပါက Forgot password ကို အသုံးပြုပါ။'
+          : (data.error ?? 'Login မအောင်မြင်ပါ။');
+        setError(msg);
+        toast.error(msg);
         setLoading(false);
         return;
       }
 
       if (!data.matched || data.role !== 'DOCTOR') {
-        setError('ဖုန်းနံပါတ် (သို့) စကားဝှက် မှားနေပါသည်။');
+        // One phone can hold several roles, each with its own password — say so when the phone
+        // is also a patient, without revealing anything else about the account.
+        const msg = data.code === 'DOCTOR_PASSWORD_MISMATCH_PATIENT'
+          ? 'ဆရာဝန်စကားဝှက် မှားနေပါသည်။ ဤဖုန်းနံပါတ်တွင် လူနာအကောင့်လည်း ရှိသော်လည်း လူနာစကားဝှက်နှင့် ဆရာဝန်စကားဝှက်သည် သီးခြားစီ ဖြစ်ပါသည်။'
+          : 'ဖုန်းနံပါတ် (သို့) ဆရာဝန်စကားဝှက် မှားနေပါသည်။ Role တစ်ခုချင်းစီ၏ စကားဝှက်သည် သီးခြားစီ ဖြစ်ပါသည်။';
+        setError(msg);
+        toast.error(msg, { duration: 6000 });
         setLoading(false);
         return;
       }
@@ -51,6 +62,7 @@ export default function DoctorLoginPage() {
       // always fetches the current bundle instead of silently hanging on a 404'd chunk.
       window.location.href = '/doctor/dashboard';
     } catch {
+      toast.error('Server ချိတ်ဆက်မှု မအောင်မြင်ပါ။');
       setError('Server ချိတ်ဆက်မှု မအောင်မြင်ပါ။');
       setLoading(false);
     }

@@ -92,6 +92,7 @@ const navGroups: NavGroup[] = [
       { href: '/admin/points', icon: Coins, mm: 'ပွိုင့်များ', en: 'Points', perm: 'dashboard.view' as Permission,
         children: [
           { href: '/admin/points/report',   icon: Users,    mm: 'အစီရင်ခံစာ', en: 'Report' },
+          { href: '/admin/points/ledger',   icon: History,  mm: 'ပွိုင့် မှတ်တမ်း', en: 'Ledger' },
           { href: '/admin/points/settings', icon: Settings, mm: 'ဆက်တင်',    en: 'Settings', perm: 'settings.manage' as Permission },
         ],
       },
@@ -220,7 +221,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (pathname === '/admin/login') return <>{children}</>;
 
-  const SidebarContent = () => (
+  // A plain element, not a component defined here: a component declared inside AdminLayout gets a
+  // new identity on every render, so React remounted the whole sidebar (and reset its scroll to
+  // the top) each time the page or any layout state changed.
+  const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-4 border-b border-white/10">
@@ -358,7 +362,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         className="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-60 z-50 print:hidden"
         style={{ background: `linear-gradient(180deg, #1e2d3d 0%, #162030 100%)` }}
       >
-        <SidebarContent />
+        {sidebarContent}
       </aside>
 
       {/* ── Mobile sidebar overlay ── */}
@@ -367,7 +371,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="relative w-64 h-full z-10 flex flex-col"
             style={{ background: `linear-gradient(180deg, #1e2d3d 0%, #162030 100%)` }}>
-            <SidebarContent />
+            {sidebarContent}
           </aside>
         </div>
       )}

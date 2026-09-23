@@ -1,27 +1,78 @@
 import { db } from '@/lib/db';
 import type { Prisma } from '@/app/generated/prisma/client';
+import { NO_EXPIRY, simulate, type ExpiryConfig, type LedgerRow } from '@/lib/pointsExpiry';
 
 type SourceType = 'CONSULTATION' | 'PROGRAM' | 'PRODUCT';
 
 /** Reads (or lazily creates) the singleton Points settings row. */
-export async function getPointsSettings() {
-  return db.pointsSettings.upsert({
+export async function getPointsSettings(client: Prisma.TransactionClient | typeof db = db) {
+  return client.pointsSettings.upsert({
     where: { id: 'singleton' },
     update: {},
     create: { id: 'singleton' },
   });
 }
 
-/** Current points balance for a patient — no cached column, always the live sum, same
- * append-only-ledger philosophy as RevenueLedger (one source of truth, nothing to drift). */
-export async function getPointsBalance(userId: string): Promise<number> {
-  const result = await db.pointsLedger.aggregate({ where: { userId }, _sum: { points: true } });
-  return result._sum.points ?? 0;
+type Client = typeof db | Prisma.TransactionClient;
+
+export function expiryConfigOf(s: { expiryEnabled: boolean; expiryValue: number; expiryUnit: 'DAYS' | 'MONTHS' }): ExpiryConfig {
+  return s.expiryEnabled ? { enabled: true, value: s.expiryValue, unit: s.expiryUnit } : NO_EXPIRY;
 }
 
-async function getPointsBalanceTx(tx: Prisma.TransactionClient, userId: string): Promise<number> {
-  const result = await tx.pointsLedger.aggregate({ where: { userId }, _sum: { points: true } });
-  return result._sum.points ?? 0;
+export async function getExpiryConfig(client: Client = db): Promise<ExpiryConfig> {
+  return expiryConfigOf(await getPointsSettings(client));
+}
+
+/** The non-deleted ledger rows for these patients, grouped by patient, in the shape the expiry
+ * engine wants. Deleted (voided) entries never count. */
+export async function loadLedgerRows(client: Client, userIds?: string[]): Promise<Map<string, LedgerRow[]>> {
+  const rows = await client.pointsLedger.findMany({
+    where: { voidedAt: null, ...(userIds ? { userId: { in: userIds } } : {}) },
+    select: { id: true, userId: true, points: true, createdAt: true, noExpiry: true },
+  });
+  const byUser = new Map<string, LedgerRow[]>();
+  for (const r of rows) {
+    const list = byUser.get(r.userId) ?? [];
+    list.push({ id: r.id, points: r.points, createdAt: r.createdAt, noExpiry: r.noExpiry });
+    byUser.set(r.userId, list);
+  }
+  return byUser;
+}
+
+async function balanceFor(client: Client, userId: string): Promise<number> {
+  const cfg = await getExpiryConfig(client);
+  if (!cfg.enabled) {
+    const result = await client.pointsLedger.aggregate({ where: { userId, voidedAt: null }, _sum: { points: true } });
+    return result._sum.points ?? 0;
+  }
+  const rows = (await loadLedgerRows(client, [userId])).get(userId) ?? [];
+  return simulate(rows, cfg).balance;
+}
+
+/** Current points balance for a patient — no cached column, always computed from the ledger
+ * (one source of truth, nothing to drift). Deleted entries don't count, and neither do points
+ * that have passed their expiry date. */
+export async function getPointsBalance(userId: string): Promise<number> {
+  return balanceFor(db, userId);
+}
+
+export async function getPointsBalanceTx(tx: Prisma.TransactionClient, userId: string): Promise<number> {
+  return balanceFor(tx, userId);
+}
+
+/** Balances for many patients at once (report list). */
+export async function getBalances(userIds: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (userIds.length === 0) return out;
+  const cfg = await getExpiryConfig();
+  if (!cfg.enabled) {
+    const groups = await db.pointsLedger.groupBy({ by: ['userId'], where: { userId: { in: userIds }, voidedAt: null }, _sum: { points: true } });
+    for (const g of groups) out.set(g.userId, g._sum.points ?? 0);
+    return out;
+  }
+  const rows = await loadLedgerRows(db, userIds);
+  for (const id of userIds) out.set(id, simulate(rows.get(id) ?? [], cfg).balance);
+  return out;
 }
 
 interface AwardPointsInput {
@@ -47,7 +98,7 @@ export async function awardPoints(input: AwardPointsInput): Promise<void> {
 
     await db.pointsLedger.upsert({
       where: { sourceType_sourceId_type: { sourceType: input.sourceType, sourceId: input.sourceId, type: 'EARNED' } },
-      create: { userId: input.userId, type: 'EARNED', points, sourceType: input.sourceType, sourceId: input.sourceId, amountKs: input.netAmountKs },
+      create: { userId: input.userId, type: 'EARNED', points, sourceType: input.sourceType, sourceId: input.sourceId, amountKs: input.netAmountKs, rateKs: settings.kyatPerPointEarn },
       update: {},
     });
   } catch (err) {
@@ -91,7 +142,7 @@ export async function redeemPoints(
   if (pointsRedeemed <= 0) return { pointsRedeemed: 0, discountAmount: 0 };
 
   await tx.pointsLedger.create({
-    data: { userId: input.userId, type: 'REDEEMED', points: -pointsRedeemed, sourceType: input.sourceType, sourceId: input.sourceId, amountKs: discountAmount },
+    data: { userId: input.userId, type: 'REDEEMED', points: -pointsRedeemed, sourceType: input.sourceType, sourceId: input.sourceId, amountKs: discountAmount, rateKs: settings.kyatPerPointRedeem },
   });
 
   return { pointsRedeemed, discountAmount };

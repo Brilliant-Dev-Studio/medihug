@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { patientWhere } from '@/lib/roleAccess';
 
 export async function GET(req: NextRequest) {
   try {
@@ -55,8 +56,8 @@ export async function GET(req: NextRequest) {
       latestRaw,
       rawApptDates,
     ] = await Promise.all([
-      db.user.count({ where: { role: 'PATIENT' } }),
-      db.user.count({ where: { role: 'PATIENT', createdAt: { lt: d30ago } } }),
+      db.user.count({ where: patientWhere }),
+      db.user.count({ where: { AND: [patientWhere, { createdAt: { lt: d30ago } }] } }),
       db.doctor.count({ where: { isActive: true } }),
       db.doctor.count({ where: { isActive: true, createdAt: { lt: d30ago } } }),
       db.product.count({ where: { isActive: true } }),

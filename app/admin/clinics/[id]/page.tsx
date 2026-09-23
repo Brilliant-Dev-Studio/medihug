@@ -177,10 +177,16 @@ export default function ClinicDetailPage({ params }: { params: Promise<{ id: str
         body: JSON.stringify({ phone: accPhone, password: accPassword || undefined }),
       });
       const d = await res.json();
-      if (!res.ok) { setAccError(d.error ?? 'Error'); return; }
+      if (!res.ok) { setAccError(d.error ?? 'Error'); toast.error(d.error ?? 'Error'); return; }
       setClinic(prev => prev ? { ...prev, owner: d.owner } : prev);
       setAccPassword('');
-      toast.success(d.created ? 'Partner account created' : 'Partner account updated');
+      if (d.created && d.accountReused) {
+        toast.success('Partner account created. This phone already had another account, so it now has a separate Partner password — its other passwords are unchanged.', { duration: 8000 });
+      } else if (!d.created && accPassword) {
+        toast.success('Partner password updated. This phone\'s other role passwords (doctor, patient) are unchanged.', { duration: 6000 });
+      } else {
+        toast.success(d.created ? 'Partner account created' : 'Partner account updated');
+      }
     } catch {
       setAccError('Server error');
     } finally { setAccSaving(false); }

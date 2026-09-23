@@ -68,12 +68,28 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? (mm ? 'အကောင့်ဖွင့်၍မရပါ' : 'Could not create account'));
+        toast.error(data.code === 'PATIENT_EXISTS'
+          ? (mm ? 'ဤဖုန်းနံပါတ်ဖြင့် လူနာအကောင့် ရှိပြီးသားဖြစ်သည်။ ဝင်ရောက်ရန် (Sign in) ကို အသုံးပြုပါ။' : 'A patient account already exists for this phone. Please sign in instead.')
+          : (data.error ?? (mm ? 'အကောင့်ဖွင့်၍မရပါ' : 'Could not create account')));
         return;
       }
 
-      localStorage.setItem('medihug_patient', JSON.stringify({ name: form.username.trim(), phone }));
-      toast.success(mm ? 'အကောင့်ဖွင့်ပြီးပါပြီ!' : 'Account created!');
+      // Their existing name wins when this phone already belonged to a doctor/partner account.
+      localStorage.setItem('medihug_patient', JSON.stringify({ name: data.user?.name ?? form.username.trim(), phone }));
+
+      if (data.roleAdded) {
+        const roleNames: Record<string, { mm: string; en: string }> = {
+          DOCTOR: { mm: 'ဆရာဝန်', en: 'Doctor' }, PARTNER: { mm: 'မိတ်ဖက်', en: 'Partner' },
+        };
+        const names = (data.existingRoles as string[] ?? [])
+          .map(r => roleNames[r]?.[mm ? 'mm' : 'en'] ?? 'Admin').join(', ');
+        toast.success(mm
+          ? `ဤဖုန်းနံပါတ်တွင် ${names} အကောင့် ရှိပြီးသားဖြစ်၍ လူနာ (Patient) အကောင့်ကို ထပ်တိုးပေးလိုက်ပါပြီ။ လူနာစကားဝှက်သည် ${names} စကားဝှက်နှင့် သီးခြားစီ ဖြစ်ပါသည်။`
+          : `This phone already has a ${names} account, so a Patient account was added to it. The patient password is separate from your ${names} password.`,
+          { duration: 8000 });
+      } else {
+        toast.success(mm ? 'အကောင့်ဖွင့်ပြီးပါပြီ!' : 'Account created!');
+      }
       router.push('/patient/dashboard');
     } finally {
       setSubmitting(false);

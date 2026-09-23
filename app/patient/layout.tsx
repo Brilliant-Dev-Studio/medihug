@@ -77,7 +77,9 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
       .then(d => {
         // Non-patient accounts (admins etc.) must never land in the patient portal, even if
         // they went through the patient sign-in/OTP flow — kick them to their real portal.
-        if (d.user?.role && d.user.role !== 'PATIENT') {
+        // A phone can hold several roles; it only needs to be a patient among them.
+        const roles: string[] = d.user?.roles ?? (d.user?.role ? [d.user.role] : []);
+        if (d.user?.role && !roles.includes('PATIENT')) {
           localStorage.removeItem('medihug_patient');
           setPortalBlocked(true);
           const ADMIN_ROLES = ['SUPER_ADMIN', 'CO_ADMIN', 'PARTNER_MANAGER', 'POS_ADMIN', 'SUPPORT_ADMIN', 'MODERATOR'];

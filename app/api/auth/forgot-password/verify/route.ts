@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signResetToken } from '@/lib/jwt';
+import { resolveResetRole } from '@/lib/roleAccess';
+import { isAdminRole } from '@/lib/permissions';
 
 /* ── POST /api/auth/forgot-password/verify ──
  * Checks the OTP against the most recent unconsumed code for that phone.
@@ -9,13 +11,14 @@ import { signResetToken } from '@/lib/jwt';
  */
 export async function POST(req: NextRequest) {
   try {
-    const { phone, code } = await req.json();
+    const { phone, code, role } = await req.json();
     if (!phone || !code) {
       return NextResponse.json({ error: 'OTP ကုဒ် ထည့်ပါ' }, { status: 400 });
     }
 
-    const user = await db.user.findUnique({ where: { phone }, select: { id: true, role: true } });
-    if (!user || user.role === 'PATIENT') {
+    const user = await db.user.findUnique({ where: { phone }, select: { id: true, role: true, password: true } });
+    const targetRole = user ? await resolveResetRole(user, typeof role === 'string' ? role : undefined, isAdminRole) : null;
+    if (!user || !targetRole) {
       return NextResponse.json({ error: 'OTP ကုဒ် မှားနေသည်' }, { status: 400 });
     }
 
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     await db.passwordResetOtp.update({ where: { id: otp.id }, data: { consumed: true } });
 
-    const resetToken = await signResetToken({ userId: user.id, phone, purpose: 'password_reset' });
+    const resetToken = await signResetToken({ userId: user.id, phone, role: targetRole, purpose: 'password_reset' });
     return NextResponse.json({ success: true, resetToken });
   } catch (e) {
     console.error(e);

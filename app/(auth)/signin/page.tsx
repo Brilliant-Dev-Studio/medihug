@@ -57,8 +57,19 @@ export default function SignInPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error ?? (mm ? 'အမှားတစ်ခု ဖြစ်ပွားသည်' : 'Something went wrong'));
+        toast.error(data.code === 'WRONG_PASSWORD'
+          ? (mm ? 'ဆရာဝန်အကောင့်၏ စကားဝှက် မှားနေပါသည်။ ထပ်မံကြိုးစားပါ (သို့) စကားဝှက်မေ့နေပါက Forgot password ကို နှိပ်ပါ။' : 'Wrong Doctor password. Try again, or use Forgot password.')
+          : (data.error ?? (mm ? 'အမှားတစ်ခု ဖြစ်ပွားသည်' : 'Something went wrong')));
         return;
+      }
+
+      // This phone is both a doctor and a patient, and the doctor password didn't match: we let
+      // them in as the patient, so say so instead of silently picking one.
+      if (data.code === 'DOCTOR_PASSWORD_MISMATCH_PATIENT') {
+        toast(mm
+          ? 'ဆရာဝန်စကားဝှက် မကိုက်ညီသဖြင့် လူနာ (Patient) အဖြစ် ဝင်ရောက်ပေးထားပါသည်။ ဆရာဝန်အဖြစ် ဝင်လိုပါက Doctor Login တွင် ဆရာဝန်စကားဝှက်ဖြင့် ဝင်ပါ။'
+          : 'The Doctor password didn\'t match, so you were signed in as a patient. To sign in as a doctor, use Doctor Login with your Doctor password.',
+          { icon: 'ℹ️', duration: 8000 });
       }
 
       // Doctor account: real credentials already verified, session cookie set.

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { rolesOf } from '@/lib/roleAccess';
 
 /* ── GET /api/patient/profile?phone=xxx ── */
 export async function GET(req: NextRequest) {
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     });
     if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ user: { ...user, roles: await rolesOf(user) } });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

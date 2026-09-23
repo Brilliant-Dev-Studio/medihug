@@ -42,13 +42,13 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     locale: "my_MM",
     alternateLocale: ["en_US"],
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: SITE_NAME }],
+    images: [{ url: "/image-1571707571304685.jpg", width: 2048, height: 1152, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/og-image.jpg"],
+    images: ["/image-1571707571304685.jpg"],
   },
   robots: {
     index: true,

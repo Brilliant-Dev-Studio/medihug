@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
 import { Phone, Lock, Eye, EyeOff, Building2, AlertCircle, ShieldCheck } from 'lucide-react';
 
 const PRIMARY = '#3b5bdb';
@@ -26,7 +27,12 @@ export default function PartnerLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? 'Login မအောင်မြင်ပါ။');
+        // One phone can hold several roles, each with its own password (doctor, patient, partner).
+        const msg = data.code === 'INVALID_CREDENTIALS'
+          ? 'ဖုန်းနံပါတ် (သို့) Partner စကားဝှက် မှားနေပါသည်။ Role တစ်ခုချင်းစီ၏ စကားဝှက်သည် သီးခြားစီ ဖြစ်သဖြင့် Partner စကားဝှက်ကို အသုံးပြုပါ။'
+          : (data.error ?? 'Login မအောင်မြင်ပါ။');
+        setError(msg);
+        toast.error(msg, { duration: 6000 });
         setLoading(false);
         return;
       }
@@ -36,6 +42,7 @@ export default function PartnerLoginPage() {
       // always fetches the current bundle instead of silently hanging on a 404'd chunk.
       window.location.href = '/partner/dashboard';
     } catch {
+      toast.error('Server ချိတ်ဆက်မှု မအောင်မြင်ပါ။');
       setError('Server ချိတ်ဆက်မှု မအောင်မြင်ပါ။');
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { verifyPartnerToken } from '@/lib/jwt';
 import { db } from '@/lib/db';
+import { grantRole, RoleAlreadyGrantedError } from '@/lib/roleAccess';
 import { notify } from '@/lib/notify';
 
 /* ── GET /api/partner/doctors — read-only, doctors attached to own clinic and any
@@ -59,17 +59,13 @@ export async function POST(req: NextRequest) {
       targetClinicId = clinicId;
     }
 
-    const existing = await db.user.findUnique({ where: { phone } });
-    if (existing) {
-      return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်သည် မှတ်ပုံတင်ပြီးသား ဖြစ်သည်။' }, { status: 409 });
-    }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
+    let accountReused = false;
     const doctor = await db.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { name, phone, password: hashedPassword, role: 'DOCTOR', isActive: true },
-      });
+      // A phone that already belongs to someone (patient, partner...) gets a separate Doctor
+      // password instead of being rejected; only a phone that already has a Doctor role is.
+      const user = await grantRole(tx, { name, phone, role: 'DOCTOR', password });
+      accountReused = !user.created;
 
       const doc = await tx.doctor.create({
         data: {
@@ -154,8 +150,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ doctor }, { status: 201 });
+    return NextResponse.json({ doctor, accountReused }, { status: 201 });
   } catch (e) {
+    if (e instanceof RoleAlreadyGrantedError) {
+      return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်ဖြင့် Doctor account ရှိပြီးသား ဖြစ်သည်။' }, { status: 409 });
+    }
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

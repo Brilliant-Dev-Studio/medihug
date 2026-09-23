@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
+import { grantRole, RoleAlreadyGrantedError } from '@/lib/roleAccess';
 import { parseCsv } from '@/lib/csv';
 import { requireAdmin } from '@/lib/adminAuth';
 
@@ -54,45 +54,46 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      const existing = await db.user.findUnique({ where: { phone } });
-      if (existing) {
-        skipped.push({ row: i + 2, name, reason: `Phone ${phone} already registered` });
-        continue;
+      try {
+        await db.$transaction(async (tx) => {
+          // An existing phone (e.g. a patient) gets a separate Doctor password; only a phone
+          // that already has a Doctor role is skipped.
+          const user = await grantRole(tx, { name, phone, role: 'DOCTOR', password: phone });
+          await tx.doctor.create({
+            data: {
+              userId: user.id,
+              name,
+              nameEn: r.nameEn || null,
+              specialty,
+              specialtyEn: r.specialtyEn || null,
+              phone,
+              phoneSecondary: r.phoneSecondary || null,
+              viber: r.viber || null,
+              experience: toInt(r.experience, 0),
+              price: toInt(r.price, 0),
+              isAvailable: toBool(r.isAvailable, true),
+              isActive: toBool(r.isActive, true),
+              qualifications: r.qualifications || null,
+              careerMm: r.careerMm || null,
+              careerEn: r.careerEn || null,
+              bio: r.bio || null,
+              clinicNote: r.clinicNote || null,
+              clinicNoteEn: r.clinicNoteEn || null,
+              location: r.location || null,
+              languages: splitList(r.languages ?? ''),
+              clinicTypesMm: splitList(r.clinicTypesMm ?? ''),
+              clinicTypesEn: splitList(r.clinicTypesEn ?? ''),
+              imageUrl: r.imageUrl || null,
+            },
+          });
+        });
+      } catch (e) {
+        if (e instanceof RoleAlreadyGrantedError) {
+          skipped.push({ row: i + 2, name, reason: `Phone ${phone} already has a Doctor account` });
+          continue;
+        }
+        throw e;
       }
-
-      const hashedPassword = await bcrypt.hash(phone, 12);
-      await db.$transaction(async (tx) => {
-        const user = await tx.user.create({
-          data: { name, phone, password: hashedPassword, role: 'DOCTOR', isActive: true },
-        });
-        await tx.doctor.create({
-          data: {
-            userId: user.id,
-            name,
-            nameEn: r.nameEn || null,
-            specialty,
-            specialtyEn: r.specialtyEn || null,
-            phone,
-            phoneSecondary: r.phoneSecondary || null,
-            viber: r.viber || null,
-            experience: toInt(r.experience, 0),
-            price: toInt(r.price, 0),
-            isAvailable: toBool(r.isAvailable, true),
-            isActive: toBool(r.isActive, true),
-            qualifications: r.qualifications || null,
-            careerMm: r.careerMm || null,
-            careerEn: r.careerEn || null,
-            bio: r.bio || null,
-            clinicNote: r.clinicNote || null,
-            clinicNoteEn: r.clinicNoteEn || null,
-            location: r.location || null,
-            languages: splitList(r.languages ?? ''),
-            clinicTypesMm: splitList(r.clinicTypesMm ?? ''),
-            clinicTypesEn: splitList(r.clinicTypesEn ?? ''),
-            imageUrl: r.imageUrl || null,
-          },
-        });
-      });
       created.push(name);
     }
 

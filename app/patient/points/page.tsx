@@ -1,19 +1,25 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Coins, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Coins, ChevronLeft, ChevronRight, Loader2, Hourglass } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY = 'var(--color-primary)';
 
 interface PointsEntry {
   id: string;
-  type: 'EARNED' | 'REDEEMED';
+  type: 'EARNED' | 'REDEEMED' | 'ADJUSTED';
   points: number;
-  sourceType: 'CONSULTATION' | 'PROGRAM' | 'PRODUCT' | 'HOME_SERVICE' | 'PARTNER_SERVICE';
+  sourceType: 'CONSULTATION' | 'PROGRAM' | 'PRODUCT' | 'HOME_SERVICE' | 'PARTNER_SERVICE' | null;
   amountKs: number;
+  note: string | null;
   createdAt: string;
+  expiry: { expiresAt: string | null; expired: number; remaining: number } | null;
 }
+
+interface ExpiryInfo { value: number; unit: 'DAYS' | 'MONTHS'; expiredTotal: number; expiringSoon: { points: number; date: string | null } }
+
+const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
 const SOURCE_LABEL: Record<string, string> = {
   CONSULTATION: 'Consultation', PROGRAM: 'Program', PRODUCT: 'Product',
@@ -32,6 +38,7 @@ export default function PatientPointsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [expiry, setExpiry] = useState<ExpiryInfo | null>(null);
 
   const load = useCallback(async (p = page) => {
     const stored = localStorage.getItem('medihug_patient');
@@ -46,6 +53,7 @@ export default function PatientPointsPage() {
     setTotal(d.total ?? 0);
     setPage(d.page ?? 1);
     setTotalPages(d.totalPages ?? 1);
+    setExpiry(d.expiry ?? null);
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -84,6 +92,28 @@ export default function PatientPointsPage() {
         </div>
       </div>
 
+      {!loading && expiry && (
+        <div className="rounded-2xl px-4 py-3.5 flex items-start gap-3"
+          style={{ backgroundColor: expiry.expiringSoon.points > 0 ? '#fffbeb' : '#f9fafb', border: `1px solid ${expiry.expiringSoon.points > 0 ? '#fde68a' : '#f3f4f6'}` }}>
+          <Hourglass className="w-4.5 h-4.5 mt-0.5 shrink-0" style={{ color: expiry.expiringSoon.points > 0 ? '#d97706' : '#9ca3af' }} />
+          <div className="text-xs leading-relaxed" style={{ color: expiry.expiringSoon.points > 0 ? '#92400e' : '#6b7280' }}>
+            {expiry.expiringSoon.points > 0 && expiry.expiringSoon.date && (
+              <p className="font-bold text-sm">
+                {mm
+                  ? `Points ${expiry.expiringSoon.points.toLocaleString()} ခုသည် ${fmtDate(expiry.expiringSoon.date)} တွင် သက်တမ်းကုန်မည်`
+                  : `${expiry.expiringSoon.points.toLocaleString()} points expire on ${fmtDate(expiry.expiringSoon.date)}`}
+              </p>
+            )}
+            <p>
+              {mm
+                ? `ရရှိသော Points များသည် ရရှိသည့်နေ့မှ ${expiry.value} ${expiry.unit === 'DAYS' ? 'ရက်' : 'လ'} အတွင်း အသုံးပြုရမည်။ အရင်ရသော Points ကို အရင်သုံးပါမည်။`
+                : `Points must be used within ${expiry.value} ${expiry.unit === 'DAYS' ? 'day' : 'month'}${expiry.value === 1 ? '' : 's'} of earning them. Older points are used first.`}
+              {expiry.expiredTotal > 0 && (mm ? ` သက်တမ်းကုန်ပြီးသော Points စုစုပေါင်း ${expiry.expiredTotal.toLocaleString()} ခု။` : ` ${expiry.expiredTotal.toLocaleString()} points have expired so far.`)}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-150">
@@ -105,12 +135,21 @@ export default function PatientPointsPage() {
               ) : entries.map(e => (
                 <tr key={e.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-4 py-3.5">
-                    <p className="text-xs font-semibold text-gray-700">{SOURCE_LABEL[e.sourceType] ?? e.sourceType}</p>
+                    <p className="text-xs font-semibold text-gray-700">
+                      {e.sourceType ? (SOURCE_LABEL[e.sourceType] ?? e.sourceType) : (mm ? 'MediHug မှ ချိန်ညှိထားသည်' : 'Adjusted by MediHug')}
+                    </p>
+                    {!e.sourceType && e.note && <p className="text-[10px] text-gray-500">{e.note}</p>}
+                    {e.expiry && e.expiry.expired > 0 && e.expiry.expiresAt && (
+                      <p className="text-[10px] text-red-500">{mm ? `${fmtDate(e.expiry.expiresAt)} တွင် ${e.expiry.expired} ခု သက်တမ်းကုန်ခဲ့သည်` : `${e.expiry.expired} expired on ${fmtDate(e.expiry.expiresAt)}`}</p>
+                    )}
+                    {e.expiry && e.expiry.expired === 0 && e.expiry.remaining > 0 && e.expiry.expiresAt && (
+                      <p className="text-[10px] text-gray-400">{mm ? `${fmtDate(e.expiry.expiresAt)} တွင် သက်တမ်းကုန်မည်` : `Expires ${fmtDate(e.expiry.expiresAt)}`}</p>
+                    )}
                     <p className="text-[10px] text-gray-400">{new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                   </td>
-                  <td className="px-4 py-3.5 text-right text-sm text-gray-600">{e.amountKs.toLocaleString()} Ks</td>
-                  <td className="px-4 py-3.5 text-right text-sm font-bold" style={{ color: e.type === 'EARNED' ? '#16a34a' : '#ef4444' }}>
-                    {e.type === 'EARNED' ? '+' : '-'}{Math.abs(e.points).toLocaleString()}
+                  <td className="px-4 py-3.5 text-right text-sm text-gray-600">{e.amountKs > 0 ? `${e.amountKs.toLocaleString()} Ks` : '—'}</td>
+                  <td className="px-4 py-3.5 text-right text-sm font-bold" style={{ color: e.points > 0 ? '#16a34a' : '#ef4444' }}>
+                    {e.points > 0 ? '+' : '-'}{Math.abs(e.points).toLocaleString()}
                   </td>
                 </tr>
               ))}

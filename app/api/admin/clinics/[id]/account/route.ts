@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/adminAuth';
+import { grantRole, RoleAlreadyGrantedError, setRolePassword } from '@/lib/roleAccess';
 
 /* ── POST /api/admin/clinics/[id]/account — create or update the partner login for a clinic ── */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,12 +24,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       const data: Record<string, unknown> = { phone };
       if (typeof isActive === 'boolean') data.isActive = isActive;
-      if (password?.trim()) {
-        if (password.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
-        data.password = await bcrypt.hash(password, 12);
+      if (password?.trim() && password.length < 6) {
+        return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
       }
 
       const user = await db.user.update({ where: { id: clinic.ownerId }, data, select: { id: true, phone: true, isActive: true } });
+      // Resets only the Partner password — the same phone's other roles keep theirs.
+      if (password?.trim()) await setRolePassword(clinic.ownerId, 'PARTNER', password);
       return NextResponse.json({ owner: user, created: false });
     }
 
@@ -37,18 +38,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!password?.trim() || password.length < 6) {
       return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
     }
-    const existing = await db.user.findUnique({ where: { phone }, select: { id: true } });
-    if (existing) return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်သည် အခြားအကောင့်တွင် အသုံးပြုနေပြီးဖြစ်သည်။' }, { status: 409 });
-
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const user = await db.user.create({
-      data: { name: clinic.name, phone, password: hashedPassword, role: 'PARTNER', isActive: true },
-      select: { id: true, phone: true, isActive: true },
+    // A phone that already belongs to someone (patient, doctor...) gets a separate Partner
+    // password instead of being rejected.
+    let accountReused = false;
+    const { user } = await db.$transaction(async (tx) => {
+      const granted = await grantRole(tx, { name: clinic.name, phone, role: 'PARTNER', password });
+      accountReused = !granted.created;
+      await tx.clinic.update({ where: { id }, data: { ownerId: granted.id } });
+      const user = await tx.user.findUniqueOrThrow({ where: { id: granted.id }, select: { id: true, phone: true, isActive: true } });
+      return { user };
     });
-    await db.clinic.update({ where: { id }, data: { ownerId: user.id } });
 
-    return NextResponse.json({ owner: user, created: true }, { status: 201 });
+    return NextResponse.json({ owner: user, created: true, accountReused }, { status: 201 });
   } catch (e) {
+    if (e instanceof RoleAlreadyGrantedError) {
+      return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်ဖြင့် Partner account ရှိပြီးသား ဖြစ်သည်။' }, { status: 409 });
+    }
     console.error('POST /api/admin/clinics/[id]/account', e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
