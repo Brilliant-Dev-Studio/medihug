@@ -28,7 +28,7 @@ const PARTNER_REASON_LABEL: Record<string, { mm: string; en: string }> = {
  * /api/patient/vouchers/validate (read-only preview); the server always re-validates and
  * re-clamps at actual submission time regardless of what's shown here. */
 export default function VoucherRedeemBox({
-  mm, variant = 'voucher', sourceType, doctorId, programId, productIds, purchaseAmount, onChange,
+  mm, variant = 'voucher', sourceType, doctorId, programId, productIds, purchaseAmount, onChange, initialApplied,
 }: {
   mm: boolean;
   /** 'partner' takes only a partner's "MHQ-" referral code (typed or camera-scanned);
@@ -39,11 +39,13 @@ export default function VoucherRedeemBox({
   programId?: string;
   productIds?: string[];
   purchaseAmount: number;
-  onChange: (state: { voucherCode: string | null; discountAmount: number }) => void;
+  onChange: (state: { voucherCode: string | null; discountAmount: number; partnerName?: string }) => void;
+  /** A code already applied earlier (the box remounts when the patient steps back a page). */
+  initialApplied?: { code: string; discountAmount: number; partnerName?: string } | null;
 }) {
   const [code, setCode] = useState('');
   const [checking, setChecking] = useState(false);
-  const [applied, setApplied] = useState<{ code: string; discountAmount: number; partnerName?: string } | null>(null);
+  const [applied, setApplied] = useState<{ code: string; discountAmount: number; partnerName?: string } | null>(initialApplied ?? null);
   const [error, setError] = useState('');
   const [scanning, setScanning] = useState(false);
 
@@ -74,7 +76,7 @@ export default function VoucherRedeemBox({
         return;
       }
       setApplied({ code: trimmed.toUpperCase(), discountAmount: data.discountAmount, partnerName: data.partnerName });
-      onChange({ voucherCode: trimmed.toUpperCase(), discountAmount: data.discountAmount });
+      onChange({ voucherCode: trimmed.toUpperCase(), discountAmount: data.discountAmount, partnerName: data.partnerName });
     } catch {
       setError(mm ? 'စစ်ဆေး၍မရပါ၊ ပြန်စမ်းကြည့်ပါ' : 'Could not check this code — try again');
     } finally {

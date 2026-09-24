@@ -12,7 +12,7 @@ const PRIMARY = 'var(--color-primary)';
  * the UI reflecting it). Points appears only when the patient has a balance, Partner Code only
  * for doctor bookings; the tab chooser is skipped when just Voucher is left. */
 export default function DiscountBox({
-  mm, phone, purchaseAmount, sourceType, doctorId, programId, productIds, onChange,
+  mm, phone, purchaseAmount, sourceType, doctorId, programId, productIds, onChange, initial,
 }: {
   mm: boolean;
   phone: string;
@@ -21,11 +21,20 @@ export default function DiscountBox({
   doctorId?: string;
   programId?: string;
   productIds?: string[];
-  onChange: (state: { pointsToRedeem: number; voucherCode: string | null; discountAmount: number }) => void;
+  onChange: (state: { pointsToRedeem: number; voucherCode: string | null; discountAmount: number; partnerName?: string }) => void;
+  /** The discount already applied (the box remounts when the patient steps back a page). */
+  initial?: { pointsToRedeem: number; voucherCode: string | null; discountAmount: number; partnerName?: string };
 }) {
   const [pointsBalance, setPointsBalance] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [mode, setMode] = useState<'points' | 'voucher' | 'partner'>('voucher');
+  const [mode, setMode] = useState<'points' | 'voucher' | 'partner'>(
+    initial && initial.pointsToRedeem > 0 ? 'points'
+    : initial?.voucherCode?.toUpperCase().startsWith('MHQ-') ? 'partner'
+    : 'voucher',
+  );
+  const restoredVoucher = initial?.voucherCode && initial.discountAmount > 0
+    ? { code: initial.voucherCode, discountAmount: initial.discountAmount, partnerName: initial.partnerName }
+    : null;
 
   useEffect(() => {
     if (!phone) { setLoaded(true); return; }
@@ -53,7 +62,8 @@ export default function DiscountBox({
     return (
       <VoucherRedeemBox mm={mm} sourceType={sourceType} doctorId={doctorId} programId={programId} productIds={productIds}
         purchaseAmount={purchaseAmount}
-        onChange={state => onChange({ pointsToRedeem: 0, voucherCode: state.voucherCode, discountAmount: state.discountAmount })} />
+        initialApplied={mode === 'voucher' ? restoredVoucher : null}
+        onChange={state => onChange({ pointsToRedeem: 0, voucherCode: state.voucherCode, discountAmount: state.discountAmount, partnerName: state.partnerName })} />
     );
   }
 
@@ -79,13 +89,14 @@ export default function DiscountBox({
       </div>
 
       {mode === 'points' && (
-        <PointsRedeemBox mm={mm} phone={phone} purchaseAmount={purchaseAmount}
+        <PointsRedeemBox mm={mm} phone={phone} purchaseAmount={purchaseAmount} initialUseAll={!!initial && initial.pointsToRedeem > 0}
           onChange={state => onChange({ pointsToRedeem: state.pointsToRedeem, voucherCode: null, discountAmount: state.discountAmount })} />
       )}
       {(mode === 'voucher' || mode === 'partner') && (
         <VoucherRedeemBox key={mode} mm={mm} variant={mode} sourceType={sourceType} doctorId={doctorId} programId={programId} productIds={productIds}
           purchaseAmount={purchaseAmount}
-          onChange={state => onChange({ pointsToRedeem: 0, voucherCode: state.voucherCode, discountAmount: state.discountAmount })} />
+          initialApplied={restoredVoucher && (restoredVoucher.code.toUpperCase().startsWith('MHQ-') ? mode === 'partner' : mode === 'voucher') ? restoredVoucher : null}
+          onChange={state => onChange({ pointsToRedeem: 0, voucherCode: state.voucherCode, discountAmount: state.discountAmount, partnerName: state.partnerName })} />
       )}
     </div>
   );

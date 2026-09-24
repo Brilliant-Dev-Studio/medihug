@@ -2,6 +2,7 @@
 import { theme } from '../../../lib/theme';
 
 import { useState, useEffect, useRef } from 'react';
+import { dayKeyOf, loadBookedSlots, loadDoctorCache, loadScheduleDraft, offsetOfDayKey, saveBookedSlots, saveDoctorCache, saveScheduleDraft } from '@/lib/scheduleDraft';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -88,9 +89,22 @@ export default function DoctorDetailPage() {
 
   const [doctor,        setDoctor]        = useState<Doctor | null>(null);
   const [loading,       setLoading]       = useState(true);
+  const [restored,      setRestored]      = useState(false);
+  const doctorId = String(Array.isArray(id) ? id[0] : id ?? '');
   const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('doctor');
   const [tab,           setTab]           = useState<Tab>(searchParams.get('tab') === 'schedule' ? 'schedule' : 'profile');
   const [lightbox,      setLightbox]      = useState<number | null>(null);
+
+  // The tab lives in the URL (?tab=schedule) too — replacing, not pushing, so it doesn't add history
+  // entries. Otherwise Back from the booking screen returns to a URL that says nothing about the
+  // tab and opens on Profile instead of the slot picker.
+  const changeTab = (t: Tab) => {
+    setTab(t);
+    const p = new URLSearchParams(searchParams.toString());
+    if (t === 'schedule') p.set('tab', 'schedule'); else p.delete('tab');
+    const qs = p.toString();
+    router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+  };
   const [selectedDay,   setSelectedDay]   = useState(0);
   const [hasPickedDate, setHasPickedDate] = useState(false);
   const [scrollToSlots, setScrollToSlots] = useState(0);
@@ -109,25 +123,76 @@ export default function DoctorDetailPage() {
   const mobileBarRef = useRef<HTMLDivElement>(null);
   const [mobileBarH, setMobileBarH] = useState(160);
 
+  // Coming back to this page (Back from the booking screen, a refresh) restores what was picked and
+  // shows the doctor straight from cache — refetched quietly below — instead of a spinner and a
+  // blank selection.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (!doctorId) return;
+    const cached = loadDoctorCache<Doctor>(doctorId);
+    if (cached) { setDoctor(cached); setLoading(false); }
+    const draft = loadScheduleDraft(doctorId);
+    if (draft) {
+      const idx = draft.dayKey ? offsetOfDayKey(draft.dayKey) : null;
+      if (idx !== null && draft.hasPickedDate) {
+        setSelectedDay(idx); setHasPickedDate(true);
+        setSelectionMode(draft.selectionMode);
+        setSelectedSlot(draft.selectedSlot); setRangeStart(draft.rangeStart); setRangeEnd(draft.rangeEnd);
+        setTab('schedule');
+        if (searchParams.get('tab') !== 'schedule') {
+          const p = new URLSearchParams(searchParams.toString());
+          p.set('tab', 'schedule');
+          router.replace(`?${p.toString()}`, { scroll: false }); // keep the address bar in step with what's shown
+        }
+        setScrollToSlots(n => n + 1);
+      }
+    }
+    setRestored(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doctorId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  useEffect(() => {
+    if (!restored || !hasPickedDate) return;
+    saveScheduleDraft(doctorId, { dayKey: dayKeyOf(selectedDay), hasPickedDate, selectionMode, selectedSlot, rangeStart, rangeEnd });
+  }, [restored, doctorId, selectedDay, hasPickedDate, selectionMode, selectedSlot, rangeStart, rangeEnd]);
+
   useEffect(() => {
     if (!id) return;
     fetch(`/api/doctors/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(d => { setDoctor(d.doctor); setLoading(false); })
-      .catch(() => { setDoctor(null); setLoading(false); });
-  }, [id]);
+      .then(d => { setDoctor(d.doctor); setLoading(false); saveDoctorCache(doctorId, d.doctor); })
+      // A failed background refresh must not wipe a doctor we already have on screen.
+      .catch(() => { setDoctor(prev => prev); setLoading(false); });
+  }, [id, doctorId]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     const d = new Date(); d.setDate(d.getDate() + selectedDay);
+    const dayKey = dayKeyOf(selectedDay);
+    // Show the last known answer straight away (fresh for a minute), then confirm in the background.
+    const known = loadBookedSlots(doctorId, dayKey);
+    if (known) { setFullSlots(new Set(known)); setSlotsLoadedFor(selectedDay); }
     fetch(`/api/doctors/${id}/booked-slots?date=${d.toISOString()}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => { if (!cancelled) setFullSlots(new Set<string>(data.fullTimes ?? [])); })
-      .catch(() => { if (!cancelled) setFullSlots(new Set()); })
+      .then(data => {
+        if (cancelled) return;
+        const fullTimes: string[] = data.fullTimes ?? [];
+        saveBookedSlots(doctorId, dayKey, fullTimes);
+        const full = new Set<string>(fullTimes);
+        setFullSlots(full);
+        // A pick restored from earlier may have been taken since — don't leave it selected.
+        setSelectedSlot(prev => (prev && full.has(prev) ? null : prev));
+        setRangeStart(prev => (prev && full.has(prev) ? null : prev));
+        setRangeEnd(prev => (prev && full.has(prev) ? null : prev));
+      })
+      .catch(() => { if (!cancelled && !known) setFullSlots(new Set()); })
       .finally(() => { if (!cancelled) setSlotsLoadedFor(selectedDay); });
     return () => { cancelled = true; };
-  }, [id, selectedDay]);
+  }, [id, doctorId, selectedDay]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Runs after the slots section has rendered for the picked date, so the ref is always set.
   useEffect(() => {
@@ -218,7 +283,7 @@ export default function DoctorDetailPage() {
   function goToBooking() {
     if (!doctor) return;
     const hasSlot = selectionMode === 'single' ? selectedSlot !== null : (rangeStart !== null && rangeEnd !== null);
-    if (!hasSlot) { setTab('schedule'); return; }
+    if (!hasSlot) { changeTab('schedule'); return; }
     const d_s = new Date(today); d_s.setDate(today.getDate() + selectedDay);
     const dl  = `${DAY_EN[d_s.getDay()]} ${d_s.getDate()} ${MONTH_EN[d_s.getMonth()]}`;
     const sorted = selectionMode === 'range' && rangeStart && rangeEnd
@@ -690,7 +755,7 @@ export default function DoctorDetailPage() {
             </div>
             <div className="flex gap-2 rounded-2xl p-1" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
               {(['profile', 'schedule'] as Tab[]).map(t => (
-                <button key={t} onClick={() => setTab(t)}
+                <button key={t} onClick={() => changeTab(t)}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
                   style={{ backgroundColor: tab === t ? '#fff' : 'transparent', color: tab === t ? PRIMARY : 'rgba(255,255,255,0.7)' }}>
                   {t === 'profile' ? (mm ? 'ကိုယ်ရေးအကျဉ်း' : 'Profile') : (mm ? 'အချိန်ဇယား' : 'Schedule')}
@@ -804,7 +869,7 @@ export default function DoctorDetailPage() {
           </div>
           <div className="flex gap-2 rounded-2xl p-1" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
             {(['profile', 'schedule'] as Tab[]).map(t => (
-              <button key={t} onClick={() => setTab(t)}
+              <button key={t} onClick={() => changeTab(t)}
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
                 style={{ backgroundColor: tab === t ? '#fff' : 'transparent', color: tab === t ? PRIMARY : 'rgba(255,255,255,0.7)' }}>
                 {t === 'profile' ? (mm ? 'ကိုယ်ရေးအကျဉ်း' : 'Profile') : (mm ? 'အချိန်ဇယား' : 'Schedule')}

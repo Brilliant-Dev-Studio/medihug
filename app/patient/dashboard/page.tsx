@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import {
   Search, Stethoscope, Calendar, FileText, Pill,
   Heart, Activity, AlertCircle, Brain, Baby, Eye,
-  ChevronRight, ChevronUp, Star, Clock, LayoutGrid, MapPin,
+  ChevronRight, ChevronUp, Star, Clock, LayoutGrid,
   Bone, Droplets, Microscope, Syringe, Wind, Thermometer, HeartPulse, Coins,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
@@ -29,65 +29,6 @@ import PrescriptionViewerModal from '@/components/PrescriptionViewerModal';
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 const ACCENT    = 'var(--color-accent)';
-
-type WeatherData = { temp: number; code: number; city: string };
-
-function weatherIcon(code: number): string {
-  if (code === 0)  return '☀️';
-  if (code <= 3)   return '⛅';
-  if (code <= 48)  return '🌫️';
-  if (code <= 55)  return '🌦️';
-  if (code <= 65)  return '🌧️';
-  if (code <= 75)  return '❄️';
-  if (code <= 82)  return '🌨️';
-  return '⛈️';
-}
-
-function WeatherWidget() {
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-      const { latitude: lat, longitude: lon } = coords;
-      try {
-        const [wRes, gRes] = await Promise.all([
-          fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`),
-          fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
-        ]);
-        const wJson = await wRes.json();
-        const gJson = await gRes.json();
-        setWeather({
-          temp: Math.round(wJson.current.temperature_2m),
-          code: wJson.current.weather_code,
-          city: gJson.address?.city || gJson.address?.town || gJson.address?.state || '',
-        });
-      } catch {}
-    });
-  }, []);
-
-  if (!weather) return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="w-16 h-6 rounded-lg bg-white/20 animate-pulse" />
-      <div className="w-20 h-3 rounded bg-white/15 animate-pulse" />
-    </div>
-  );
-
-  return (
-    <div className="flex flex-col items-end gap-0.5">
-      <div className="flex items-center gap-1.5">
-        <span className="text-2xl leading-none">{weatherIcon(weather.code)}</span>
-        <span className="text-2xl font-bold text-white leading-none">{weather.temp}°C</span>
-      </div>
-      {weather.city && (
-        <div className="flex items-center gap-0.5">
-          <MapPin className="w-3 h-3 text-white/50" />
-          <span className="text-xs text-white/50">{weather.city}</span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ── Dashboard hero search box with dropdown autosuggest ── */
 function DashboardDoctorSearchBox({ doctors, mm }: { doctors: DoctorItem[]; mm: boolean }) {
@@ -323,7 +264,6 @@ export default function PatientDashboard() {
               <p className="text-sm text-white/60 lg:text-base">{mm ? 'မင်္ဂလာပါ 👋' : 'Hello 👋'}</p>
               <h1 className="text-xl font-bold text-white lg:text-3xl lg:mt-1">{patientName || 'Patient User'}</h1>
             </div>
-            <WeatherWidget />
           </div>
           <DashboardDoctorSearchBox doctors={doctors} mm={mm} />
         </div>

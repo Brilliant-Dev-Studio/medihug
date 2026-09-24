@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import {
   CheckCircle2, ChevronRight, Upload, X, FileText,
@@ -331,37 +331,58 @@ export interface IntakeData {
   medicalFiles: { url: string; type: 'record' | 'film'; name: string }[];
 }
 
+/** Everything the patient has typed so far (files aside) — what gets kept if they step back. */
+export type IntakeDraft = Omit<IntakeData, 'medicalFiles'>;
+export type MedFile = { file: File; url: string; type: 'record' | 'film' };
+
 /* ─── main component ─── */
-export default function IntakeForm({ mm, onDone }: { mm: boolean; onDone: (data: IntakeData) => void }) {
+export default function IntakeForm({ mm, onDone, initial, initialFiles, onDraftChange }: {
+  mm: boolean;
+  onDone: (data: IntakeData) => void;
+  /** Previously entered values to start from (the form remounts when the patient steps back). */
+  initial?: IntakeDraft | null;
+  initialFiles?: MedFile[];
+  /** Called on every change so the parent can keep the draft. Pass a stable (useCallback) function. */
+  onDraftChange?: (draft: IntakeDraft, files: MedFile[]) => void;
+}) {
   /* basic fields */
-  const [name,         setName]         = useState('');
-  const [phone,        setPhone]        = useState('');
-  const [age,          setAge]          = useState('');
-  const [gender,       setGender]       = useState('');
-  const [mainComplaint,setMainComplaint]= useState('');
-  const [symptomDetail,setSymptomDetail]= useState('');
-  const [pregnancy,    setPregnancy]    = useState('');
-  const [medHistory,   setMedHistory]   = useState<string[]>([]);
-  const [hadSurgery,   setHadSurgery]   = useState('');
-  const [surgeryDetail,setSurgeryDetail]= useState('');
-  const [drugAllergy,  setDrugAllergy]  = useState('');
-  const [allergyDetail,setAllergyDetail]= useState('');
-  const [currentMeds,  setCurrentMeds]  = useState<string[]>([]);
-  const [category,     setCategory]     = useState('');
-  const [medFiles,     setMedFiles]     = useState<{ file: File; url: string; type: 'record' | 'film' }[]>([]);
+  const [name,         setName]         = useState(initial?.name ?? '');
+  const [phone,        setPhone]        = useState(initial?.phone ?? '');
+  const [age,          setAge]          = useState(initial?.age ?? '');
+  const [gender,       setGender]       = useState(initial?.gender ?? '');
+  const [mainComplaint,setMainComplaint]= useState(initial?.mainComplaint ?? '');
+  const [symptomDetail,setSymptomDetail]= useState(initial?.symptomDetail ?? '');
+  const [pregnancy,    setPregnancy]    = useState(initial?.pregnancy ?? '');
+  const [medHistory,   setMedHistory]   = useState<string[]>(initial?.medHistory ?? []);
+  const [hadSurgery,   setHadSurgery]   = useState(initial?.hadSurgery ?? '');
+  const [surgeryDetail,setSurgeryDetail]= useState(initial?.surgeryDetail ?? '');
+  const [drugAllergy,  setDrugAllergy]  = useState(initial?.drugAllergy ?? '');
+  const [allergyDetail,setAllergyDetail]= useState(initial?.allergyDetail ?? '');
+  const [currentMeds,  setCurrentMeds]  = useState<string[]>(initial?.currentMeds ?? []);
+  const [category,     setCategory]     = useState(initial?.category ?? '');
+  const [medFiles,     setMedFiles]     = useState<MedFile[]>(initialFiles ?? []);
   const recordRef = useRef<HTMLInputElement>(null);
   const filmRef   = useRef<HTMLInputElement>(null);
 
   /* dynamic fields - single value */
-  const [dynSingle, setDynSingle] = useState<Record<string, string>>({});
+  const [dynSingle, setDynSingle] = useState<Record<string, string>>(initial?.dynSingle ?? {});
   /* dynamic fields - multi value */
-  const [dynMulti,  setDynMulti]  = useState<Record<string, string[]>>({});
+  const [dynMulti,  setDynMulti]  = useState<Record<string, string[]>>(initial?.dynMulti ?? {});
 
   const setSingle = (k: string, v: string) => setDynSingle(p => ({ ...p, [k]: v }));
   const setMulti  = (k: string, v: string[]) => setDynMulti(p => ({ ...p, [k]: v }));
 
   const [submitError, setSubmitError] = useState('');
   const [uploading,   setUploading]   = useState(false);
+
+  useEffect(() => {
+    onDraftChange?.({
+      name, phone, age, gender, mainComplaint, symptomDetail, pregnancy,
+      medHistory, hadSurgery, surgeryDetail, drugAllergy, allergyDetail,
+      currentMeds, category, dynSingle, dynMulti,
+    }, medFiles);
+  }, [name, phone, age, gender, mainComplaint, symptomDetail, pregnancy, medHistory, hadSurgery,
+      surgeryDetail, drugAllergy, allergyDetail, currentMeds, category, dynSingle, dynMulti, medFiles, onDraftChange]);
 
   async function handleSubmit() {
     if (!name.trim() || !phone.trim()) {

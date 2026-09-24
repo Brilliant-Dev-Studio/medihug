@@ -1,7 +1,7 @@
 'use client';
 import { theme } from '../../lib/theme';
 
-import { useState, useRef, useEffect, Suspense } from 'react';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -10,7 +10,9 @@ import {
   CreditCard, Smartphone, Building2, CalendarClock, RotateCcw, Tag,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
-import IntakeForm, { IntakeData } from './IntakeForm';
+import IntakeForm, { IntakeData, type IntakeDraft, type MedFile } from './IntakeForm';
+import { clearDraft, draftKey, loadDraft, saveDraft } from '@/lib/bookingDraft';
+import { clearScheduleDraft } from '@/lib/scheduleDraft';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
 import DiscountBox from '@/components/DiscountBox';
@@ -73,10 +75,14 @@ function BookingContent() {
 
   /* ── local state ── */
   const [payMethod,  setPayMethod]  = useState<string>('');
-  const [discount, setDiscount] = useState<{ pointsToRedeem: number; voucherCode: string | null; discountAmount: number }>({ pointsToRedeem: 0, voucherCode: null, discountAmount: 0 });
+  const [discount, setDiscount] = useState<{ pointsToRedeem: number; voucherCode: string | null; discountAmount: number; partnerName?: string }>({ pointsToRedeem: 0, voucherCode: null, discountAmount: 0 });
   const [receipt,    setReceipt]    = useState<{ file: File; url: string } | null>(null);
   const [dragOver,   setDragOver]   = useState(false);
-  const [step, setStep] = useState<FormStep | 'intake' | 'done'>('review');
+  const [done, setDone] = useState(false);
+  const [restored, setRestored] = useState(false);
+  const [intakeDraft, setIntakeDraft] = useState<IntakeDraft | null>(null);
+  const [medFiles, setMedFiles] = useState<MedFile[]>([]);
+  const key = draftKey({ doctorId, dateIso, start: slotStart, end: slotEnd });
   const [note,       setNote]       = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitErr,  setSubmitErr]  = useState<{ message: string; code?: string } | null>(null);
@@ -92,6 +98,60 @@ function BookingContent() {
   const [cbDeeplink, setCbDeeplink] = useState<string | null>(null);
   const [cbAppMissing, setCbAppMissing] = useState(false);
   const [cbProof, setCbProof] = useState<{ orderId: string; generateRefOrder: string } | null>(null);
+
+  /* ── Steps live in the URL (?step=payment …) so the browser's Back/Forward buttons move between
+   * steps instead of leaving the booking, and everything picked so far is kept in a draft. A step
+   * whose earlier requirements aren't met (e.g. a refresh dropped the receipt file) falls back to
+   * the step that collects it. */
+  const payIsCb = payMethod === 'cb';
+  const intakeReady = payIsCb ? !!cbProof : (!!payMethod && !!receipt);
+  const urlStep = params.get('step');
+  const requested = urlStep === 'payment' || urlStep === 'receipt' || urlStep === 'intake' ? urlStep : 'review';
+  const step: FormStep | 'intake' | 'done' =
+    done ? 'done'
+    : requested === 'intake' ? (intakeReady ? 'intake' : (payMethod && !payIsCb ? 'receipt' : 'payment'))
+    : requested === 'receipt' ? (payMethod && !payIsCb ? 'receipt' : 'payment')
+    : requested;
+
+  function goStep(next: FormStep | 'intake' | 'done', mode: 'push' | 'replace' = 'push') {
+    const p = new URLSearchParams(params.toString());
+    if (next === 'review') p.delete('step'); else p.set('step', next);
+    const url = `?${p.toString()}`;
+    if (mode === 'replace') router.replace(url, { scroll: false }); else router.push(url, { scroll: false });
+  }
+
+  // Right after a saved draft is restored, if the URL asks for a step the patient can't be on yet
+  // (e.g. a refresh dropped the receipt file), make the address bar say where they actually are —
+  // otherwise re-attaching the file would jump them ahead on its own. One-shot on purpose: during
+  // normal navigation the URL changes a render before the state does, and reconciling then would
+  // fight the click.
+  const reconciledRef = useRef(false);
+  useEffect(() => {
+    if (!restored || reconciledRef.current) return;
+    reconciledRef.current = true;
+    if (step !== 'done' && requested !== step) goStep(step, 'replace');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restored, step, requested]);
+
+  // Bring back what this patient had already picked for this doctor + time slot.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const d = loadDraft(key);
+    if (d) {
+      setPayMethod(d.payMethod); setDiscount(d.discount); setNote(d.note); setCbProof(d.cbProof);
+      setReceipt(d.receipt); setIntakeDraft(d.intake); setMedFiles(d.medFiles);
+    }
+    setRestored(true);
+  }, [key]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // …and keep it up to date (skipped until restored, so an empty form never overwrites a saved one).
+  useEffect(() => {
+    if (!restored || done) return;
+    saveDraft(key, { payMethod, discount, note, cbProof, intake: intakeDraft, receipt, medFiles });
+  }, [restored, done, key, payMethod, discount, note, cbProof, intakeDraft, receipt, medFiles]);
+
+  const handleIntakeDraft = useCallback((d: IntakeDraft, files: MedFile[]) => { setIntakeDraft(d); setMedFiles(files); }, []);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollAttempts = useRef(0);
 
@@ -111,7 +171,7 @@ function BookingContent() {
         pushLog('GET /api/payments/cbpay/pending (poll)', { attempt: pollAttempts.current, status: res.status, ok: res.ok, data });
         if (res.ok && data.transactionStatus === 'S') {
           setCbPhase('idle');
-          setStep('intake');
+          goStep('intake');
           return;
         }
         if (res.ok && (data.transactionStatus === 'F' || data.transactionStatus === 'E')) {
@@ -177,14 +237,11 @@ function BookingContent() {
     if (!payMethod) return;
     if (payMethod === 'cb') { startCbPayment(); return; }
     if (!receipt) return;
-    setStep('intake');
+    goStep('intake');
   }
 
-  function handleBack() {
-    if (step === 'payment') setStep('review');
-    else if (step === 'receipt') setStep('payment');
-    else router.back();
-  }
+  // Steps are history entries, so Back returns to the previous step (or leaves the booking from the first).
+  function handleBack() { router.back(); }
 
   const [lastIntake, setLastIntake] = useState<IntakeData | null>(null);
 
@@ -223,13 +280,19 @@ function BookingContent() {
       }
       localStorage.setItem('medihug_patient', JSON.stringify({ name: intake.name, phone: intake.phone }));
       setSubmitting(false);
-      setStep('done');
+      setDone(true);
+      clearDraft(key);
+      clearScheduleDraft(doctorId);
+      goStep('done', 'replace');
     } catch (err) {
       pushLog('handleIntakeDone error', { message: err instanceof Error ? err.message : String(err) });
       setSubmitErr({ message: err instanceof Error ? err.message : (mm ? 'ဆာဗာအမှား' : 'Server error') });
       setSubmitting(false);
     }
   }
+
+  // Nothing renders until the saved draft (if any) is back, so the forms start from it.
+  if (!restored) return null;
 
   /* ── Intake form screen ── */
   if (step === 'intake') {
@@ -282,7 +345,7 @@ function BookingContent() {
               </div>
             </div>
           )}
-          <IntakeForm mm={mm} onDone={handleIntakeDone} />
+          <IntakeForm mm={mm} onDone={handleIntakeDone} initial={intakeDraft} initialFiles={medFiles} onDraftChange={handleIntakeDraft} />
           {submitting && (
             <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
               <div className="bg-white rounded-2xl px-6 py-4 text-sm font-semibold" style={{ color: PRIMARY }}>
@@ -396,11 +459,11 @@ function BookingContent() {
 
           {/* Action bar */}
           <div className="mt-auto px-6 pb-6">
-            {step === 'review' && <ReviewActionBar mm={mm} onContinue={() => setStep('payment')} />}
+            {step === 'review' && <ReviewActionBar mm={mm} onContinue={() => goStep('payment')} />}
             {step === 'payment' && (
               <PaymentActionBar mm={mm} payMethod={payMethod} cbPhase={cbPhase} cbDeeplink={cbDeeplink}
                 cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
-                onContinue={() => setStep('receipt')} onPayCb={handleSubmit} />
+                onContinue={() => goStep('receipt')} onPayCb={handleSubmit} />
             )}
             {step === 'receipt' && <ReceiptActionBar mm={mm} receipt={receipt} onSubmit={handleSubmit} />}
           </div>
@@ -464,11 +527,11 @@ function BookingContent() {
           className="fixed bottom-16 left-0 right-0 px-4 pt-3 pb-4 border-t border-gray-100 z-30"
           style={{ backgroundColor: '#fff', boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}
         >
-          {step === 'review' && <ReviewActionBar mm={mm} onContinue={() => setStep('payment')} />}
+          {step === 'review' && <ReviewActionBar mm={mm} onContinue={() => goStep('payment')} />}
           {step === 'payment' && (
             <PaymentActionBar mm={mm} payMethod={payMethod} cbPhase={cbPhase} cbDeeplink={cbDeeplink}
               cbAppMissing={cbAppMissing} onRetryDeeplink={retryDeeplink}
-              onContinue={() => setStep('receipt')} onPayCb={handleSubmit} />
+              onContinue={() => goStep('receipt')} onPayCb={handleSubmit} />
           )}
           {step === 'receipt' && <ReceiptActionBar mm={mm} receipt={receipt} onSubmit={handleSubmit} />}
         </div>
@@ -594,8 +657,8 @@ function PaymentMethodCard({ mm, payMethod, setPayMethod, fee, cbDeeplink, cbApp
   fee: string;
   cbDeeplink: string | null; cbAppMissing: boolean; onRetryDeeplink: () => void;
   purchaseAmount: number;
-  discount: { pointsToRedeem: number; voucherCode: string | null; discountAmount: number };
-  onDiscountChange: (state: { pointsToRedeem: number; voucherCode: string | null; discountAmount: number }) => void;
+  discount: { pointsToRedeem: number; voucherCode: string | null; discountAmount: number; partnerName?: string };
+  onDiscountChange: (state: { pointsToRedeem: number; voucherCode: string | null; discountAmount: number; partnerName?: string }) => void;
   doctorId: string;
 }) {
   const patientPhone = getStoredPatientPhone();
@@ -637,7 +700,7 @@ function PaymentMethodCard({ mm, payMethod, setPayMethod, fee, cbDeeplink, cbApp
         </div>
       </div>
 
-      <DiscountBox mm={mm} phone={patientPhone} purchaseAmount={purchaseAmount} sourceType="CONSULTATION" doctorId={doctorId} onChange={onDiscountChange} />
+      <DiscountBox mm={mm} phone={patientPhone} purchaseAmount={purchaseAmount} sourceType="CONSULTATION" doctorId={doctorId} initial={discount} onChange={onDiscountChange} />
 
       <PaymentMethodPicker
         mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}

@@ -11,17 +11,19 @@ const PRIMARY = 'var(--color-primary)';
  * {pointsToRedeem, discountAmount} via onChange to display a live total and send with the
  * purchase — the server always re-validates and re-clamps regardless of what's shown here. */
 export default function PointsRedeemBox({
-  mm, phone, purchaseAmount, onChange,
+  mm, phone, purchaseAmount, onChange, initialUseAll = false,
 }: {
   mm: boolean;
   phone: string;
   purchaseAmount: number;
   onChange: (state: { pointsToRedeem: number; discountAmount: number }) => void;
+  /** Start with "use points" already on (the box remounts when the patient steps back a page). */
+  initialUseAll?: boolean;
 }) {
   const [balance, setBalance] = useState(0);
   const [kyatPerPointRedeem, setKyatPerPointRedeem] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [useAll, setUseAll] = useState(false);
+  const [useAll, setUseAll] = useState(initialUseAll);
 
   useEffect(() => {
     if (!phone) { setLoaded(true); return; }
@@ -36,12 +38,15 @@ export default function PointsRedeemBox({
   }, [phone]);
 
   useEffect(() => {
+    // Until the balance has loaded there's nothing to compute — resetting now would wipe an
+    // already-applied discount every time this box remounts.
+    if (!loaded) return;
     if (!useAll || balance <= 0 || kyatPerPointRedeem <= 0) { onChange({ pointsToRedeem: 0, discountAmount: 0 }); return; }
     const maxPointsForPurchase = Math.floor(purchaseAmount / kyatPerPointRedeem);
     const pointsToRedeem = Math.min(balance, maxPointsForPurchase);
     onChange({ pointsToRedeem, discountAmount: pointsToRedeem * kyatPerPointRedeem });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useAll, balance, kyatPerPointRedeem, purchaseAmount]);
+  }, [loaded, useAll, balance, kyatPerPointRedeem, purchaseAmount]);
 
   if (!loaded || balance <= 0) return null;
 
