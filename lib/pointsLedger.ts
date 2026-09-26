@@ -124,6 +124,8 @@ export async function redeemPoints(
   input: RedeemPointsInput,
   maxDiscountKs: number,
 ): Promise<{ pointsRedeemed: number; discountAmount: number }> {
+  // Points can only be spent on online doctor appointments (earning them elsewhere is unchanged).
+  if (input.sourceType !== 'CONSULTATION') return { pointsRedeemed: 0, discountAmount: 0 };
   if (input.pointsToRedeem <= 0 || maxDiscountKs <= 0) return { pointsRedeemed: 0, discountAmount: 0 };
 
   const settings = await getPointsSettings();

@@ -9,6 +9,7 @@ import {
   SlidersHorizontal, BriefcaseMedical, Banknote, RotateCcw, ListFilter, ChevronDown, Check,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
+import CategoryPartners from '@/components/CategoryPartners';
 
 const PRIMARY = '#0d2b6e';
 
@@ -578,6 +579,7 @@ function DoctorsByCategory({ categoryId, onBack }: { categoryId: string; onBack:
                 {doctors.map(d => <DoctorCard key={d.id} d={d} />)}
               </div>
             )}
+            {!loading && <CategoryPartners categoryId={categoryId} />}
           </div>
 
           {/* Desktop filter sidebar */}

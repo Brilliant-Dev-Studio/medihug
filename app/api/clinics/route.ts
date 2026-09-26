@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     const limit  = parseInt(searchParams.get('limit') ?? '10');
     const skip   = parseInt(searchParams.get('skip')  ?? '0');
     const type   = searchParams.get('type')   ?? '';
+    const categoryId = searchParams.get('categoryId') ?? '';
     const search = searchParams.get('search') ?? '';
 
     const international = searchParams.get('international') ?? '';
@@ -21,13 +22,22 @@ export async function GET(req: NextRequest) {
       { type:   { contains: search, mode: 'insensitive' } },
     ];
 
-    const clinics = await db.clinic.findMany({
-      where,
-      include: { _count: { select: { doctors: true } } },
-      orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
-      skip,
-      take: limit,
-    });
+    // Scoped to a landing-page category: only partners tagged onto it, in the order they were tagged.
+    const clinics = categoryId
+      ? await db.categoryClinic.findMany({
+          where: { categoryId, clinic: where },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: { clinic: { include: { _count: { select: { doctors: true } } } } },
+          skip,
+          take: limit,
+        }).then(links => links.map(l => l.clinic))
+      : await db.clinic.findMany({
+          where,
+          include: { _count: { select: { doctors: true } } },
+          orderBy: [{ rating: 'desc' }, { createdAt: 'desc' }],
+          skip,
+          take: limit,
+        });
 
     return NextResponse.json({ clinics });
   } catch (e) {

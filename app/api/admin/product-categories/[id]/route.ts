@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   try {
     const { id }        = await params;
-    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, order, showAllDoctors } = await req.json();
+    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, clinicIds, order, showAllDoctors } = await req.json();
     if (name !== undefined && !name.trim()) {
       return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
     }
@@ -29,6 +29,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         await tx.doctorCategory.deleteMany({ where: { categoryId: id } });
         if (doctorIds.length > 0) {
           await tx.doctorCategory.createMany({ data: doctorIds.map((doctorId: string) => ({ categoryId: id, doctorId })) });
+        }
+      }
+      if (Array.isArray(clinicIds)) {
+        await tx.categoryClinic.deleteMany({ where: { categoryId: id } });
+        if (clinicIds.length > 0) {
+          await tx.categoryClinic.createMany({ data: [...new Set<string>(clinicIds)].map(clinicId => ({ categoryId: id, clinicId })) });
         }
       }
       if (Array.isArray(programIds)) {

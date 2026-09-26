@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, HeartPulse } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
+import CategoryPartners from '@/components/CategoryPartners';
 
 const PRIMARY = '#0d2b6e';
 const ACCENT = '#2ab5ad';
@@ -142,6 +143,7 @@ function ProgramsListPageInner() {
             })}
           </div>
         )}
+        {pcat && <CategoryPartners categoryId={pcat} />}
       </div>
     </main>
   );

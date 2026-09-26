@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const [categories, total] = await Promise.all([
       db.productCategory.findMany({
         where, orderBy: [{ order: 'asc' }, { name: 'asc' }], skip, take: limit,
-        include: { doctors: { select: { doctorId: true } }, programs: { select: { programId: true } } },
+        include: { doctors: { select: { doctorId: true } }, programs: { select: { programId: true } }, clinics: { select: { clinicId: true } } },
       }),
       db.productCategory.count({ where }),
     ]);
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, order, showAllDoctors } = await req.json();
+    const { name, nameEn, descriptionMm, descriptionEn, iconUrl, bgImageUrl, doctorIds, programIds, clinicIds, order, showAllDoctors } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
     const existing = await db.productCategory.findUnique({ where: { name: name.trim() } });
     if (existing) return NextResponse.json({ error: 'Category already exists.' }, { status: 409 });
@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
           : undefined,
         programs: Array.isArray(programIds) && programIds.length > 0
           ? { create: programIds.map((programId: string) => ({ programId })) }
+          : undefined,
+        clinics: Array.isArray(clinicIds) && clinicIds.length > 0
+          ? { create: [...new Set<string>(clinicIds)].map(clinicId => ({ clinicId })) }
           : undefined,
       },
     });

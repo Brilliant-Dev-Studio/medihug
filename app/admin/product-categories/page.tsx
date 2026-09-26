@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search, Stethoscope, ArrowUp, ArrowDown, HeartPulse } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, Layers, ChevronLeft, ChevronRight, Search, Stethoscope, ArrowUp, ArrowDown, HeartPulse, Building2 } from 'lucide-react';
 import ImageUploadSlot from '@/components/admin/ImageUploadSlot';
 
 const PRIMARY = '#2ab5ad';
@@ -14,9 +14,11 @@ interface Category {
   showAllDoctors?: boolean;
   doctors?: { doctorId: string }[];
   programs?: { programId: string }[];
+  clinics?: { clinicId: string }[];
 }
 interface DoctorOption { id: string; name: string; nameEn: string | null; specialty: string; imageUrl: string | null; }
 interface ProgramOption { id: string; titleMm: string; titleEn: string | null; imageUrl: string; }
+interface ClinicOption { id: string; name: string; nameEn: string | null; type: string; imageUrl: string | null; }
 
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
@@ -92,6 +94,56 @@ function ProgramChecklist({ programOptions, selected, onToggle }: {
   );
 }
 
+function PartnerChecklist({ clinicOptions, selected, onToggle }: {
+  clinicOptions: ClinicOption[]; selected: string[]; onToggle: (id: string) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? clinicOptions.filter(c => `${c.name} ${c.nameEn ?? ''} ${c.type}`.toLowerCase().includes(q))
+    : clinicOptions;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[11px] font-semibold text-gray-500">
+        Tagged Partners (optional — clinics, hospitals, labs… shown inside this category on the website)
+        {selected.length > 0 && <span className="ml-1.5 text-teal-600">· {selected.length} selected</span>}
+      </p>
+      {clinicOptions.length === 0 ? (
+        <p className="text-xs text-gray-400">No partners available.</p>
+      ) : (
+        <>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search partners..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-xs outline-none focus:border-teal-400"
+            />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto border border-gray-100 rounded-xl p-2">
+            {visible.length === 0 && <p className="text-xs text-gray-400 px-2 py-1.5 sm:col-span-2">No partners match.</p>}
+            {visible.map(c => (
+              <label key={c.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" checked={selected.includes(c.id)} onChange={() => onToggle(c.id)} className="accent-teal-500 shrink-0" />
+                <div className="w-6 h-6 rounded-full overflow-hidden shrink-0 border border-gray-100 bg-gray-50 flex items-center justify-center">
+                  {c.imageUrl ? (
+                    <Image src={c.imageUrl} alt={c.name} width={24} height={24} className="object-cover w-full h-full" />
+                  ) : (
+                    <Building2 className="w-3 h-3 text-gray-300" />
+                  )}
+                </div>
+                <span className="text-xs text-gray-700 truncate">{c.nameEn ?? c.name}</span>
+                <span className="text-[10px] text-gray-400 shrink-0">{c.type}</span>
+              </label>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function ProductCategoriesPage() {
   const [categories,   setCategories]   = useState<Category[]>([]);
   const [loading,      setLoading]      = useState(true);
@@ -110,6 +162,7 @@ export default function ProductCategoriesPage() {
   const [newBgUrl,    setNewBgUrl]    = useState<string | null>(null);
   const [newDoctorIds, setNewDoctorIds] = useState<string[]>([]);
   const [newProgramIds, setNewProgramIds] = useState<string[]>([]);
+  const [newClinicIds, setNewClinicIds] = useState<string[]>([]);
   const [newShowAll, setNewShowAll] = useState(false);
   const [createError, setCreateError] = useState('');
   const [savingNew,   setSavingNew]   = useState(false);
@@ -123,10 +176,12 @@ export default function ProductCategoriesPage() {
   const [editBgUrl,   setEditBgUrl]   = useState<string | null>(null);
   const [editDoctorIds, setEditDoctorIds] = useState<string[]>([]);
   const [editProgramIds, setEditProgramIds] = useState<string[]>([]);
+  const [editClinicIds, setEditClinicIds] = useState<string[]>([]);
   const [editShowAll, setEditShowAll] = useState(false);
 
   const [doctorOptions, setDoctorOptions] = useState<DoctorOption[]>([]);
   const [programOptions, setProgramOptions] = useState<ProgramOption[]>([]);
+  const [clinicOptions, setClinicOptions] = useState<ClinicOption[]>([]);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
@@ -140,6 +195,10 @@ export default function ProductCategoriesPage() {
     fetch('/api/admin/healthcare-programs')
       .then(r => r.json())
       .then(d => setProgramOptions(d.programs ?? []))
+      .catch(() => {});
+    fetch('/api/admin/clinics?pageSize=500&isActive=true&isPartner=true&international=false')
+      .then(r => r.json())
+      .then(d => setClinicOptions(d.clinics ?? []))
       .catch(() => {});
   }, []);
 
@@ -172,12 +231,12 @@ export default function ProductCategoriesPage() {
       body: JSON.stringify({
         name: newName.trim(), nameEn: newNameEn.trim(),
         descriptionMm: newDescMm.trim(), descriptionEn: newDescEn.trim(),
-        iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds, programIds: newProgramIds, showAllDoctors: newShowAll, order: categories.length,
+        iconUrl: newIconUrl, bgImageUrl: newBgUrl, doctorIds: newDoctorIds, programIds: newProgramIds, clinicIds: newClinicIds, showAllDoctors: newShowAll, order: categories.length,
       }),
     });
     const data = await res.json();
     if (!res.ok) { setCreateError(data.error); setSavingNew(false); return; }
-    setNewName(''); setNewNameEn(''); setNewDescMm(''); setNewDescEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setNewProgramIds([]); setNewShowAll(false); setCreating(false); setSavingNew(false);
+    setNewName(''); setNewNameEn(''); setNewDescMm(''); setNewDescEn(''); setNewIconUrl(null); setNewBgUrl(null); setNewDoctorIds([]); setNewProgramIds([]); setNewClinicIds([]); setNewShowAll(false); setCreating(false); setSavingNew(false);
     load(1);
   };
 
@@ -185,6 +244,8 @@ export default function ProductCategoriesPage() {
   const toggleEditDoctor = (id: string) => setEditDoctorIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
   const toggleNewProgram = (id: string) => setNewProgramIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
   const toggleEditProgram = (id: string) => setEditProgramIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+  const toggleNewClinic = (id: string) => setNewClinicIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+  const toggleEditClinic = (id: string) => setEditClinicIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
 
   const startEdit = (c: Category) => {
     setEditId(c.id); setEditName(c.name); setEditNameEn(c.nameEn ?? '');
@@ -192,6 +253,7 @@ export default function ProductCategoriesPage() {
     setEditIconUrl(c.iconUrl); setEditBgUrl(c.bgImageUrl);
     setEditDoctorIds(c.doctors?.map(d => d.doctorId) ?? []);
     setEditProgramIds(c.programs?.map(p => p.programId) ?? []);
+    setEditClinicIds(c.clinics?.map(x => x.clinicId) ?? []);
     setEditShowAll(c.showAllDoctors ?? false);
   };
 
@@ -202,7 +264,7 @@ export default function ProductCategoriesPage() {
       body: JSON.stringify({
         name: editName.trim(), nameEn: editNameEn.trim(),
         descriptionMm: editDescMm.trim(), descriptionEn: editDescEn.trim(),
-        iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds, programIds: editProgramIds, showAllDoctors: editShowAll,
+        iconUrl: editIconUrl, bgImageUrl: editBgUrl, doctorIds: editDoctorIds, programIds: editProgramIds, clinicIds: editClinicIds, showAllDoctors: editShowAll,
       }),
     });
     if (res.ok) { setEditId(null); load(page); }
@@ -315,6 +377,7 @@ export default function ProductCategoriesPage() {
           </div>
           <DoctorChecklist doctorOptions={doctorOptions} selected={newDoctorIds} onToggle={toggleNewDoctor} showAll={newShowAll} onShowAllChange={setNewShowAll} />
           <ProgramChecklist programOptions={programOptions} selected={newProgramIds} onToggle={toggleNewProgram} />
+          <PartnerChecklist clinicOptions={clinicOptions} selected={newClinicIds} onToggle={toggleNewClinic} />
           <div className="flex gap-2">
             <button
               onClick={handleCreate} disabled={savingNew}
@@ -422,6 +485,7 @@ export default function ProductCategoriesPage() {
                           </div>
                           <DoctorChecklist doctorOptions={doctorOptions} selected={editDoctorIds} onToggle={toggleEditDoctor} showAll={editShowAll} onShowAllChange={setEditShowAll} />
                           <ProgramChecklist programOptions={programOptions} selected={editProgramIds} onToggle={toggleEditProgram} />
+                          <PartnerChecklist clinicOptions={clinicOptions} selected={editClinicIds} onToggle={toggleEditClinic} />
                         </div>
                       </td>
                     </>

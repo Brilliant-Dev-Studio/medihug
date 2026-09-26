@@ -10,7 +10,7 @@ import { useLang } from '../../lib/LanguageContext';
 
 const PRIMARY = '#0d2b6e';
 
-interface Category { id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; doctorCount?: number; programCount?: number; }
+interface Category { id: string; name: string; nameEn: string | null; iconUrl: string | null; bgImageUrl: string | null; doctorCount?: number; programCount?: number; clinicCount?: number; }
 
 const PRODUCT_ICON_MAP: Record<string, { icon: LucideIcon; color: string }> = {
   'Medicine':               { icon: Pill,        color: '#ef4444' },
@@ -57,6 +57,8 @@ function CategoryList({
           ? `/doctors?category=${cat.id}`
           : (cat.programCount ?? 0) > 0
           ? `/programs?pcat=${cat.id}`
+          : (cat.clinicCount ?? 0) > 0
+          ? `/clinics?pcat=${cat.id}`
           : `/products?category=${encodeURIComponent(cat.name)}`;
         return (
           <Link

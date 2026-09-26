@@ -291,6 +291,7 @@ model Clinic {
   vouchers                   Voucher[]
   stores                     Store[]
   qrRedemptions              PartnerQrRedemption[]
+  categories                 CategoryClinic[]
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -594,6 +595,7 @@ model ProductCategory {
 
   doctors  DoctorCategory[]
   programs CategoryProgram[]
+  clinics  CategoryClinic[]
 }
 
 model CategoryProgram {
@@ -607,6 +609,21 @@ model CategoryProgram {
   program  HealthcareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
 
   @@unique([categoryId, programId])
+}
+
+// Partners (clinics) tagged onto a landing-page category, like DoctorCategory / CategoryProgram.
+model CategoryClinic {
+  id         String   @id @default(cuid())
+  categoryId String
+  clinicId   String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  category ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  clinic   Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, clinicId])
+  @@index([clinicId])
 }
 
 model DoctorCategory {

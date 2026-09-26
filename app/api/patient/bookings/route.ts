@@ -25,6 +25,14 @@ export async function POST(req: NextRequest) {
     if (pointsToRedeem !== undefined && (!Number.isInteger(pointsToRedeem) || pointsToRedeem < 0)) {
       return NextResponse.json({ error: 'pointsToRedeem must be a non-negative integer.' }, { status: 400 });
     }
+    // Points and a discount coupon can't be combined on one booking — refuse loudly rather than
+    // silently dropping one of them.
+    if (typeof voucherCode === 'string' && voucherCode.trim() && (pointsToRedeem ?? 0) > 0) {
+      return NextResponse.json(
+        { error: 'Points and a discount coupon cannot be used together. Please choose one.', code: 'POINTS_AND_COUPON_TOGETHER' },
+        { status: 400 },
+      );
+    }
 
     // CB Pay bookings are only created once payment already succeeded (patient pays first,
     // fills the medical intake form after) — re-verify with CB Bank server-side rather than

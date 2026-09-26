@@ -6,9 +6,9 @@ export async function GET() {
   try {
     const categories = await db.productCategory.findMany({
       orderBy: [{ order: 'asc' }, { name: 'asc' }],
-      include: { _count: { select: { doctors: true, programs: true } } },
+      include: { _count: { select: { doctors: true, programs: true, clinics: true } } },
     });
-    const withCounts = categories.map(({ _count, ...c }) => ({ ...c, doctorCount: _count.doctors, programCount: _count.programs }));
+    const withCounts = categories.map(({ _count, ...c }) => ({ ...c, doctorCount: _count.doctors, programCount: _count.programs, clinicCount: _count.clinics }));
     return NextResponse.json({ categories: withCounts });
   } catch (e) {
     console.error(e);

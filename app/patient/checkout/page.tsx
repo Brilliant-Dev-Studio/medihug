@@ -13,7 +13,6 @@ import { useLang } from '../../lib/LanguageContext';
 import { useCart } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
-import DiscountBox from '@/components/DiscountBox';
 import DeliveryAddressSection from '@/components/DeliveryAddressSection';
 import { tryOpenDeeplink } from '@/lib/deeplink';
 import { pushLog } from '@/lib/debugLog';
@@ -58,7 +57,6 @@ function CheckoutContent() {
   const [phone, setPhone] = useState(patient?.phone ?? '');
 
   const [payMethod, setPayMethod] = useState('');
-  const [discount, setDiscount] = useState<{ pointsToRedeem: number; voucherCode: string | null; discountAmount: number }>({ pointsToRedeem: 0, voucherCode: null, discountAmount: 0 });
   const [receipt,   setReceipt]   = useState<{ file: File; url: string } | null>(null);
   const [dragOver,  setDragOver]  = useState(false);
   const [note,      setNote]      = useState('');
@@ -88,7 +86,7 @@ function CheckoutContent() {
     const p = products[l.productId];
     return sum + (p ? p.price * l.quantity : 0);
   }, 0);
-  const finalTotal = Math.max(0, total - discount.discountAmount);
+  const finalTotal = total; // Points / discount coupons apply to online doctor appointments only
   const priceBreakdown = sumProductPricesByCurrency(
     checkoutLines.filter(l => products[l.productId]).map(l => ({ ...products[l.productId], quantity: l.quantity })),
     { labels: { MMK: 'Ks' } }
@@ -117,8 +115,6 @@ function CheckoutContent() {
           items: checkoutLines.map(l => ({ productId: l.productId, quantity: l.quantity })),
           paymentMethod: payMethod, receiptUrl, note,
           deliveryAddress: deliveryAddress.trim(),
-          pointsToRedeem: discount.pointsToRedeem,
-          voucherCode: discount.voucherCode,
         }),
       });
       const data = await res.json();
@@ -319,20 +315,11 @@ function CheckoutContent() {
 
               <div className="flex flex-col gap-1 px-4 py-3 rounded-xl"
                 style={{ background: `linear-gradient(135deg, ${PRIMARY}08 0%, ${SECONDARY}12 100%)`, border: `1px solid ${PRIMARY}15` }}>
-                {discount.discountAmount > 0 && (
-                  <div className="flex items-center justify-between text-xs text-amber-600">
-                    <span>{discount.voucherCode ? (mm ? 'Voucher လျှော့ငွေ' : 'Voucher discount') : (mm ? 'Points လျှော့ငွေ' : 'Points discount')}</span>
-                    <span>-{discount.discountAmount.toLocaleString()} Ks</span>
-                  </div>
-                )}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500">{mm ? 'ပေးရမည့်ငွေ' : 'Amount to pay'}</span>
                   <span className="text-xl font-bold" style={{ color: PRIMARY }}>{finalTotal.toLocaleString()} <span className="text-xs font-semibold text-gray-400">MMK</span></span>
                 </div>
               </div>
-
-              <DiscountBox mm={mm} phone={phone} purchaseAmount={total} sourceType="PRODUCT"
-                productIds={checkoutLines.map(l => l.productId)} onChange={setDiscount} />
 
               <PaymentMethodPicker
                 mm={mm} payMethod={payMethod} setPayMethod={setPayMethod}

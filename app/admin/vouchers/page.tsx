@@ -241,8 +241,6 @@ export default function AdminVouchersPage() {
 
           <select value={serviceType} onChange={e => { setServiceType(e.target.value as ServiceType); setDoctorId(null); setDoctorName(null); setProductId(null); setProductName(null); setProgramId(null); setProgramName(null); }} className={inp}>
             <option value="CONSULTATION">Consultation (Doctor Appointments)</option>
-            <option value="PROGRAM">Program (Enrollments)</option>
-            <option value="PRODUCT">Product (Orders)</option>
           </select>
 
           {serviceType === 'CONSULTATION' && (

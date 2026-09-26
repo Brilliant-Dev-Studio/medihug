@@ -160,7 +160,7 @@ export default function PointsSettingsPage() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold text-gray-700">Redeem Rate</label>
-            <p className="text-xs text-gray-400">1 Point သုံးရင် ဘယ်လောက် လျှော့ပေးမလဲ</p>
+            <p className="text-xs text-gray-400">1 Point သုံးရင် ဘယ်လောက် လျှော့ပေးမလဲ — Online Doctor appointment တွင်သာ သုံးနိုင်ပြီး Coupon နှင့် တစ်ပြိုင်နက် မသုံးနိုင်ပါ</p>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-gray-400">1 Point =</span>
               <input type="number" min={1} value={kyatPerPointRedeem} onChange={e => setKyatPerPointRedeem(e.target.value)} className={inp} />

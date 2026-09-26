@@ -92,6 +92,12 @@ export default function PatientPointsPage() {
         </div>
       </div>
 
+      <p className="text-xs text-gray-400 -mt-2 px-1">
+        {mm
+          ? 'Points ကို Online ဆရာဝန်ချိန်းဆိုမှုတွင်သာ သုံးနိုင်ပြီး Coupon နှင့် တစ်ပြိုင်နက် မသုံးနိုင်ပါ။'
+          : 'Points can be used on online doctor appointments only, and not together with a coupon.'}
+      </p>
+
       {!loading && expiry && (
         <div className="rounded-2xl px-4 py-3.5 flex items-start gap-3"
           style={{ backgroundColor: expiry.expiringSoon.points > 0 ? '#fffbeb' : '#f9fafb', border: `1px solid ${expiry.expiringSoon.points > 0 ? '#fde68a' : '#f3f4f6'}` }}>

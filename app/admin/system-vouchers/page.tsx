@@ -190,7 +190,7 @@ export default function SystemVouchersPage() {
     <div className="flex flex-col gap-5">
       <div>
         <h1 className="text-xl font-bold text-gray-800">Discount Codes</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Platform-wide fixed discount codes for Doctor appointments and Program purchases.</p>
+        <p className="text-sm text-gray-400 mt-0.5">Platform-wide fixed discount codes for online Doctor appointments. Coupons can't be used on Products or Programs, and can't be combined with Points.</p>
       </div>
 
       {loading ? (

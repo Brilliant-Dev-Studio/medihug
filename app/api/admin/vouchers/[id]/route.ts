@@ -20,6 +20,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       maxUses, expiresAt, active,
     } = body;
 
+    if (serviceType !== undefined && serviceType !== 'CONSULTATION') {
+      return NextResponse.json({ error: 'Discount coupons can only apply to online doctor appointments (CONSULTATION).' }, { status: 400 });
+    }
     if (discountType !== undefined && !['PERCENT', 'FIXED'].includes(discountType)) {
       return NextResponse.json({ error: 'discountType must be PERCENT or FIXED.' }, { status: 400 });
     }

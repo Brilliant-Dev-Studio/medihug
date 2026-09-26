@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
     } = await req.json();
 
     if (!code?.trim()) return NextResponse.json({ error: 'code is required.' }, { status: 400 });
-    if (!['CONSULTATION', 'PROGRAM', 'PRODUCT'].includes(serviceType)) {
-      return NextResponse.json({ error: 'serviceType must be CONSULTATION, PROGRAM, or PRODUCT.' }, { status: 400 });
+    if (serviceType !== 'CONSULTATION') {
+      return NextResponse.json({ error: 'Discount coupons can only be created for online doctor appointments (CONSULTATION).' }, { status: 400 });
     }
     if (!['PERCENT', 'FIXED'].includes(discountType)) {
       return NextResponse.json({ error: 'discountType must be PERCENT or FIXED.' }, { status: 400 });

@@ -88,6 +88,10 @@ export default function DiscountBox({
         })}
       </div>
 
+      <p className="text-[11px] text-gray-400 px-1 -mt-0.5">
+        {mm ? 'Points နှင့် Coupon ကို တစ်ပြိုင်နက် မသုံးနိုင်ပါ — တစ်ခုသာ ရွေးပါ' : 'Points and coupons can\'t be used together — choose one.'}
+      </p>
+
       {mode === 'points' && (
         <PointsRedeemBox mm={mm} phone={phone} purchaseAmount={purchaseAmount} initialUseAll={!!initial && initial.pointsToRedeem > 0}
           onChange={state => onChange({ pointsToRedeem: state.pointsToRedeem, voucherCode: null, discountAmount: state.discountAmount })} />

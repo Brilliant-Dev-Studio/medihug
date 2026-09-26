@@ -50,6 +50,8 @@ async function ownsPurchase(client: DbClient, clinicId: string, input: CheckVouc
  * time (with `tx` passed as `client` there, so the max-uses check sees in-flight state). */
 async function checkVoucher(client: DbClient, input: CheckVoucherInput): Promise<CheckVoucherResult> {
   if (!input.code.trim()) return { ok: false, reason: 'NOT_FOUND' };
+  // Discount coupons are for online doctor appointments only — never products or programs.
+  if (input.sourceType !== 'CONSULTATION') return { ok: false, reason: 'SCOPE_MISMATCH' };
 
   const voucher = await client.voucher.findUnique({ where: { code: input.code.trim().toUpperCase() } });
   if (!voucher) return { ok: false, reason: 'NOT_FOUND' };

@@ -3,8 +3,6 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { checkCbPayStatus } from '@/lib/cbpay';
-import { redeemPoints } from '@/lib/pointsLedger';
-import { redeemVoucher, VoucherRedemptionError } from '@/lib/voucherLedger';
 
 /* ── POST /api/patient/programs/[id]/enroll ──
  * Patient purchases a Program: pays first (CB Pay verified server-side here, like bookings;
@@ -23,8 +21,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!name || !phone) {
       return NextResponse.json({ error: 'name, phone are required.' }, { status: 400 });
     }
-    if (pointsToRedeem !== undefined && (!Number.isInteger(pointsToRedeem) || pointsToRedeem < 0)) {
-      return NextResponse.json({ error: 'pointsToRedeem must be a non-negative integer.' }, { status: 400 });
+    // Points and discount coupons are for online doctor appointments only.
+    if ((typeof voucherCode === 'string' && voucherCode.trim()) || (pointsToRedeem ?? 0) > 0) {
+      return NextResponse.json(
+        { error: 'Points and discount coupons can only be used on online doctor appointments.', code: 'DISCOUNT_NOT_ALLOWED' },
+        { status: 400 },
+      );
     }
 
     const program = await db.healthcareProgram.findUnique({ where: { id: programId, isActive: true } });
@@ -68,36 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         },
       });
 
-      // Same CB Pay timing rule as bookings — the amount already paid can't be discounted
-      // after the fact, so points redemption is manual-receipt payment methods only.
-      if (cbPayVerified) return tx.programEnrollment.findUniqueOrThrow({ where: { id: created.id }, include: { user: true } });
-
-      let pointsRedeemed = 0;
-      let voucherApplied: string | null = null;
-      let discountAmount = 0;
-      if (voucherCode) {
-        const result = await redeemVoucher(tx, user.id, created.id, {
-          code: voucherCode, sourceType: 'PROGRAM', programId, purchaseAmount: program.price,
-        });
-        voucherApplied = result.voucherCode;
-        discountAmount = result.discountAmount;
-      } else {
-        const result = await redeemPoints(
-          tx, { userId: user.id, sourceType: 'PROGRAM', sourceId: created.id, pointsToRedeem: pointsToRedeem ?? 0 }, program.price,
-        );
-        pointsRedeemed = result.pointsRedeemed;
-        discountAmount = result.discountAmount;
-      }
-
-      return tx.programEnrollment.update({
-        where: { id: created.id },
-        data: {
-          amount: program.price - discountAmount,
-          pointsRedeemed, pointsDiscountAmount: voucherApplied ? 0 : discountAmount,
-          voucherCode: voucherApplied, voucherDiscountAmount: voucherApplied ? discountAmount : 0,
-        },
-        include: { user: true },
-      });
+      return tx.programEnrollment.findUniqueOrThrow({ where: { id: created.id }, include: { user: true } });
     });
 
     const admins = await db.user.findMany({
@@ -133,9 +106,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json({ enrollment }, { status: 201 });
   } catch (e) {
-    if (e instanceof VoucherRedemptionError) {
-      return NextResponse.json({ error: 'This voucher cannot be used for this program.', code: e.reason }, { status: 400 });
-    }
     console.error(e);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
