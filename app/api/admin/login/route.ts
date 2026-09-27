@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { signAdminToken } from '@/lib/jwt';
 import { isAdminRole } from '@/lib/permissions';
+import { withDbRetry } from '@/lib/dbRetry';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +13,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Phone and password are required.' }, { status: 400 });
     }
 
-    const user = await db.user.findUnique({ where: { phone } });
+    // Read-only, so safe to retry: a cold/reaped Neon connection on the first hit after a
+    // quiet spell is what turns "type password, wait" into "wait ~10s, get a server error".
+    const user = await withDbRetry(() => db.user.findUnique({ where: { phone } }));
 
     if (!user) {
       return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်သည် မှတ်ပုံတင်မထားပါ။' }, { status: 401 });
