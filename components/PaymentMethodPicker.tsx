@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Copy, Check, X, Wallet, ChevronDown } from 'lucide-react';
+import { Copy, Check, X, Wallet, ChevronDown, Download, Loader2 } from 'lucide-react';
 
 const PRIMARY = 'var(--color-primary)';
+
+const MMQR_SRC = '/payment/mmqr.jpg';
+const MMQR_FILENAME = 'MediHug-MMQR.jpg';
 
 interface PaymentMethod {
   id: string; key: string; label: string;
@@ -45,6 +48,7 @@ export default function PaymentMethodPicker({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [zoomQr, setZoomQr] = useState(false);
   const [mmqrOpen, setMmqrOpen] = useState(true);
+  const [qrSave, setQrSave] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   useEffect(() => {
     fetch('/api/payment-methods').then(r => r.json()).then(d => {
@@ -77,6 +81,52 @@ export default function PaymentMethodPicker({
       setTimeout(() => setCopiedKey(null), 1500);
     } catch {}
   };
+
+  // "Save to gallery": on a phone the share sheet is the only web route into the photo library
+  // (iOS "Save Image", Android Photos/Gallery), so use it when the browser can share files. A
+  // desktop, or a browser without file sharing, gets a plain download of the same image instead.
+  const saveQr = async () => {
+    if (qrSave === 'saving') return;
+    setQrSave('saving');
+    try {
+      const blob = await fetch(MMQR_SRC).then(r => { if (!r.ok) throw new Error('fetch'); return r.blob(); });
+      const file = new File([blob], MMQR_FILENAME, { type: blob.type || 'image/jpeg' });
+      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+      if (isTouch && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'MMQR' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = MMQR_FILENAME;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      setQrSave('saved');
+      setTimeout(() => setQrSave('idle'), 2500);
+    } catch (e) {
+      // Closing the share sheet without choosing anything is a cancel, not a failure.
+      if (e instanceof DOMException && e.name === 'AbortError') { setQrSave('idle'); return; }
+      setQrSave('error');
+      setTimeout(() => setQrSave('idle'), 3500);
+    }
+  };
+
+  const renderSaveQrButton = (onDark = false) => (
+    <button
+      type="button"
+      onClick={saveQr}
+      disabled={qrSave === 'saving'}
+      className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-60 active:scale-95 transition-transform"
+      style={onDark ? { backgroundColor: '#fff', color: '#111827' } : { backgroundColor: PRIMARY, color: '#fff' }}
+    >
+      {qrSave === 'saving' ? <Loader2 className="w-4 h-4 animate-spin" />
+        : qrSave === 'saved' ? <Check className="w-4 h-4" />
+        : <Download className="w-4 h-4" />}
+      {qrSave === 'saved' ? (mm ? 'သိမ်းပြီးပါပြီ' : 'Saved')
+        : qrSave === 'error' ? (mm ? 'မအောင်မြင်ပါ၊ ပြန်ကြိုးစားပါ' : 'Failed — try again')
+        : 'Save MMQR'}
+    </button>
+  );
 
   const Logo = ({ m, size = 44 }: { m: PaymentMethod; size?: number }) => (
     <div className="rounded-lg overflow-hidden shrink-0 border border-gray-100 bg-white flex items-center justify-center" style={{ width: size, height: size }}>
@@ -129,10 +179,14 @@ export default function PaymentMethodPicker({
                         <div className="px-4 pb-4 flex flex-col items-center gap-3">
                           <button type="button" onClick={() => setZoomQr(true)}
                             className="w-40 h-40 rounded-xl overflow-hidden border border-gray-100 bg-white flex items-center justify-center active:scale-95 transition-transform">
-                            <Image src="/payment/mmqr.jpg" alt="MMQR" width={160} height={160} className="object-contain w-full h-full" />
+                            <Image src={MMQR_SRC} alt="MMQR" width={160} height={160} className="object-contain w-full h-full" />
                           </button>
+                          {renderSaveQrButton()}
                           <p className="text-xs text-gray-500 text-center">
                             {mm ? 'ပုံကို နှိပ်ပြီး ချဲ့ကြည့်နိုင်ပါသည် · MMQR ကို စကင်ဖတ်ပြီး ငွေလွှဲပေးပါ' : 'Tap image to zoom · Scan the MMQR to pay'}
+                          </p>
+                          <p className="text-[11px] text-gray-400 text-center -mt-1.5">
+                            {mm ? 'Save နှိပ်ပြီး ဖုန်း Gallery ထဲသိမ်းကာ ဘဏ်/Wallet App ထဲက Scan ဖတ်နိုင်ပါသည်' : 'Save it to your gallery, then scan it from your banking/wallet app'}
                           </p>
                         </div>
                       )}
@@ -185,9 +239,12 @@ export default function PaymentMethodPicker({
                   <button onClick={() => setZoomQr(false)} className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 flex items-center justify-center">
                     <X className="w-5 h-5 text-white" />
                   </button>
-                  <div className="bg-white rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/payment/mmqr.jpg" alt="MMQR" className="block w-auto h-auto max-w-[92vw] max-h-[88vh]" />
+                  <div className="flex flex-col items-center gap-3" onClick={e => e.stopPropagation()}>
+                    <div className="bg-white rounded-2xl overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={MMQR_SRC} alt="MMQR" className="block w-auto h-auto max-w-[92vw] max-h-[78vh]" />
+                    </div>
+                    {renderSaveQrButton(true)}
                   </div>
                 </div>
               )}
