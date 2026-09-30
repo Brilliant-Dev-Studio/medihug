@@ -80,7 +80,7 @@ export default function Home() {
               </Link>
             </motion.span>
             <motion.span whileHover={{ scale: 1.045 }} whileTap={{ scale: 0.97 }} className="inline-block">
-              <Link href="/patient/booking" className="font-semibold text-sm sm:text-base hover:underline underline-offset-4" style={{ color: PRIMARY }}>
+              <Link href="/doctors" className="font-semibold text-sm sm:text-base hover:underline underline-offset-4" style={{ color: PRIMARY }}>
                 {tr.noInsurance}
               </Link>
             </motion.span>
