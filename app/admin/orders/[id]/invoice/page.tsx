@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import OrderReceiptView, { type OrderReceiptData } from '@/components/OrderReceiptView';
 
 interface OrderItem {
-  quantity: number; price: number;
+  quantity: number; price: number; sizeLabel: string | null;
   product: { name: string; nameEn: string | null };
 }
 interface Order {
@@ -38,7 +38,7 @@ export default function AdminOrderInvoicePage({ params }: { params: Promise<{ id
         customerPhone: order.user.phone,
         paymentMethod: order.paymentMethod,
         lines: order.items.map(i => ({
-          label: i.product.nameEn ?? i.product.name,
+          label: (i.product.nameEn ?? i.product.name) + (i.sizeLabel ? ` (${i.sizeLabel})` : ''),
           qty: i.quantity, unit: 'PCS',
           price: i.price, total: i.price * i.quantity,
         })),

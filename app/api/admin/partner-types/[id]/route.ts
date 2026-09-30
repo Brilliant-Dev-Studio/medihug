@@ -21,11 +21,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   try {
     const { id }          = await params;
-    const { name, nameEn } = await req.json();
+    const { name, nameEn, isInternational } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
     const partnerType = await db.partnerType.update({
       where: { id },
-      data: { name: name.trim(), nameEn: nameEn?.trim() || null },
+      data: { name: name.trim(), nameEn: nameEn?.trim() || null, isInternational: !!isInternational },
     });
     return NextResponse.json({ partnerType });
   } catch {

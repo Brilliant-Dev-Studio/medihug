@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        include: { _count: { select: { sizes: true } } },
       }),
       db.product.count({ where }),
     ]);
@@ -48,7 +49,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'ဈေးနှုန်း (Ks) ကို 0 ထက်ကြီးသော ကိန်းပြည့်ဖြင့် ထည့်ရပါမည်။' }, { status: 400 });
     }
 
-    const { brand, type, strength, packSize, tags, keyBenefits, rating, reviewCount, isActive, clinicIds } = body;
+    const { brand, type, strength, packSize, tags, keyBenefits, rating, reviewCount, isActive, clinicIds, sizes } = body;
+
+    if (Array.isArray(sizes)) {
+      for (const s of sizes) {
+        if (!s?.label?.trim()) return NextResponse.json({ error: 'Each size needs a label.' }, { status: 400 });
+      }
+    }
+
     const product = await db.product.create({
       data: {
         name,
@@ -70,6 +78,16 @@ export async function POST(req: NextRequest) {
         rating:      rating      ?? 0,
         reviewCount: reviewCount ?? 0,
         isActive:    isActive    ?? true,
+        ...(Array.isArray(sizes) && sizes.length > 0 ? {
+          sizes: {
+            create: sizes.map((s: { label: string; priceOverride?: number | null; stock?: number }, i: number) => ({
+              label: s.label.trim(),
+              priceOverride: s.priceOverride == null || s.priceOverride === '' as unknown ? null : Number(s.priceOverride),
+              stock: s.stock ?? 0,
+              order: i,
+            })),
+          },
+        } : {}),
       },
     });
 

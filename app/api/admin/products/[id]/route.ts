@@ -11,6 +11,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
       include: {
         clinics: { select: { clinicId: true } },
         stocks: { include: { store: { select: { id: true, name: true, code: true } } } },
+        sizes: { orderBy: { order: 'asc' } },
       },
     });
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -26,11 +27,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
-    const { id: _id, createdAt, updatedAt, clinicIds, ...data } = body;
-    void _id; void createdAt; void updatedAt;
+    const { id: _id, createdAt, updatedAt, clinicIds, sizes, stocks, orderItems, purchaseItems, stockMovements, favoritedBy, vouchers, clinics, ...data } = body;
+    void _id; void createdAt; void updatedAt; void stocks; void orderItems; void purchaseItems; void stockMovements; void favoritedBy; void vouchers; void clinics;
 
     if (data.price !== undefined && (!Number.isInteger(data.price) || data.price <= 0)) {
       return NextResponse.json({ error: 'ဈေးနှုန်း (Ks) ကို 0 ထက်ကြီးသော ကိန်းပြည့်ဖြင့် ထည့်ရပါမည်။' }, { status: 400 });
+    }
+    if (Array.isArray(sizes)) {
+      for (const s of sizes) {
+        if (!s?.label?.trim()) return NextResponse.json({ error: 'Each size needs a label.' }, { status: 400 });
+      }
     }
 
     const product = await db.$transaction(async tx => {
@@ -39,6 +45,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         await tx.clinicProduct.deleteMany({ where: { productId: id } });
         if (clinicIds.length > 0) {
           await tx.clinicProduct.createMany({ data: clinicIds.map((clinicId: string) => ({ clinicId, productId: id })) });
+        }
+      }
+      if (Array.isArray(sizes)) {
+        // Existing OrderItems reference sizeId with onDelete: SetNull, and keep their own
+        // sizeLabel snapshot — replacing the size rows here never loses past-order history.
+        await tx.productSize.deleteMany({ where: { productId: id } });
+        if (sizes.length > 0) {
+          await tx.productSize.createMany({
+            data: sizes.map((s: { label: string; priceOverride?: number | null; stock?: number }, i: number) => ({
+              productId: id,
+              label: s.label.trim(),
+              priceOverride: s.priceOverride == null || s.priceOverride === '' as unknown ? null : Number(s.priceOverride),
+              stock: s.stock ?? 0,
+              order: i,
+            })),
+          });
         }
       }
       return updated;

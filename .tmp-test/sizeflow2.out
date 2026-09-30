@@ -1,0 +1,54 @@
+PASS  size picker shows S/M/L
+PASS  base price shown for default-selected size S (10,000)
+PASS  picking M updates price to 12,000
+PASS  L (0 stock) button is disabled
+FAIL  cart shows the product with Size: M   
+PASS  cart shows M price 12,000
+PASS  navigated to checkout with lines= param
+FAIL  checkout item list shows size M   Compassionate
+Healthcare
+ပင်မ
+ဆရာဝန်များ
+ကုန်ပစ္စည်းနှင့် ဝန်ဆောင်မှုများ
+ချိန်းဆိုမှု
+ပရိုဖိုင်
+ကျန်းမာရေး အစီအစဉ်
+ဆောင်းပါးများ
+ပွိုင့်များ
+P
+
+Size Tester
+
+PATIENT
+
+ထွက်ရန်
+
+Wednesday, September 30, 2026
+
+မြန်မာ
+1
+P
+
+Size Tester
+
+PATIENT
+
+ငွေချေရန်
+
+ဝယ်ယူမည့်ပစ္စည်း
+
+စုစုပေါင်း
+
+သင့်အချက်အလက်
+
+ငွေပေးချေမှု
+
+ပေးရမည့်ငွေ
+0 MMK
+
+⚠ ပို့ဆောင်မည့်လိပ်စာ ဖြည့်ရန် လိုအပ်သည်
+
+⚠ ငွေပေးချေနည်း ရွေးရန် လိုအ
+FAIL  amount to pay reflects 12,000 (single qty)   
+
+3 FAILED

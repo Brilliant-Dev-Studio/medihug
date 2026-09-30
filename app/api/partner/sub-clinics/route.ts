@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
       phone, phone2, phone3, website, facebookUrl, tiktokUrl, mapUrl,
       imageUrl, coverUrl, openTime, closeTime,
       aboutMm, aboutEn, tagsMm, tagsEn,
+      specialties, contactEmail, availabilityNote,
       branches, gallery,
     } = body;
 
@@ -70,6 +71,9 @@ export async function POST(req: NextRequest) {
         aboutEn: aboutEn || null,
         tagsMm: tagsMm ?? [],
         tagsEn: tagsEn ?? [],
+        specialties: specialties ?? [],
+        contactEmail: contactEmail || null,
+        availabilityNote: availabilityNote || null,
         isInternational: true,
         isPartner: true,
         isActive: true,

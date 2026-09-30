@@ -50,6 +50,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     phone, phone2, phone3, website, facebookUrl, tiktokUrl, mapUrl,
     imageUrl, coverUrl, openTime, closeTime,
     aboutMm, aboutEn, tagsMm, tagsEn,
+    specialties, contactEmail, availabilityNote,
     branches, gallery,
   } = body;
 
@@ -84,6 +85,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       ...(aboutEn     !== undefined && { aboutEn }),
       ...(tagsMm      !== undefined && { tagsMm }),
       ...(tagsEn      !== undefined && { tagsEn }),
+      ...(specialties      !== undefined && { specialties }),
+      ...(contactEmail     !== undefined && { contactEmail }),
+      ...(availabilityNote !== undefined && { availabilityNote }),
     },
   });
 

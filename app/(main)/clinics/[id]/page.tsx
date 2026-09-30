@@ -7,8 +7,10 @@ import { useParams } from 'next/navigation';
 import {
   ChevronLeft, ChevronRight, Star, Building2, Loader2, Phone, MapPin, Globe,
   Stethoscope, ShoppingBag, HeartPulse, CheckCircle2, Navigation, Images, X, Pill,
+  Mail, Clock, Send, Stamp,
 } from 'lucide-react';
 import { FaFacebook, FaTiktok } from 'react-icons/fa6';
+import toast from 'react-hot-toast';
 import { useLang } from '@/app/lib/LanguageContext';
 import { getProductPriceEntries, formatPriceEntries } from '@/lib/productPrice';
 
@@ -34,6 +36,8 @@ interface Clinic {
   facebookUrl: string | null; tiktokUrl: string | null; mapUrl: string | null;
   aboutMm: string | null; aboutEn: string | null;
   tagsMm: string[]; tagsEn: string[];
+  specialties: string[]; contactEmail: string | null; availabilityNote: string | null;
+  isInternational: boolean;
   imageUrl: string | null; coverUrl: string | null;
   verified: boolean; rating: number; reviewCount: number;
   type: string;
@@ -42,6 +46,83 @@ interface Clinic {
   branches: { id: string; title: string; titleEn: string | null; address: string; addressEn: string | null; mapUrl: string | null }[];
   gallery: { id: string; imageUrl: string; captionMm: string | null; captionEn: string | null }[];
   programs: { id: string; imageUrl: string; titleMm: string; titleEn: string | null; price: number }[];
+}
+
+/** Patient intake form for asking a specific international Hospital about treatment —
+ * public, no login required (same name+phone convention as doctor booking). Creates a
+ * MedicalRequest the hospital's partner portal picks up (New → ... → Completed). */
+function MedicalRequestModal({ hospitalClinicId, hospitalName, mm, onClose }: {
+  hospitalClinicId: string; hospitalName: string; mm: boolean; onClose: () => void;
+}) {
+  const [name, setName]         = useState('');
+  const [phone, setPhone]       = useState('');
+  const [email, setEmail]       = useState('');
+  const [specialty, setSpecialty] = useState('');
+  const [reason, setReason]     = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent]         = useState(false);
+
+  const submit = async () => {
+    if (!name.trim() || !phone.trim()) { toast.error(mm ? 'အမည်နှင့် ဖုန်းနံပါတ် လိုအပ်သည်' : 'Name and phone are required'); return; }
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/medical-requests', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hospitalClinicId, name, phone, email, specialty, reason }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      setSent(true);
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : (mm ? 'ပို့၍မရပါ' : 'Could not send request'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-0 sm:px-4" onClick={onClose}>
+      <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {sent ? (
+          <div className="flex flex-col items-center text-center gap-3 py-6">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: `${PRIMARY}15` }}>
+              <CheckCircle2 className="w-7 h-7" style={{ color: PRIMARY }} />
+            </div>
+            <p className="font-bold text-gray-800">{mm ? 'ပို့ပြီးပါပြီ' : 'Request sent'}</p>
+            <p className="text-sm text-gray-500">{mm ? `${hospitalName} က မကြာမီ ဆက်သွယ်ပါလိမ့်မည်` : `${hospitalName} will get back to you soon.`}</p>
+            <button onClick={onClose} className="mt-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white" style={{ backgroundColor: PRIMARY }}>
+              {mm ? 'ပိတ်မည်' : 'Close'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-1">
+              <p className="font-bold text-gray-800">{mm ? 'ကုသမှု စုံစမ်းရန်' : 'Ask about treatment'}</p>
+              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100"><X className="w-4 h-4" /></button>
+            </div>
+            <p className="text-xs text-gray-400 mb-4">{hospitalName}</p>
+            <div className="flex flex-col gap-3">
+              <input value={name} onChange={e => setName(e.target.value)} placeholder={mm ? 'အမည် *' : 'Full name *'}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-teal-400" />
+              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder={mm ? 'ဖုန်းနံပါတ် *' : 'Phone *'}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-teal-400" />
+              <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder={mm ? 'အီးမေးလ် (မထည့်လည်းရ)' : 'Email (optional)'}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-teal-400" />
+              <input value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder={mm ? 'လိုအပ်သော အထူးကု' : 'Specialty needed (optional)'}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-teal-400" />
+              <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} placeholder={mm ? 'ရောဂါအခြေအနေ / မေးလိုသည့်အကြောင်းအရာ' : 'Tell them what you need help with'}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-teal-400 resize-none" />
+              <button onClick={submit} disabled={submitting}
+                className="w-full py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60"
+                style={{ backgroundColor: PRIMARY }}>
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {mm ? 'တောင်းဆိုမှု ပို့မည်' : 'Send request'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function SectionHeader({ icon, label, count, unit }: { icon: React.ReactNode; label: string; count: number; unit: string }) {
@@ -68,6 +149,7 @@ export default function PublicClinicDetailPage() {
   const [notFound,  setNotFound]  = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [lightbox,  setLightbox]  = useState<string | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/clinics/${id}`)
@@ -155,6 +237,26 @@ export default function PublicClinicDetailPage() {
               </div>
             )}
 
+            {clinic.specialties.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{mm ? 'အထူးကု' : 'Specialties'}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {clinic.specialties.map(s => (
+                    <span key={s} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-700">{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {clinic.isInternational && (
+              <button onClick={() => setRequestOpen(true)}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold text-white"
+                style={{ backgroundColor: PRIMARY }}>
+                <Stamp className="w-4 h-4" />
+                {mm ? 'ကုသမှု စုံစမ်းရန် တောင်းဆိုမည်' : 'Request Medical Treatment'}
+              </button>
+            )}
+
             <div className="flex flex-col gap-0 rounded-2xl border border-gray-100 overflow-hidden">
               {clinic.phone && (
                 <a href={`tel:${clinic.phone}`} className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition-colors border-b border-gray-100">
@@ -175,6 +277,28 @@ export default function PublicClinicDetailPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] text-gray-400 font-medium">{mm ? 'လိပ်စာ' : 'Address'}</p>
                     <p className="text-sm font-semibold text-gray-700">{address}</p>
+                  </div>
+                </div>
+              )}
+              {clinic.contactEmail && (
+                <a href={`mailto:${clinic.contactEmail}`} className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition-colors border-b border-gray-100">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${PRIMARY}15` }}>
+                    <Mail className="w-4 h-4" style={{ color: PRIMARY }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-gray-400 font-medium">{mm ? 'အီးမေးလ်' : 'Email'}</p>
+                    <p className="text-sm font-bold truncate" style={{ color: PRIMARY }}>{clinic.contactEmail}</p>
+                  </div>
+                </a>
+              )}
+              {clinic.availabilityNote && (
+                <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100">
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-gray-400 font-medium">{mm ? 'ချိန်းဆိုနိုင်မှု' : 'Appointment Availability'}</p>
+                    <p className="text-sm font-semibold text-gray-700">{clinic.availabilityNote}</p>
                   </div>
                 </div>
               )}
@@ -410,6 +534,10 @@ export default function PublicClinicDetailPage() {
             <Image src={lightbox} alt="" fill className="object-contain" />
           </div>
         </div>
+      )}
+
+      {requestOpen && (
+        <MedicalRequestModal hospitalClinicId={clinic.id} hospitalName={name} mm={mm} onClose={() => setRequestOpen(false)} />
       )}
     </div>
   );

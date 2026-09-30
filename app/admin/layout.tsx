@@ -13,7 +13,7 @@ import {
   ArrowLeftRight, History, Trash2, ClipboardList, MessageSquareQuote, Coins, Globe, HeartHandshake,
   Truck, PackagePlus, ShoppingCart,
   Shield, Package, UserCog, UserPlus, DollarSign, SlidersHorizontal,
-  Building, Users2, MessageCircle, GraduationCap, Network, FolderOpen,
+  Building, Users2, MessageCircle, GraduationCap, Network, FolderOpen, Send,
   type LucideIcon,
 } from 'lucide-react';
 import { RealtimeProvider } from '@/components/RealtimeProvider';
@@ -122,6 +122,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: '/admin/clinics',                icon: Building2, mm: 'မိတ်ဖက်များ',              en: 'Partners', perm: 'partners.manage' as Permission },
       { href: '/admin/international-partners', icon: Globe,     mm: 'နိုင်ငံတကာ မိတ်ဖက်များ',   en: 'International Partners', perm: 'partners.manage' as Permission },
+      { href: '/admin/medical-requests',       icon: Send,      mm: 'ဆေးကုသမှု တောင်းဆိုမှုများ', en: 'Medical Requests', perm: 'partners.manage' as Permission },
       { href: '/admin/partner-types',          icon: Tags,      mm: 'မိတ်ဖက် အမျိုးအစားများ',   en: 'Partner Types', perm: 'partners.manage' as Permission },
       { href: CS,                              icon: UserCog,   mm: 'မိတ်ဖက် ရာထူးများ',        en: 'Partner Roles', perm: 'partners.manage' as Permission },
       { href: '/admin/partner-qr',              icon: UserPlus,  mm: 'ညွှန်းဆိုမှုများ',         en: 'Referrals', perm: 'partners.manage' as Permission },

@@ -9,16 +9,17 @@ import {
   Sparkles, Check, Store,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
-import { useCart } from '../../lib/useCart';
+import { useCart, cartLineKey } from '../../lib/useCart';
 import { getProductPriceEntries, formatPriceEntries, sumProductPricesByCurrency } from '@/lib/productPrice';
 
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 
+interface ProductSize { id: string; label: string; priceOverride: number | null; stock: number; }
 interface Product {
   id: string; name: string; nameEn: string | null;
   imageUrl: string | null; price: number; priceThb: number | null; priceUsd: number | null;
-  stock: number; packSize: string | null;
+  stock: number; packSize: string | null; sizes: ProductSize[];
 }
 
 function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -43,42 +44,60 @@ export default function CartPage() {
   useEffect(() => {
     if (lines.length === 0) { setProducts({}); setLoading(false); return; }
     setLoading(true);
-    Promise.all(lines.map(l => fetch(`/api/admin/products/${l.productId}`).then(r => r.ok ? r.json() : null)))
+    const productIds = [...new Set(lines.map(l => l.productId))];
+    Promise.all(productIds.map(id => fetch(`/api/admin/products/${id}`).then(r => r.ok ? r.json() : null)))
       .then(results => {
         const map: Record<string, Product> = {};
         results.forEach(r => { if (r?.product) map[r.product.id] = r.product; });
         setProducts(map);
         setSelected(prev => {
-          const ids = lines.map(l => l.productId);
-          const next = new Set(prev.size === 0 ? ids : [...prev].filter(id => ids.includes(id)));
-          ids.forEach(id => { if (prev.size === 0) next.add(id); });
+          const keys = lines.map(l => cartLineKey(l.productId, l.sizeId));
+          const next = new Set(prev.size === 0 ? keys : [...prev].filter(k => keys.includes(k)));
+          keys.forEach(k => { if (prev.size === 0) next.add(k); });
           return next;
         });
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lines.map(l => l.productId).join(',')]);
+  }, [lines.map(l => cartLineKey(l.productId, l.sizeId)).join(',')]);
 
-  const toggleOne = (id: string) => setSelected(prev => {
+  // A cart line paired with its resolved product + (if any) size — the size's label/price
+  // override/stock take priority over the base product's wherever they differ.
+  const resolvedLines = lines
+    .map(l => {
+      const p = products[l.productId];
+      if (!p) return null;
+      const size = l.sizeId ? p.sizes?.find(s => s.id === l.sizeId) ?? null : null;
+      return {
+        key: cartLineKey(l.productId, l.sizeId),
+        productId: l.productId, sizeId: l.sizeId, quantity: l.quantity,
+        product: p, size,
+        effective: { ...p, price: size?.priceOverride ?? p.price } as Product,
+        stock: size ? size.stock : p.stock,
+      };
+    })
+    .filter((l): l is NonNullable<typeof l> => l !== null);
+
+  const toggleOne = (key: string) => setSelected(prev => {
     const next = new Set(prev);
-    next.has(id) ? next.delete(id) : next.add(id);
+    next.has(key) ? next.delete(key) : next.add(key);
     return next;
   });
-  const allIds = lines.map(l => l.productId);
-  const allSelected = allIds.length > 0 && allIds.every(id => selected.has(id));
-  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allIds));
+  const allKeys = resolvedLines.map(l => l.key);
+  const allSelected = allKeys.length > 0 && allKeys.every(k => selected.has(k));
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(allKeys));
 
   const goToCheckout = () => {
     if (selected.size === 0) return;
-    router.push(`/patient/checkout?ids=${[...selected].join(',')}`);
+    router.push(`/patient/checkout?lines=${[...selected].join(',')}`);
   };
 
   const itemCount = lines.reduce((sum, l) => sum + l.quantity, 0);
-  const selectedCount = lines.filter(l => selected.has(l.productId)).reduce((sum, l) => sum + l.quantity, 0);
-  const selectedLines = lines
-    .filter(l => selected.has(l.productId) && products[l.productId])
-    .map(l => ({ ...products[l.productId], quantity: l.quantity }));
-  const selectedTotalDisplay = formatPriceEntries(sumProductPricesByCurrency(selectedLines, { labels: { MMK: 'Ks' } }));
+  const selectedResolvedLines = resolvedLines.filter(l => selected.has(l.key));
+  const selectedCount = selectedResolvedLines.reduce((sum, l) => sum + l.quantity, 0);
+  const selectedTotalDisplay = formatPriceEntries(
+    sumProductPricesByCurrency(selectedResolvedLines.map(l => ({ ...l.effective, quantity: l.quantity })), { labels: { MMK: 'Ks' } })
+  );
 
   return (
     <div className="min-h-full bg-gray-50">
@@ -142,15 +161,14 @@ export default function CartPage() {
                 </div>
 
                 <div className="divide-y divide-gray-50">
-                  {lines.map(line => {
-                    const p = products[line.productId];
-                    if (!p) return null;
+                  {resolvedLines.map(line => {
+                    const p = line.product;
                     const name = mm ? p.name : (p.nameEn ?? p.name);
-                    const lineTotal = formatPriceEntries(sumProductPricesByCurrency([{ ...p, quantity: line.quantity }], { labels: { MMK: 'Ks' } }));
-                    const isSel = selected.has(line.productId);
+                    const lineTotal = formatPriceEntries(sumProductPricesByCurrency([{ ...line.effective, quantity: line.quantity }], { labels: { MMK: 'Ks' } }));
+                    const isSel = selected.has(line.key);
                     return (
-                      <div key={line.productId} className="flex items-center gap-3 px-4 py-4">
-                        <Checkbox checked={isSel} onChange={() => toggleOne(line.productId)} />
+                      <div key={line.key} className="flex items-center gap-3 px-4 py-4">
+                        <Checkbox checked={isSel} onChange={() => toggleOne(line.key)} />
 
                         <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
                           {p.imageUrl ? (
@@ -162,24 +180,26 @@ export default function CartPage() {
 
                         <div className="min-w-0 flex-1">
                           <Link href={`/patient/records/${p.id}`} className="text-sm font-semibold text-gray-800 hover:underline block truncate">{name}</Link>
-                          {p.packSize && <p className="text-[11px] text-gray-400 mt-0.5">{p.packSize}</p>}
-                          <p className="text-sm font-bold mt-1" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(p, { labels: { MMK: 'Ks' } }))}</p>
+                          {line.size ? (
+                            <p className="text-[11px] text-gray-400 mt-0.5">Size: {line.size.label}</p>
+                          ) : p.packSize && <p className="text-[11px] text-gray-400 mt-0.5">{p.packSize}</p>}
+                          <p className="text-sm font-bold mt-1" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(line.effective, { labels: { MMK: 'Ks' } }))}</p>
                           {/* Mobile: qty + subtotal + remove inline */}
                           <div className="flex lg:hidden items-center justify-between mt-2">
                             <div className="flex items-center gap-0.5 rounded-full border border-gray-200 bg-gray-50 p-0.5">
-                              <button onClick={() => setQuantity(line.productId, line.quantity - 1)}
+                              <button onClick={() => setQuantity(line.productId, line.sizeId, line.quantity - 1)}
                                 className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-500">
                                 <Minus className="w-3 h-3" />
                               </button>
                               <span className="w-6 text-center text-xs font-bold text-gray-700">{line.quantity}</span>
-                              <button onClick={() => setQuantity(line.productId, Math.min(p.stock, line.quantity + 1))} disabled={line.quantity >= p.stock}
+                              <button onClick={() => setQuantity(line.productId, line.sizeId, Math.min(line.stock, line.quantity + 1))} disabled={line.quantity >= line.stock}
                                 className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-500 disabled:opacity-30">
                                 <Plus className="w-3 h-3" />
                               </button>
                             </div>
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-bold text-gray-700">{lineTotal}</p>
-                              <button onClick={() => removeItem(line.productId)} className="w-7 h-7 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50">
+                              <button onClick={() => removeItem(line.productId, line.sizeId)} className="w-7 h-7 rounded-full flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -189,19 +209,19 @@ export default function CartPage() {
                         {/* Desktop columns */}
                         <div className="hidden lg:flex w-28 justify-center">
                           <div className="flex items-center gap-0.5 rounded-full border border-gray-200 bg-gray-50 p-0.5">
-                            <button onClick={() => setQuantity(line.productId, line.quantity - 1)}
+                            <button onClick={() => setQuantity(line.productId, line.sizeId, line.quantity - 1)}
                               className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors">
                               <Minus className="w-3 h-3" />
                             </button>
                             <span className="w-6 text-center text-xs font-bold text-gray-700">{line.quantity}</span>
-                            <button onClick={() => setQuantity(line.productId, Math.min(p.stock, line.quantity + 1))} disabled={line.quantity >= p.stock}
+                            <button onClick={() => setQuantity(line.productId, line.sizeId, Math.min(line.stock, line.quantity + 1))} disabled={line.quantity >= line.stock}
                               className="w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-700 disabled:opacity-30 transition-colors">
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
                         </div>
                         <p className="hidden lg:block w-24 text-right text-sm font-bold text-gray-800">{lineTotal}</p>
-                        <button onClick={() => removeItem(line.productId)}
+                        <button onClick={() => removeItem(line.productId, line.sizeId)}
                           className="hidden lg:flex w-8 h-8 rounded-full items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
                           <Trash2 className="w-4 h-4" />
                         </button>

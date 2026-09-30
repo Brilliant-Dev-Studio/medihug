@@ -25,6 +25,8 @@ const EMPTY = {
   aboutMm: '', aboutEn: '',
   tagsMmRaw: '', tagsEnRaw: '',
   tagsMm: [] as string[], tagsEn: [] as string[],
+  specialtiesRaw: '', specialties: [] as string[],
+  contactEmail: '', availabilityNote: '',
   imageUrl: '', coverUrl: '',
 };
 
@@ -73,6 +75,13 @@ export default function NewSubClinicPage() {
     set(listKey, list.filter(x => x !== t));
   };
 
+  const addSpecialty = () => {
+    const v = form.specialtiesRaw.trim();
+    if (v && !form.specialties.includes(v)) set('specialties', [...form.specialties, v]);
+    set('specialtiesRaw', '');
+  };
+  const removeSpecialty = (t: string) => set('specialties', form.specialties.filter(x => x !== t));
+
   const handleSubmit = async () => {
     if (!form.name.trim()) { setError('Name is required.'); return; }
     if (!form.country.trim()) { setError('Country is required.'); return; }
@@ -103,6 +112,9 @@ export default function NewSubClinicPage() {
           aboutEn:   form.aboutEn   || null,
           tagsMm:    form.tagsMm,
           tagsEn:    form.tagsEn,
+          specialties: form.specialties,
+          contactEmail: form.contactEmail || null,
+          availabilityNote: form.availabilityNote || null,
           imageUrl:  form.imageUrl  || null,
           coverUrl:  form.coverUrl  || null,
           gallery,
@@ -197,9 +209,41 @@ export default function NewSubClinicPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={lbl}>Contact Email</label>
+            <input type="email" className={inp} value={form.contactEmail} onChange={e => set('contactEmail', e.target.value)} placeholder="hospital@example.com" />
+          </div>
+          <div>
+            <label className={lbl}>Appointment Availability</label>
+            <input className={inp} value={form.availabilityNote} onChange={e => set('availabilityNote', e.target.value)} placeholder="e.g. Mon–Sat, book 3 days ahead" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <TimePicker label="Open Time"  value={form.openTime}  onChange={v => set('openTime', v)}  />
           <TimePicker label="Close Time" value={form.closeTime} onChange={v => set('closeTime', v)} />
         </div>
+      </Section>
+
+      <Section title="Specialties">
+        <p className="text-xs text-gray-400 -mt-2">Medical specialties this hospital offers (e.g. Cardiology, Oncology) — shown on its public profile</p>
+        <div className="flex gap-2">
+          <input className={inp} value={form.specialtiesRaw}
+            onChange={e => set('specialtiesRaw', e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSpecialty(); } }}
+            placeholder="Type specialty, press Enter" />
+          <button type="button" onClick={addSpecialty}
+            className="px-4 py-2.5 rounded-xl text-white text-sm font-medium shrink-0"
+            style={{ backgroundColor: PRIMARY }}>+</button>
+        </div>
+        {form.specialties.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {form.specialties.map(t => (
+              <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 text-xs font-medium">
+                {t}<button type="button" onClick={() => removeSpecialty(t)} className="hover:text-red-500"><X size={10} /></button>
+              </span>
+            ))}
+          </div>
+        )}
       </Section>
 
       <Section title="Links">

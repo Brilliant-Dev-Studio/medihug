@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Loader2, Package, Search, X, ChevronDown, Plus, MapPin, ArrowUpRight } from 'lucide-react';
 import ImageDropzoneMulti from '@/components/admin/ImageDropzoneMulti';
 import ClinicMultiSelect, { type ClinicOption } from '@/components/admin/ClinicMultiSelect';
+import ProductSizesEditor, { type SizeRow } from '@/components/admin/ProductSizesEditor';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
@@ -20,6 +21,7 @@ interface Product {
   rating: number; reviewCount: number;
   clinics?: { clinicId: string }[];
   stocks?: { id: string; quantity: number; store: { id: string; name: string; code: string } }[];
+  sizes?: { id: string; label: string; priceOverride: number | null; stock: number }[];
 }
 interface Category { id: string; name: string; nameEn: string | null; }
 
@@ -172,6 +174,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     tags: [] as string[], keyBenefits: [] as string[],
     rating: 0, reviewCount: 0,
   });
+  const [sizeRows, setSizeRows] = useState<SizeRow[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -206,6 +209,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         rating:      p.rating      ?? 0,
         reviewCount: p.reviewCount ?? 0,
       });
+      setSizeRows((p.sizes ?? []).map(s => ({
+        label: s.label, priceOverride: s.priceOverride != null ? String(s.priceOverride) : '', stock: String(s.stock),
+      })));
       setLoading(false);
     });
   }, [id]);
@@ -218,6 +224,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       setError("Price (Ks) must be a whole number greater than 0 — it's the amount actually charged at checkout.");
       return;
     }
+    if (sizeRows.some(r => !r.label.trim())) { setError('Every size needs a label, or remove the empty row.'); return; }
     setSaving(true); setError('');
     try {
       const res = await fetch(`/api/admin/products/${id}`, {
@@ -243,6 +250,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           reviewCount: Number(form.reviewCount),
           isActive:    form.isActive,
           clinicIds:   selectedClinics.map(c => c.id),
+          sizes: sizeRows.map(r => ({
+            label: r.label.trim(),
+            priceOverride: r.priceOverride === '' ? null : Number(r.priceOverride),
+            stock: Number(r.stock || 0),
+          })),
         }),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); return; }
@@ -350,6 +362,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               <label className={lbl}>Stock Quantity (aggregate, across all locations)</label>
               <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
+          </Section>
+
+          <Section title="Sizes">
+            <p className="text-xs text-gray-400 -mt-2">Optional. Leave empty and this product sells as one item with the price/stock above. Add sizes and patients must pick one to buy.</p>
+            <ProductSizesEditor rows={sizeRows} onChange={setSizeRows} />
           </Section>
 
           <Section title="Stock by Location">

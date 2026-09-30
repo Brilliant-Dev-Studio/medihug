@@ -1,0 +1,9 @@
+PASS  admin order detail shows Size: M
+PASS  admin order detail shows correct line total 24,000
+PASS  admin products list shows "3 sizes" pill
+PASS  edit page loads 3 size rows
+PASS  first row label is S
+PASS  edit page now has 4 size rows after save+reload
+PASS  4th row is the new XL size
+
+ALL PASS

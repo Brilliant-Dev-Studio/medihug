@@ -34,14 +34,14 @@ export async function POST(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { name, nameEn } = await req.json();
+    const { name, nameEn, isInternational } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'Name is required.' }, { status: 400 });
 
     const existing = await db.partnerType.findUnique({ where: { name: name.trim() } });
     if (existing) return NextResponse.json({ error: 'ဤ Partner Type ရှိနှင့်ပြီးသားဖြစ်သည်။' }, { status: 409 });
 
     const partnerType = await db.partnerType.create({
-      data: { name: name.trim(), nameEn: nameEn?.trim() || null },
+      data: { name: name.trim(), nameEn: nameEn?.trim() || null, isInternational: !!isInternational },
     });
     return NextResponse.json({ partnerType }, { status: 201 });
   } catch {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Search, X, ChevronDown, Plus } from 'lucide-react';
 import ImageDropzoneMulti from '@/components/admin/ImageDropzoneMulti';
 import ClinicMultiSelect, { type ClinicOption } from '@/components/admin/ClinicMultiSelect';
+import ProductSizesEditor, { type SizeRow } from '@/components/admin/ProductSizesEditor';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2ab5ad]/40 focus:border-[#2ab5ad] transition-colors';
@@ -169,6 +170,7 @@ export default function NewProductPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [clinics, setClinics]       = useState<ClinicOption[]>([]);
   const [selectedClinics, setSelectedClinics] = useState<ClinicOption[]>([]);
+  const [sizeRows, setSizeRows] = useState<SizeRow[]>([]);
 
   useEffect(() => {
     fetch('/api/admin/product-categories').then(r => r.json()).then(d => setCategories(d.categories ?? []));
@@ -183,6 +185,7 @@ export default function NewProductPage() {
       setError("Price (Ks) must be a whole number greater than 0 — it's the amount actually charged at checkout.");
       return;
     }
+    if (sizeRows.some(r => !r.label.trim())) { setError('Every size needs a label, or remove the empty row.'); return; }
     setError(''); setLoading(true);
     try {
       const res = await fetch('/api/admin/products', {
@@ -208,6 +211,11 @@ export default function NewProductPage() {
           reviewCount: Number(form.reviewCount),
           isActive:    form.isActive,
           clinicIds:   selectedClinics.map(c => c.id),
+          sizes: sizeRows.map(r => ({
+            label: r.label.trim(),
+            priceOverride: r.priceOverride === '' ? null : Number(r.priceOverride),
+            stock: Number(r.stock || 0),
+          })),
         }),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); return; }
@@ -305,6 +313,11 @@ export default function NewProductPage() {
               <label className={lbl}>Stock Quantity</label>
               <input className={inp} type="number" min={0} value={form.stock} onChange={e => set('stock', e.target.value)} />
             </div>
+          </Section>
+
+          <Section title="Sizes">
+            <p className="text-xs text-gray-400 -mt-2">Optional. Leave empty and this product sells as one item with the price/stock above. Add sizes and patients must pick one to buy.</p>
+            <ProductSizesEditor rows={sizeRows} onChange={setSizeRows} />
           </Section>
         </div>
 

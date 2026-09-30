@@ -39,6 +39,7 @@ type Product = {
   keyBenefits: string[];
   tags: string[];
   isActive: boolean;
+  sizes: { id: string; label: string; priceOverride: number | null; stock: number }[];
 };
 
 export default function ProductDetailPage() {
@@ -53,6 +54,7 @@ export default function ProductDetailPage() {
   const { favorites, toggle: toggleFav, needsIdentity, closeIdentity, submitIdentity } = useFavorites('product');
   const [zoom,      setZoom]      = useState(false);
   const [qty, setQty] = useState(1);
+  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null);
   const { add: addToCart } = useCart();
   const [recommended, setRecommended] = useState<Product[]>([]);
   const recScrollRef = useRef<HTMLDivElement>(null);
@@ -63,7 +65,12 @@ export default function ProductDetailPage() {
   useEffect(() => {
     fetch(`/api/admin/products/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(d => { setProduct(d.product); setLoading(false); })
+      .then(d => {
+        const p: Product = d.product;
+        setProduct(p);
+        setSelectedSizeId(p.sizes?.[0]?.id ?? null);
+        setLoading(false);
+      })
       .catch(() => { setNotFound(true); setLoading(false); });
   }, [id]);
 
@@ -115,6 +122,13 @@ export default function ProductDetailPage() {
   }
 
   const favorited = favorites.has(product.id);
+  const hasSizes = product.sizes.length > 0;
+  const selectedSize = hasSizes ? (product.sizes.find(s => s.id === selectedSizeId) ?? product.sizes[0]) : null;
+  const effectivePrice: Product = {
+    ...product,
+    price: selectedSize?.priceOverride ?? product.price,
+  };
+  const effectiveStock = hasSizes ? (selectedSize?.stock ?? 0) : product.stock;
 
   // Build specs from real fields
   const specs = [
@@ -125,10 +139,35 @@ export default function ProductDetailPage() {
   ].filter((s): s is NonNullable<typeof s> => s !== null);
 
   const handleAddToCart = () => {
-    addToCart(product.id, qty);
+    if (hasSizes && !selectedSize) {
+      toast.error(mm ? 'Size ရွေးပေးပါ' : 'Please choose a size');
+      return;
+    }
+    addToCart(product.id, qty, selectedSize?.id ?? null);
     toast.success(mm ? 'ဈေးခြင်းထဲ ထည့်ပြီးပါပြီ' : 'Added to cart');
     setQty(1);
   };
+
+  const sizePicker = hasSizes && (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{mm ? 'Size ရွေးပါ' : 'Select Size'}</p>
+      <div className="flex flex-wrap gap-2">
+        {product.sizes.map(s => {
+          const active = s.id === selectedSizeId;
+          const out = s.stock <= 0;
+          return (
+            <button key={s.id} type="button" disabled={out}
+              onClick={() => { setSelectedSizeId(s.id); setQty(1); }}
+              className="px-3.5 py-2 rounded-xl text-sm font-bold border-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={active ? { borderColor: PRIMARY, backgroundColor: `${PRIMARY}12`, color: PRIMARY } : { borderColor: '#e5e7eb', color: '#4b5563' }}>
+              {s.label}
+              {out && <span className="ml-1 text-[10px] font-semibold">({mm ? 'ကုန်' : 'out'})</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   const qtyStepper = (
     <div className="flex items-center gap-2 rounded-xl border border-gray-200 px-1 py-1 w-fit">
@@ -136,7 +175,7 @@ export default function ProductDetailPage() {
         <Minus className="w-3.5 h-3.5" />
       </button>
       <span className="w-6 text-center text-sm font-bold text-gray-700">{qty}</span>
-      <button onClick={() => setQty(q => Math.min(product.stock, q + 1))} disabled={qty >= product.stock}
+      <button onClick={() => setQty(q => Math.min(effectiveStock, q + 1))} disabled={qty >= effectiveStock}
         className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-50 disabled:opacity-30">
         <Plus className="w-3.5 h-3.5" />
       </button>
@@ -224,13 +263,17 @@ export default function ProductDetailPage() {
 
       {/* Price */}
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-bold" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(product, { labels: { MMK: 'Ks' } }))}</span>
-        {product.stock <= 0 && (
+        <span className="text-2xl font-bold" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(effectivePrice, { labels: { MMK: 'Ks' } }))}</span>
+        {effectiveStock <= 0 && (
           <span className="text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-full ml-2">
             {mm ? 'ကုန်သွားပြီ' : 'Out of stock'}
           </span>
         )}
       </div>
+
+      {/* Sizes — mobile shows it here (this block also renders in the mobile layout);
+          desktop repeats it in the right-hand order card, next to the buy action. */}
+      <div className="lg:hidden">{sizePicker}</div>
 
       {/* Description */}
       {product.description && (
@@ -286,7 +329,7 @@ export default function ProductDetailPage() {
   );
 
   const addToCartButton = (
-    <button onClick={handleAddToCart} disabled={product.stock <= 0}
+    <button onClick={handleAddToCart} disabled={effectiveStock <= 0}
       className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-bold text-sm text-white transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
       style={{ backgroundColor: PRIMARY }}>
       <ShoppingCart className="w-4 h-4" />
@@ -365,7 +408,7 @@ export default function ProductDetailPage() {
               <div className="px-5 pt-5 pb-4" style={{ background: `linear-gradient(135deg, ${PRIMARY} 0%, ${SECONDARY} 100%)` }}>
                 <p className="text-white/60 text-xs mb-1">{mm ? 'တန်ဖိုး' : 'Price'}</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-white">{formatPriceEntries(getProductPriceEntries(product, { labels: { MMK: 'Ks' } }))}</span>
+                  <span className="text-3xl font-bold text-white">{formatPriceEntries(getProductPriceEntries(effectivePrice, { labels: { MMK: 'Ks' } }))}</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-3">
                   <div className="flex items-center gap-1">
@@ -392,6 +435,8 @@ export default function ProductDetailPage() {
                     </div>
                   ))}
                 </div>
+
+                {sizePicker}
 
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-gray-500">{mm ? 'အရေအတွက်' : 'Quantity'}</p>

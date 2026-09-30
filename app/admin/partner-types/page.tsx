@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Check, X, Loader2, Building2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check, X, Loader2, Building2, ChevronLeft, ChevronRight, Search, Globe } from 'lucide-react';
 
 const PRIMARY = '#2ab5ad';
 
-interface PartnerType { id: string; name: string; nameEn: string | null; createdAt: string; }
+interface PartnerType { id: string; name: string; nameEn: string | null; isInternational: boolean; createdAt: string; }
 
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
@@ -21,12 +21,14 @@ export default function AdminPartnerTypesPage() {
   const [creating,    setCreating]    = useState(false);
   const [newName,     setNewName]     = useState('');
   const [newNameEn,   setNewNameEn]   = useState('');
+  const [newInternational, setNewInternational] = useState(false);
   const [createError, setCreateError] = useState('');
   const [savingNew,   setSavingNew]   = useState(false);
 
   const [editId,     setEditId]     = useState<string | null>(null);
   const [editName,   setEditName]   = useState('');
   const [editNameEn, setEditNameEn] = useState('');
+  const [editInternational, setEditInternational] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async (p = page) => {
@@ -50,23 +52,23 @@ export default function AdminPartnerTypesPage() {
     setSavingNew(true); setCreateError('');
     const res  = await fetch('/api/admin/partner-types', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName.trim(), nameEn: newNameEn.trim() }),
+      body: JSON.stringify({ name: newName.trim(), nameEn: newNameEn.trim(), isInternational: newInternational }),
     });
     const data = await res.json();
     if (!res.ok) { setCreateError(data.error); setSavingNew(false); return; }
-    setNewName(''); setNewNameEn(''); setCreating(false); setSavingNew(false);
+    setNewName(''); setNewNameEn(''); setNewInternational(false); setCreating(false); setSavingNew(false);
     load(1);
   };
 
   const startEdit = (s: PartnerType) => {
-    setEditId(s.id); setEditName(s.name); setEditNameEn(s.nameEn ?? '');
+    setEditId(s.id); setEditName(s.name); setEditNameEn(s.nameEn ?? ''); setEditInternational(s.isInternational);
   };
 
   const handleEdit = async (id: string) => {
     if (!editName.trim()) return;
     const res = await fetch(`/api/admin/partner-types/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName.trim(), nameEn: editNameEn.trim() }),
+      body: JSON.stringify({ name: editName.trim(), nameEn: editNameEn.trim(), isInternational: editInternational }),
     });
     if (res.ok) { setEditId(null); load(page); }
   };
@@ -141,6 +143,10 @@ export default function AdminPartnerTypesPage() {
               className={inp}
             />
           </div>
+          <label className="flex items-center gap-2 px-1 cursor-pointer">
+            <input type="checkbox" checked={newInternational} onChange={e => setNewInternational(e.target.checked)} className="accent-teal-500" />
+            <span className="text-xs text-gray-600">International Partner type — grants access to the partner portal&rsquo;s International Partner menu</span>
+          </label>
           <div className="flex gap-2">
             <button
               onClick={handleCreate} disabled={savingNew}
@@ -168,17 +174,18 @@ export default function AdminPartnerTypesPage() {
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest w-8">#</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Myanmar Name</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">English Name</th>
+                <th className="px-5 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">International</th>
                 <th className="px-5 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Created</th>
                 <th className="px-5 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan={5} className="py-16 text-center">
+                <tr><td colSpan={6} className="py-16 text-center">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-300" />
                 </td></tr>
               ) : partnerTypes.length === 0 ? (
-                <tr><td colSpan={5} className="py-16 text-center">
+                <tr><td colSpan={6} className="py-16 text-center">
                   <Building2 className="w-8 h-8 mx-auto text-gray-200 mb-2" />
                   <p className="text-sm text-gray-400">No partner types yet. Create one above.</p>
                 </td></tr>
@@ -188,7 +195,7 @@ export default function AdminPartnerTypesPage() {
 
                   {editId === s.id ? (
                     <>
-                      <td className="px-5 py-3.5" colSpan={2}>
+                      <td className="px-5 py-3.5" colSpan={3}>
                         <div className="flex gap-2">
                           <input
                             autoFocus
@@ -205,6 +212,10 @@ export default function AdminPartnerTypesPage() {
                             placeholder="English name"
                             className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-teal-400"
                           />
+                          <label className="flex items-center gap-1.5 shrink-0 px-1 cursor-pointer" title="International Partner type">
+                            <input type="checkbox" checked={editInternational} onChange={e => setEditInternational(e.target.checked)} className="accent-teal-500" />
+                            <Globe className="w-3.5 h-3.5 text-gray-400" />
+                          </label>
                           <button onClick={() => handleEdit(s.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-white shrink-0" style={{ backgroundColor: PRIMARY }}>
                             <Check className="w-3.5 h-3.5" />
                           </button>
@@ -227,6 +238,15 @@ export default function AdminPartnerTypesPage() {
                       </td>
                       <td className="px-5 py-3.5">
                         <span className="text-sm text-gray-500">{s.nameEn || <span className="text-gray-300 text-xs italic">—</span>}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-center">
+                        {s.isInternational ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full" style={{ backgroundColor: '#e6f7f7', color: PRIMARY }}>
+                            <Globe className="w-3 h-3" /> Yes
+                          </span>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-xs text-gray-400 whitespace-nowrap">
                         {new Date(s.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}

@@ -22,16 +22,25 @@ export async function POST(req: NextRequest) {
 
     const order = await db.$transaction(async (tx) => {
       const productIds = items.map((i: { productId: string }) => i.productId);
-      const products = await tx.product.findMany({ where: { id: { in: productIds } } });
+      const products = await tx.product.findMany({ where: { id: { in: productIds } }, include: { sizes: true } });
       const productMap = new Map(products.map(p => [p.id, p]));
 
       let totalAmount = 0;
-      const itemsData = items.map((i: { productId: string; quantity: number }) => {
+      const itemsData = items.map((i: { productId: string; sizeId?: string | null; quantity: number }) => {
         const product = productMap.get(i.productId);
         if (!product) throw new Error('PRODUCT_NOT_FOUND');
-        if (product.stock < i.quantity) throw new Error('OUT_OF_STOCK');
-        totalAmount += product.price * i.quantity;
-        return { productId: i.productId, quantity: i.quantity, price: product.price };
+
+        // A product with sizes must be bought by size — its base stock/price don't apply.
+        const size = i.sizeId ? product.sizes.find(s => s.id === i.sizeId) : null;
+        if (i.sizeId && !size) throw new Error('PRODUCT_NOT_FOUND');
+        if (product.sizes.length > 0 && !size) throw new Error('SIZE_REQUIRED');
+
+        const stock = size ? size.stock : product.stock;
+        const price = size?.priceOverride ?? product.price;
+        if (stock < i.quantity) throw new Error('OUT_OF_STOCK');
+
+        totalAmount += price * i.quantity;
+        return { productId: i.productId, sizeId: size?.id ?? null, sizeLabel: size?.label ?? null, quantity: i.quantity, price };
       });
 
       let user = await tx.user.findUnique({ where: { phone } });
@@ -41,7 +50,10 @@ export async function POST(req: NextRequest) {
       }
 
       await Promise.all(
-        itemsData.map(i => tx.product.update({ where: { id: i.productId }, data: { stock: { decrement: i.quantity } } }))
+        itemsData.map(i => i.sizeId
+          ? tx.productSize.update({ where: { id: i.sizeId }, data: { stock: { decrement: i.quantity } } })
+          : tx.product.update({ where: { id: i.productId }, data: { stock: { decrement: i.quantity } } })
+        )
       );
 
       const created = await tx.order.create({
@@ -103,6 +115,9 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     if (e instanceof Error && e.message === 'OUT_OF_STOCK') {
       return NextResponse.json({ error: 'One or more items are out of stock.', code: 'OUT_OF_STOCK' }, { status: 409 });
+    }
+    if (e instanceof Error && e.message === 'SIZE_REQUIRED') {
+      return NextResponse.json({ error: 'Please choose a size for one or more items.', code: 'SIZE_REQUIRED' }, { status: 400 });
     }
     if (e instanceof Error && e.message === 'PRODUCT_NOT_FOUND') {
       return NextResponse.json({ error: 'One or more products no longer exist.', code: 'PRODUCT_NOT_FOUND' }, { status: 404 });

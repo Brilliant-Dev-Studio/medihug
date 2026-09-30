@@ -21,6 +21,7 @@ interface Product {
   category: string | null;
   isActive: boolean;
   createdAt: string;
+  _count?: { sizes: number };
 }
 
 /* ── Main Page ── */
@@ -184,9 +185,13 @@ export default function AdminProductsPage() {
                     {p.price.toLocaleString()} Ks
                   </td>
                   <td className="px-4 py-3.5 text-right">
-                    <span className={`font-semibold ${p.stock === 0 ? 'text-red-500' : p.stock < 10 ? 'text-amber-500' : 'text-gray-700'}`}>
-                      {p.stock}
-                    </span>
+                    {(p._count?.sizes ?? 0) > 0 ? (
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full bg-teal-50 text-[#2ab5ad]">{p._count!.sizes} sizes</span>
+                    ) : (
+                      <span className={`font-semibold ${p.stock === 0 ? 'text-red-500' : p.stock < 10 ? 'text-amber-500' : 'text-gray-700'}`}>
+                        {p.stock}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     <button

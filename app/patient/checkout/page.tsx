@@ -10,7 +10,7 @@ import {
   Loader2, ShoppingBag, PartyPopper, Sparkles, ArrowRight, Copy, Check,
 } from 'lucide-react';
 import { useLang } from '../../lib/LanguageContext';
-import { useCart } from '../../lib/useCart';
+import { useCart, cartLineKey } from '../../lib/useCart';
 import { compressAndUpload } from '@/components/admin/uploadImage';
 import PaymentMethodPicker from '@/components/PaymentMethodPicker';
 import DeliveryAddressSection from '@/components/DeliveryAddressSection';
@@ -21,9 +21,11 @@ import { formatPriceEntries, sumProductPricesByCurrency } from '@/lib/productPri
 const PRIMARY   = 'var(--color-primary)';
 const SECONDARY = 'var(--color-primary-dark)';
 
+interface ProductSize { id: string; label: string; priceOverride: number | null; stock: number; }
 interface Product {
   id: string; name: string; nameEn: string | null; imageUrl: string | null;
   price: number; priceThb: number | null; priceUsd: number | null; packSize: string | null;
+  sizes: ProductSize[];
 }
 
 function getPatient(): { name: string; phone: string } | null {
@@ -46,8 +48,13 @@ function CheckoutContent() {
   const mm = lang === 'mm';
   const { lines, removeItem } = useCart();
 
+  // `lines` carries composite productId::sizeId keys; `ids` is kept for any old bookmarked
+  // link and just matches by productId (sizeId null — pre-sizes carts never had one).
+  const lineKeys = (params.get('lines') ?? '').split(',').filter(Boolean);
   const ids = (params.get('ids') ?? '').split(',').filter(Boolean);
-  const checkoutLines = lines.filter(l => ids.includes(l.productId));
+  const checkoutLines = lines.filter(l => lineKeys.length > 0
+    ? lineKeys.includes(cartLineKey(l.productId, l.sizeId))
+    : ids.includes(l.productId));
 
   const [products, setProducts] = useState<Record<string, Product>>({});
   const [loading, setLoading]   = useState(true);
@@ -71,8 +78,14 @@ function CheckoutContent() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (ids.length === 0) { setLoading(false); return; }
-    Promise.all(ids.map(id => fetch(`/api/admin/products/${id}`).then(r => r.ok ? r.json() : null)))
+    // Derived from the URL, not `checkoutLines` — the cart hook's `lines` are still empty on
+    // this very first render (they hydrate from localStorage a tick later), and this effect's
+    // deps are deliberately empty so it must not close over that pre-hydration snapshot.
+    const productIds = [...new Set(
+      lineKeys.length > 0 ? lineKeys.map(k => k.split('::')[0]) : ids
+    )];
+    if (productIds.length === 0) { setLoading(false); return; }
+    Promise.all(productIds.map(id => fetch(`/api/admin/products/${id}`).then(r => r.ok ? r.json() : null)))
       .then(results => {
         const map: Record<string, Product> = {};
         results.forEach(r => { if (r?.product) map[r.product.id] = r.product; });
@@ -82,13 +95,21 @@ function CheckoutContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const total = checkoutLines.reduce((sum, l) => {
-    const p = products[l.productId];
-    return sum + (p ? p.price * l.quantity : 0);
-  }, 0);
+  // Each checkout line paired with its resolved product + (if any) size — size's price
+  // override wins over the base product price, same rule as the cart page.
+  const resolvedLines = checkoutLines
+    .map(l => {
+      const p = products[l.productId];
+      if (!p) return null;
+      const size = l.sizeId ? p.sizes?.find(s => s.id === l.sizeId) ?? null : null;
+      return { ...l, product: p, size, effective: { ...p, price: size?.priceOverride ?? p.price } as Product };
+    })
+    .filter((l): l is NonNullable<typeof l> => l !== null);
+
+  const total = resolvedLines.reduce((sum, l) => sum + l.effective.price * l.quantity, 0);
   const finalTotal = total; // Points / discount coupons apply to online doctor appointments only
   const priceBreakdown = sumProductPricesByCurrency(
-    checkoutLines.filter(l => products[l.productId]).map(l => ({ ...products[l.productId], quantity: l.quantity })),
+    resolvedLines.map(l => ({ ...l.effective, quantity: l.quantity })),
     { labels: { MMK: 'Ks' } }
   );
 
@@ -112,7 +133,7 @@ function CheckoutContent() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(), phone: phone.trim(),
-          items: checkoutLines.map(l => ({ productId: l.productId, quantity: l.quantity })),
+          items: checkoutLines.map(l => ({ productId: l.productId, sizeId: l.sizeId, quantity: l.quantity })),
           paymentMethod: payMethod, receiptUrl, note,
           deliveryAddress: deliveryAddress.trim(),
         }),
@@ -121,7 +142,7 @@ function CheckoutContent() {
       pushLog('POST /api/patient/orders', { status: res.status, ok: res.ok, data });
       if (!res.ok) { setError(data.error ?? (mm ? 'အမှားတစ်ခုဖြစ်ပွားသည်' : 'Something went wrong')); setSubmitting(false); return; }
       localStorage.setItem('medihug_patient', JSON.stringify({ name: name.trim(), phone: phone.trim() }));
-      checkoutLines.forEach(l => removeItem(l.productId));
+      checkoutLines.forEach(l => removeItem(l.productId, l.sizeId));
 
       if (isCb) {
         const initRes = await fetch('/api/payments/cbpay/initiate', {
@@ -265,20 +286,19 @@ function CheckoutContent() {
             {/* order items */}
             <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{mm ? 'ဝယ်ယူမည့်ပစ္စည်း' : 'Order Items'}</p>
-              {checkoutLines.map(l => {
-                const p = products[l.productId];
-                if (!p) return null;
+              {resolvedLines.map(l => {
+                const p = l.product;
                 const pname = mm ? p.name : (p.nameEn ?? p.name);
                 return (
-                  <div key={l.productId} className="flex items-center gap-3">
+                  <div key={cartLineKey(l.productId, l.sizeId)} className="flex items-center gap-3">
                     <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
                       {p.imageUrl ? <Image src={p.imageUrl} alt={pname} fill sizes="48px" className="object-cover" /> : <div className="absolute inset-0 flex items-center justify-center"><Package className="w-5 h-5 text-gray-300" /></div>}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 truncate">{pname}</p>
-                      <p className="text-xs text-gray-400">x{l.quantity}</p>
+                      <p className="text-xs text-gray-400">{l.size ? `${l.size.label} · ` : ''}x{l.quantity}</p>
                     </div>
-                    <p className="text-sm font-bold text-gray-700 shrink-0">{formatPriceEntries(sumProductPricesByCurrency([{ ...p, quantity: l.quantity }], { labels: { MMK: 'Ks' } }))}</p>
+                    <p className="text-sm font-bold text-gray-700 shrink-0">{formatPriceEntries(sumProductPricesByCurrency([{ ...l.effective, quantity: l.quantity }], { labels: { MMK: 'Ks' } }))}</p>
                   </div>
                 );
               })}

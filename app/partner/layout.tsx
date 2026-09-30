@@ -11,7 +11,7 @@ import { NotificationBellButton } from '@/components/NotificationBell';
 
 const PRIMARY = '#3b5bdb';
 
-interface ClinicInfo { id: string; name: string; nameEn: string | null; imageUrl: string | null; userId?: string; isInternational?: boolean; }
+interface ClinicInfo { id: string; name: string; nameEn: string | null; imageUrl: string | null; userId?: string; isInternational?: boolean; internationalEligible?: boolean; }
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -24,11 +24,23 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     fetch('/api/partner/me').then(r => r.json()).then(d => setClinic(d.clinic ?? null));
   }, [pathname]);
 
+  // Defense in depth against a bookmarked/typed URL: the nav item is already hidden, but a
+  // non-eligible partner landing on the route directly (or one whose type lost the flag) gets
+  // bounced to the dashboard instead of seeing a page that no longer applies to them.
+  useEffect(() => {
+    if (!clinic || clinic.internationalEligible) return;
+    if (pathname.startsWith('/partner/international-partner')) router.replace('/partner/dashboard');
+  }, [clinic, pathname, router]);
+
   const navItems = [
     { href: '/partner/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/partner/appointments', icon: Calendar,        label: 'Appointments' },
     { href: '/partner/doctors',      icon: Stethoscope,     label: 'Doctors' },
-    { href: '/partner/international-partner', icon: Globe,  label: 'International Partner' },
+    // Only partner types the SuperAdmin flagged as international (Partner Types → International)
+    // get this section — everyone else never sees it. `clinic` is null on first paint (still
+    // fetching /api/partner/me), so it briefly hides for every partner rather than flashing it
+    // on for one who shouldn't have it.
+    ...(clinic?.internationalEligible ? [{ href: '/partner/international-partner', icon: Globe, label: 'International Partner' }] : []),
     { href: '/partner/products',     icon: ShoppingBag,     label: 'Product and Services' },
     { href: '/partner/programs',     icon: HeartPulse,      label: 'Programs' },
     { href: '/partner/orders',       icon: Receipt,         label: 'Orders' },

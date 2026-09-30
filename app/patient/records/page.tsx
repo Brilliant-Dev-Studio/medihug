@@ -33,6 +33,7 @@ type Product = {
   rating: number;
   reviewCount: number;
   isActive: boolean;
+  _count?: { sizes: number };
 };
 type Category = { id: string; name: string; nameEn: string | null };
 
@@ -171,6 +172,9 @@ function ProductCard({ product, mm, catLabel, favorited, onToggleFav }: {
         <div className="mt-auto pt-1 flex items-center justify-between gap-2">
           <span className="text-sm font-bold" style={{ color: PRIMARY }}>{formatPriceEntries(getProductPriceEntries(product, { labels: { MMK: 'Ks' } }))}</span>
           <button onClick={e => {
+            // Sized products need a size picked first — let the card's own Link carry the
+            // click through to the detail page instead of silently adding a sizeless line.
+            if ((product._count?.sizes ?? 0) > 0) return;
             e.preventDefault(); e.stopPropagation();
             addToCart(product.id, 1);
             toast.success(mm ? 'ဈေးခြင်းထဲ ထည့်ပြီးပါပြီ' : 'Added to cart');

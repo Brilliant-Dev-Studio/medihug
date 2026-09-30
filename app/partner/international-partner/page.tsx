@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, Save, Plane, Stethoscope, ArrowUpRight, Plus, Trash2, Building2 } from 'lucide-react';
+import { Loader2, Save, Plane, Stethoscope, ArrowUpRight, Plus, Trash2, Building2, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DangerDeleteModal from '@/components/admin/DangerDeleteModal';
 
@@ -139,6 +139,17 @@ export default function InternationalPartnerPage() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold text-gray-800">{clinic?._count?.doctors ?? 0} Doctors</p>
               <p className="text-xs text-gray-400">Manage doctors &amp; weekly slots</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0" />
+          </Link>
+
+          <Link href="/partner/international-partner/requests" className="group bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4 hover:border-gray-200 hover:shadow-sm transition-all">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${ACCENT}15` }}>
+              <Send className="w-5 h-5" style={{ color: ACCENT }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-gray-800">Medical Requests</p>
+              <p className="text-xs text-gray-400">Patients asking about treatment</p>
             </div>
             <ArrowUpRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors shrink-0" />
           </Link>

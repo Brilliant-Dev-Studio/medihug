@@ -119,6 +119,7 @@ model User {
   roleCredentials          RoleCredential[]
   stockMovementsCreated    StockMovement[]
   purchasesCreated         Purchase[]            @relation("PurchaseCreatedBy")
+  medicalRequests          MedicalRequest[]
 }
 
 // ─────────────────────────────────────────────
@@ -222,6 +223,9 @@ model PartnerType {
   id        String   @id @default(cuid())
   name      String   @unique
   nameEn    String?
+  // Gates the partner portal's "International Partner" menu/pages — only clinics whose
+  // Clinic.type matches a PartnerType with this flag set see that section at all.
+  isInternational Boolean @default(false)
   createdAt DateTime @default(now())
 }
 
@@ -249,6 +253,11 @@ model Clinic {
   aboutEn                   String?
   tagsMm                    String[]
   tagsEn                    String[]
+  // Hospital-profile fields for International Partner listings (Clinic.isInternational) —
+  // tagsMm/tagsEn already double as "Services"; this is the separate "Specialty" list.
+  specialties               String[]
+  contactEmail              String?
+  availabilityNote          String? // free-text appointment-availability blurb, not a bookable slot calendar
   verified                  Boolean  @default(false)
   rating                    Float    @default(0)
   reviewCount               Int      @default(0)
@@ -292,6 +301,70 @@ model Clinic {
   stores                     Store[]
   qrRedemptions              PartnerQrRedemption[]
   categories                 CategoryClinic[]
+  medicalRequestsOwned       MedicalRequest[]      @relation("MedicalRequestOwner")
+  medicalRequestsAsHospital  MedicalRequest[]      @relation("MedicalRequestHospital")
+}
+
+// ─────────────────────────────────────────────
+// Medical Request — the International Hospital Representative pipeline. A patient asks
+// about treatment at a specific international Hospital (Clinic.isInternational — either
+// the partner's own clinic or one of their "International Partner" sub-clinics); the
+// partner works it through this status pipeline; SuperAdmin gets read-only oversight.
+// Phase 1 only: Quotation/Documents/Referral-Commission stay as plain fields here rather
+// than their own entities — wiring quotationAmount into RevenueLedger's
+// RevenueSourceType (a new INTERNATIONAL_REFERRAL member, reusing the existing Commission
+// Rules/Earnings engine per product decision) is a later phase once this pipeline itself
+// is validated.
+// ─────────────────────────────────────────────
+
+enum MedicalRequestStatus {
+  NEW
+  SENT
+  RESPONDED
+  QUOTATION
+  ACCEPTED
+  APPOINTMENT
+  COMPLETED
+  CANCELLED
+}
+
+model MedicalRequest {
+  id String @id @default(cuid())
+
+  // The partner's own top-level clinic — whose partner-portal pipeline this request lives
+  // in, regardless of whether it targets that clinic itself or one of its sub-clinics.
+  ownerClinicId String
+  // The specific Hospital the patient is asking about (Clinic.isInternational = true) —
+  // the partner's own clinic, or one of their sub-clinics.
+  hospitalClinicId String
+
+  patientUserId String?
+  patientName   String
+  patientPhone  String
+  patientEmail  String?
+
+  specialty String?
+  reason    String?
+
+  status MedicalRequestStatus @default(NEW)
+
+  quotationAmount   Int?
+  quotationCurrency String? @default("USD")
+  quotationNote     String?
+
+  appointmentDate DateTime?
+  cancelReason    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerClinic    Clinic @relation("MedicalRequestOwner", fields: [ownerClinicId], references: [id], onDelete: Cascade)
+  hospitalClinic Clinic @relation("MedicalRequestHospital", fields: [hospitalClinicId], references: [id], onDelete: Cascade)
+  patient        User?  @relation(fields: [patientUserId], references: [id], onDelete: SetNull)
+
+  @@index([ownerClinicId, status])
+  @@index([hospitalClinicId])
+  @@index([patientUserId])
 }
 
 // Shared login account audit trail — a clinic's partner_token login is often used by
@@ -523,6 +596,29 @@ model Product {
   stocks         ProductStock[]
   stockMovements StockMovement[]
   purchaseItems  PurchaseItem[]
+  sizes          ProductSize[]
+}
+
+// A purchasable variant of a Product — e.g. S/M/L, or "500ml"/"1L". Optional: most products
+// have none, and behave exactly as before (Product.price / Product.stock apply directly).
+// Once a product has sizes, the patient must pick one — each size carries its own stock, and
+// an optional price override (still MMK only; the foreign-currency display prices stay the
+// product's, same as before). This is patient-checkout scope only — the multi-store POS
+// system (ProductStock/StockMovement/Purchase) is not size-aware and still tracks the base
+// product; reconciling the two is a later phase if the POS side ever needs it.
+model ProductSize {
+  id            String   @id @default(cuid())
+  productId     String
+  label         String
+  priceOverride Int? // MMK; null = use Product.price
+  stock         Int      @default(0)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
 }
 
 // ─────────────────────────────────────────────
@@ -561,17 +657,21 @@ model Order {
 }
 
 model OrderItem {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   orderId   String
   productId String
   quantity  Int
-  price     Int // snapshot of product price at order time
+  price     Int // snapshot of product (or size) price at order time
+  sizeId    String? // null when the product has no sizes
+  sizeLabel String? // snapshot — the size row can be renamed/deleted later, this stays accurate
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order   Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size    ProductSize? @relation(fields: [sizeId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
+  @@index([sizeId])
 }
 
 // ─────────────────────────────────────────────

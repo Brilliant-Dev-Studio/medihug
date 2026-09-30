@@ -15,5 +15,15 @@ export async function GET(req: NextRequest) {
   });
   if (!clinic) return NextResponse.json({ clinic: null }, { status: 404 });
 
-  return NextResponse.json({ clinic: { ...clinic, userId: payload.id }, ownerName: payload.name });
+  // The "International Partner" section is only relevant to partner types the SuperAdmin has
+  // flagged as international (Partner Types → International) — everyone else never sees it.
+  // A clinic that already switched it on under an older/renamed type keeps access regardless,
+  // so re-labelling a PartnerType later can't lock someone out of their own data.
+  const internationalType = await db.partnerType.findFirst({
+    where: { name: clinic.type, isInternational: true },
+    select: { id: true },
+  });
+  const internationalEligible = !!internationalType || clinic.isInternational;
+
+  return NextResponse.json({ clinic: { ...clinic, userId: payload.id, internationalEligible }, ownerName: payload.name });
 }

@@ -9,7 +9,7 @@ import RefundPanel from '@/components/admin/RefundPanel';
 const PRIMARY = '#2ab5ad';
 
 interface OrderItem {
-  id: string; quantity: number; price: number;
+  id: string; quantity: number; price: number; sizeLabel: string | null;
   product: { id: string; name: string; nameEn: string | null; imageUrl: string | null; packSize: string | null };
 }
 interface Order {
@@ -154,7 +154,9 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
-                      {item.product.packSize && <p className="text-[11px] text-gray-400">{item.product.packSize}</p>}
+                      {item.sizeLabel ? (
+                        <p className="text-[11px] font-semibold" style={{ color: PRIMARY }}>Size: {item.sizeLabel}</p>
+                      ) : item.product.packSize && <p className="text-[11px] text-gray-400">{item.product.packSize}</p>}
                       <p className="text-xs text-gray-400 mt-0.5">x{item.quantity} · {item.price.toLocaleString()} Ks each</p>
                     </div>
                     <p className="text-sm font-bold text-gray-700 shrink-0">{(item.price * item.quantity).toLocaleString()} Ks</p>
