@@ -1,25 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PieChart as PieChartIcon, Loader2, TrendingUp, TrendingDown, Wallet, Receipt, Stethoscope, Building2 } from 'lucide-react';
+import { PieChart as PieChartIcon, Loader2, TrendingUp, TrendingDown, Wallet, Receipt, Stethoscope, Building2, Download } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { toCsv } from '@/lib/csv';
 
 const PRIMARY = '#2ab5ad';
 
 interface Overview {
   range: string;
-  revenue: { consultation: number; product: number; program: number; ads: number; total: number };
-  cost: { doctorPayout: number; gatewayFee: number; expenses: number; refunds: number; partnerPayout: number; txnCount: number };
+  revenue: { consultation: number; product: number; program: number; weightProgram: number; ads: number; internationalService: number; total: number };
+  cost: { doctorPayout: number; productCogs: number; gatewayFee: number; expenses: number; refunds: number; partnerPayout: number; costOfSales: number; operatingExpenses: number; txnCount: number };
   result: { grossProfit: number; netProfit: number; profitMargin: number };
-  serviceBreakdown: { serviceType: string; sales: number; revenue: number; cost: number; netProfit: number; margin: number }[];
+  serviceBreakdown: { serviceType: string; label: string; sales: number; revenue: number; cost: number; netProfit: number; margin: number; noDataSource?: boolean; note?: string }[];
   doctorProfitability: { doctor: { id: string; name: string; nameEn: string | null; imageUrl: string | null } | null; patients: number; revenue: number; payout: number; commission: number }[];
   clinicProfitability: { clinic: { id: string; name: string; nameEn: string | null; imageUrl: string | null } | null; appointments: number; revenue: number; platformCommission: number; programRevenue: number; referralsReceived: number }[];
   series: { label: string; revenue: number; netProfit: number }[];
 }
 
-const SERVICE_LABEL: Record<string, string> = {
-  CONSULTATION: 'Teleconsultation', PRODUCT: 'Products', PROGRAM: 'Programs', ADS: 'Advertisement',
-};
+function downloadCsv(filename: string, rows: Record<string, unknown>[], columns: string[]) {
+  const blob = new Blob([toCsv(rows, columns)], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
@@ -50,20 +56,32 @@ function StatCard({ icon: Icon, label, value, color, bg }: { icon: React.Element
   );
 }
 
-const RANGES = ['daily', 'weekly', 'monthly', 'yearly'] as const;
+const RANGES = ['daily', 'weekly', 'monthly', 'yearly', 'custom'] as const;
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const monthAgoStr = () => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 10); };
 
 export default function PnlPage() {
   const [range, setRange] = useState<typeof RANGES[number]>('monthly');
+  const [customFrom, setCustomFrom] = useState(monthAgoStr());
+  const [customTo, setCustomTo] = useState(todayStr());
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/admin/finance/pnl?range=${range}`)
+    const q = new URLSearchParams({ range });
+    if (range === 'custom') { q.set('from', customFrom); q.set('to', customTo); }
+    fetch(`/api/admin/finance/pnl?${q}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [range]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [range, range === 'custom' ? customFrom : null, range === 'custom' ? customTo : null]);
+
+  const exportCsv = () => {
+    if (!data) return;
+    downloadCsv(`pnl-${range}-${todayStr()}.csv`, data.serviceBreakdown, ['label', 'sales', 'revenue', 'cost', 'netProfit', 'margin']);
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-5">
@@ -77,14 +95,29 @@ export default function PnlPage() {
             <p className="text-sm text-gray-500 mt-0.5">Revenue − payout − gateway fees − expenses</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-          {RANGES.map(r => (
-            <button key={r} onClick={() => setRange(r)}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors"
-              style={{ backgroundColor: range === r ? '#fff' : 'transparent', color: range === r ? PRIMARY : '#9ca3af', boxShadow: range === r ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }}>
-              {r}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+            {RANGES.map(r => (
+              <button key={r} onClick={() => setRange(r)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors"
+                style={{ backgroundColor: range === r ? '#fff' : 'transparent', color: range === r ? PRIMARY : '#9ca3af', boxShadow: range === r ? '0 1px 2px rgba(0,0,0,0.06)' : 'none' }}>
+                {r}
+              </button>
+            ))}
+          </div>
+          {range === 'custom' && (
+            <div className="flex items-center gap-2">
+              <input type="date" value={customFrom} max={customTo} onChange={e => setCustomFrom(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 outline-none focus:border-[#2ab5ad]" />
+              <span className="text-xs text-gray-400">to</span>
+              <input type="date" value={customTo} min={customFrom} max={todayStr()} onChange={e => setCustomTo(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 outline-none focus:border-[#2ab5ad]" />
+            </div>
+          )}
+          <button onClick={exportCsv} disabled={!data}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 transition-colors">
+            <Download className="w-3.5 h-3.5" /> Export CSV
+          </button>
         </div>
       </div>
 
@@ -108,8 +141,9 @@ export default function PnlPage() {
           </div>
 
           {/* Cost breakdown */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-sm">
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
             <div><p className="text-xs text-gray-400 mb-1">Doctor Payout</p><p className="font-bold text-gray-700">{data.cost.doctorPayout.toLocaleString()} Ks</p></div>
+            <div><p className="text-xs text-gray-400 mb-1">Product COGS</p><p className="font-bold text-gray-700">{data.cost.productCogs.toLocaleString()} Ks</p></div>
             <div><p className="text-xs text-gray-400 mb-1">Partner Payout (Program/Ads)</p><p className="font-bold text-gray-700">{data.cost.partnerPayout.toLocaleString()} Ks</p></div>
             <div><p className="text-xs text-gray-400 mb-1">Gateway Fees ({data.cost.txnCount} txns)</p><p className="font-bold text-gray-700">{data.cost.gatewayFee.toLocaleString()} Ks</p></div>
             <div><p className="text-xs text-gray-400 mb-1">Operating Expenses</p><p className="font-bold text-gray-700">{data.cost.expenses.toLocaleString()} Ks</p></div>
@@ -168,8 +202,12 @@ export default function PnlPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {data.serviceBreakdown.map(s => (
-                    <tr key={s.serviceType} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-5 py-3.5 text-sm font-semibold text-gray-700">{SERVICE_LABEL[s.serviceType] ?? s.serviceType}</td>
+                    <tr key={s.serviceType} className={`hover:bg-gray-50/60 transition-colors ${s.noDataSource ? 'opacity-50' : ''}`}>
+                      <td className="px-5 py-3.5 text-sm font-semibold text-gray-700">
+                        {s.label}
+                        {s.noDataSource && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400 align-middle">no data source yet</span>}
+                        {s.note && <span className="ml-2 text-[10px] font-normal text-gray-400 align-middle">({s.note})</span>}
+                      </td>
                       <td className="px-5 py-3.5 text-sm text-gray-500 text-right">{s.sales}</td>
                       <td className="px-5 py-3.5 text-sm text-gray-700 text-right">{s.revenue.toLocaleString()} Ks</td>
                       <td className="px-5 py-3.5 text-sm text-gray-500 text-right">{s.cost.toLocaleString()} Ks</td>

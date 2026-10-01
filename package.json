@@ -29,6 +29,7 @@
     "ai": "^7.0.55",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
+    "exceljs": "^4.4.0",
     "firebase": "^12.15.0",
     "ioredis": "^6.0.0",
     "jose": "^6.2.3",

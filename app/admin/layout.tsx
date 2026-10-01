@@ -74,6 +74,8 @@ const navGroups: NavGroup[] = [
       { href: '/admin/finance/rules',           icon: Percent,        mm: 'ကော်မရှင်စည်းမျဉ်း',     en: 'Commission Rules',    perm: 'pos.manage' as Permission },
       { href: '/admin/finance/expenses',        icon: Receipt,        mm: 'အသုံးစရိတ်',           en: 'Expenses',            perm: 'pos.manage' as Permission },
       { href: '/admin/finance/pnl',             icon: PieChart,       mm: 'အမြတ်/အရှုံး',          en: 'P&L',                 perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/partners',        icon: Building2,      mm: 'Partner အမြတ်/အရှုံး',  en: 'Partner P&L',         perm: 'pos.manage' as Permission },
+      { href: '/admin/finance/products',        icon: Package,        mm: 'Product အမြတ်/အရှုံး',  en: 'Product P&L',         perm: 'pos.manage' as Permission },
       { href: '/admin/finance/refunds',         icon: Undo2,          mm: 'ငွေပြန်အမ်း',           en: 'Refunds',             perm: 'pos.manage' as Permission },
       { href: '/admin/finance/reconciliation',  icon: Scale,          mm: 'ငွေစာရင်းချိန်ညှိခြင်း', en: 'Reconciliation',      perm: 'pos.manage' as Permission },
       { href: '/admin/finance/cashflow',        icon: ArrowLeftRight, mm: 'ငွေသားစီးဆင်းမှု',      en: 'Cash Flow',           perm: 'pos.manage' as Permission },
