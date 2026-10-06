@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PieChart as PieChartIcon, Loader2, TrendingUp, TrendingDown, Wallet, Receipt, Stethoscope, Building2, Download } from 'lucide-react';
+import { PieChart as PieChartIcon, Loader2, TrendingUp, TrendingDown, Wallet, Receipt, Stethoscope, Building2, Download, Landmark, CalendarCheck, CalendarX, Minus } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { toCsv } from '@/lib/csv';
 
@@ -10,12 +10,28 @@ const PRIMARY = '#2ab5ad';
 interface Overview {
   range: string;
   revenue: { consultation: number; product: number; program: number; weightProgram: number; ads: number; internationalService: number; total: number };
-  cost: { doctorPayout: number; productCogs: number; gatewayFee: number; expenses: number; refunds: number; partnerPayout: number; costOfSales: number; operatingExpenses: number; txnCount: number };
-  result: { grossProfit: number; netProfit: number; profitMargin: number };
+  cost: { doctorPayout: number; productCogs: number; gatewayFee: number; opex: number; capex: number; refunds: number; partnerPayout: number; costOfSales: number; operatingExpenses: number; txnCount: number };
+  result: { grossProfit: number; operatingProfit: number; otherIncome: number; otherExpense: number; netProfit: number; profitMargin: number };
+  growth: { revenue: number | null; grossProfit: number | null; operatingExpenses: number | null; netProfit: number | null };
+  appointmentPerformance: { total: number; completed: number; pending: number; cancelled: number; completionRate: number; cancellationRate: number };
   serviceBreakdown: { serviceType: string; label: string; sales: number; revenue: number; cost: number; netProfit: number; margin: number; noDataSource?: boolean; note?: string }[];
   doctorProfitability: { doctor: { id: string; name: string; nameEn: string | null; imageUrl: string | null } | null; patients: number; revenue: number; payout: number; commission: number }[];
   clinicProfitability: { clinic: { id: string; name: string; nameEn: string | null; imageUrl: string | null } | null; appointments: number; revenue: number; platformCommission: number; programRevenue: number; referralsReceived: number }[];
+  expensesByCategory: { name: string; type: string; isCapital: boolean; amount: number }[];
   series: { label: string; revenue: number; netProfit: number }[];
+}
+
+/** "+12.4% vs previous period" — null means the previous period was zero (no meaningful %). */
+function GrowthBadge({ pct, invert = false }: { pct: number | null; invert?: boolean }) {
+  if (pct === null) return <span className="text-[10px] font-semibold text-gray-300">new</span>;
+  const up = pct > 0;
+  const good = invert ? pct <= 0 : pct >= 0;
+  const Icon = pct === 0 ? Minus : up ? TrendingUp : TrendingDown;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold" style={{ color: good ? '#16a34a' : '#dc2626' }}>
+      <Icon className="w-2.5 h-2.5" /> {up ? '+' : ''}{pct}% <span className="font-normal text-gray-400">vs previous period</span>
+    </span>
+  );
 }
 
 function downloadCsv(filename: string, rows: Record<string, unknown>[], columns: string[]) {
@@ -42,7 +58,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
-function StatCard({ icon: Icon, label, value, color, bg }: { icon: React.ElementType; label: string; value: string; color: string; bg: string }) {
+function StatCard({ icon: Icon, label, value, color, bg, growth, invert }: { icon: React.ElementType; label: string; value: string; color: string; bg: string; growth?: number | null; invert?: boolean }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-5 flex items-center gap-4">
       <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: bg }}>
@@ -51,6 +67,7 @@ function StatCard({ icon: Icon, label, value, color, bg }: { icon: React.Element
       <div className="min-w-0">
         <p className="text-xl font-bold truncate text-gray-800">{value}</p>
         <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+        {growth !== undefined && <div className="mt-1"><GrowthBadge pct={growth} invert={invert} /></div>}
       </div>
     </div>
   );
@@ -127,18 +144,37 @@ export default function PnlPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard icon={Wallet} label="Total Revenue" value={`${data.revenue.total.toLocaleString()} Ks`} color={PRIMARY} bg="#e6f7f7" />
-            <StatCard icon={TrendingUp} label="Gross Profit" value={`${data.result.grossProfit.toLocaleString()} Ks`} color="#f59e0b" bg="#fffbeb" />
+          <p className="text-xs text-gray-400 -mt-2">Revenue → Cost of Sales → Gross Profit → Operating Expenses → Operating Profit → Net Profit</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <StatCard icon={Wallet} label="Revenue" value={`${data.revenue.total.toLocaleString()} Ks`} color={PRIMARY} bg="#e6f7f7" growth={data.growth.revenue} />
+            <StatCard icon={TrendingUp} label="Gross Profit" value={`${data.result.grossProfit.toLocaleString()} Ks`} color="#f59e0b" bg="#fffbeb" growth={data.growth.grossProfit} />
+            <StatCard icon={Receipt} label="Operating Expenses" value={`${data.cost.operatingExpenses.toLocaleString()} Ks`} color="#9ca3af" bg="#f9fafb" growth={data.growth.operatingExpenses} invert />
+            <StatCard
+              icon={data.result.operatingProfit >= 0 ? TrendingUp : TrendingDown}
+              label="Operating Profit"
+              value={`${data.result.operatingProfit.toLocaleString()} Ks`}
+              color={data.result.operatingProfit >= 0 ? '#16a34a' : '#dc2626'}
+              bg={data.result.operatingProfit >= 0 ? '#f0fdf4' : '#fef2f2'}
+            />
             <StatCard
               icon={data.result.netProfit >= 0 ? TrendingUp : TrendingDown}
               label={`Net Profit (${data.result.profitMargin}% margin)`}
               value={`${data.result.netProfit.toLocaleString()} Ks`}
               color={data.result.netProfit >= 0 ? '#16a34a' : '#dc2626'}
               bg={data.result.netProfit >= 0 ? '#f0fdf4' : '#fef2f2'}
+              growth={data.growth.netProfit}
             />
-            <StatCard icon={Receipt} label="Operating Expenses" value={`${data.cost.expenses.toLocaleString()} Ks`} color="#9ca3af" bg="#f9fafb" />
           </div>
+
+          {data.cost.capex > 0 && (
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-3.5">
+              <Landmark className="w-5 h-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="text-sm font-bold text-amber-700">{data.cost.capex.toLocaleString()} Ks — Investment / CAPEX this period</p>
+                <p className="text-xs text-amber-600/80">Kept separate from Operating Expenses — not subtracted from Net Profit.</p>
+              </div>
+            </div>
+          )}
 
           {/* Cost breakdown */}
           <div className="bg-white rounded-2xl border border-gray-100 p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
@@ -146,9 +182,44 @@ export default function PnlPage() {
             <div><p className="text-xs text-gray-400 mb-1">Product COGS</p><p className="font-bold text-gray-700">{data.cost.productCogs.toLocaleString()} Ks</p></div>
             <div><p className="text-xs text-gray-400 mb-1">Partner Payout (Program/Ads)</p><p className="font-bold text-gray-700">{data.cost.partnerPayout.toLocaleString()} Ks</p></div>
             <div><p className="text-xs text-gray-400 mb-1">Gateway Fees ({data.cost.txnCount} txns)</p><p className="font-bold text-gray-700">{data.cost.gatewayFee.toLocaleString()} Ks</p></div>
-            <div><p className="text-xs text-gray-400 mb-1">Operating Expenses</p><p className="font-bold text-gray-700">{data.cost.expenses.toLocaleString()} Ks</p></div>
+            <div><p className="text-xs text-gray-400 mb-1">Operating Expenses (OPEX)</p><p className="font-bold text-gray-700">{data.cost.opex.toLocaleString()} Ks</p></div>
             <div><p className="text-xs text-gray-400 mb-1">Refunds</p><p className="font-bold text-gray-700">{data.cost.refunds.toLocaleString()} Ks</p></div>
           </div>
+
+          {/* Appointment Performance */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <h2 className="font-bold text-gray-700 text-sm mb-4">Appointment Performance</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+              <div><p className="text-xs text-gray-400 mb-1">Total Bookings</p><p className="text-lg font-bold text-gray-700">{data.appointmentPerformance.total}</p></div>
+              <div><p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><CalendarCheck className="w-3 h-3 text-green-500" /> Completed</p><p className="text-lg font-bold text-green-600">{data.appointmentPerformance.completed}</p></div>
+              <div><p className="text-xs text-gray-400 mb-1">Pending</p><p className="text-lg font-bold text-amber-500">{data.appointmentPerformance.pending}</p></div>
+              <div><p className="text-xs text-gray-400 mb-1 flex items-center gap-1"><CalendarX className="w-3 h-3 text-red-400" /> Cancelled</p><p className="text-lg font-bold text-red-500">{data.appointmentPerformance.cancelled}</p></div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Completion / Cancellation</p>
+                <p className="text-lg font-bold text-gray-700">{data.appointmentPerformance.completionRate}% <span className="text-xs font-normal text-gray-400">/</span> <span className={data.appointmentPerformance.cancellationRate > 30 ? 'text-red-500' : 'text-gray-700'}>{data.appointmentPerformance.cancellationRate}%</span></p>
+              </div>
+            </div>
+          </div>
+
+          {/* Expense Breakdown */}
+          {data.expensesByCategory.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100"><h2 className="font-bold text-gray-700 text-sm">Expense Breakdown</h2></div>
+              <div className="divide-y divide-gray-50">
+                {[...data.expensesByCategory].sort((a, b) => b.amount - a.amount).map(e => (
+                  <div key={e.name} className="flex items-center justify-between px-5 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">{e.name}</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={e.isCapital ? { backgroundColor: '#fffbeb', color: '#b45309' } : { backgroundColor: '#f3f4f6', color: '#9ca3af' }}>
+                        {e.isCapital ? 'CAPEX' : 'OPEX'}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700">{e.amount.toLocaleString()} Ks</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Chart */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-6">

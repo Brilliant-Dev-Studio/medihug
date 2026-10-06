@@ -9,7 +9,9 @@ const PRIMARY = '#2ab5ad';
 interface Cashflow {
   range: string;
   series: { label: string; cashIn: number; cashOut: number; net: number; cumulative: number }[];
-  totalCashIn: number; totalCashOut: number; netCashFlow: number;
+  totalCashIn: number; totalCashOut: number; netCashFlow: number; closingBalance: number;
+  cashInByType: { consultation: number; product: number; program: number };
+  cashOutByType: { doctorPayout: number; productPurchase: number; operatingExpenses: number; capex: number; refunds: number };
 }
 
 function StatCard({ icon: Icon, label, value, color, bg }: { icon: React.ElementType; label: string; value: string; color: string; bg: string }) {
@@ -70,13 +72,48 @@ export default function CashFlowPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard icon={ArrowDownCircle} label="Total Cash In" value={`${data.totalCashIn.toLocaleString()} Ks`} color="#16a34a" bg="#f0fdf4" />
-            <StatCard icon={ArrowUpCircle} label="Total Cash Out" value={`${data.totalCashOut.toLocaleString()} Ks`} color="#dc2626" bg="#fef2f2" />
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <StatCard icon={ArrowDownCircle} label="Cash In" value={`${data.totalCashIn.toLocaleString()} Ks`} color="#16a34a" bg="#f0fdf4" />
+            <StatCard icon={ArrowUpCircle} label="Cash Out" value={`${data.totalCashOut.toLocaleString()} Ks`} color="#dc2626" bg="#fef2f2" />
             <StatCard
               icon={Wallet} label="Net Cash Flow" value={`${data.netCashFlow.toLocaleString()} Ks`}
               color={data.netCashFlow >= 0 ? PRIMARY : '#dc2626'} bg={data.netCashFlow >= 0 ? '#e6f7f7' : '#fef2f2'}
             />
+            <StatCard
+              icon={Wallet} label="Closing Balance" value={`${data.closingBalance.toLocaleString()} Ks`}
+              color={data.closingBalance >= 0 ? '#2ab5ad' : '#dc2626'} bg={data.closingBalance >= 0 ? '#e6f7f7' : '#fef2f2'}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <h2 className="font-bold text-gray-700 text-sm mb-3">Cash In</h2>
+              {[
+                { label: 'Doctor Consultation', value: data.cashInByType.consultation },
+                { label: 'Product / E-commerce', value: data.cashInByType.product },
+                { label: 'Weight / Other Programs', value: data.cashInByType.program },
+              ].map(r => (
+                <div key={r.label} className="flex items-center justify-between py-1.5 text-sm">
+                  <span className="text-gray-500">{r.label}</span>
+                  <span className="font-semibold text-green-600">{r.value.toLocaleString()} Ks</span>
+                </div>
+              ))}
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <h2 className="font-bold text-gray-700 text-sm mb-3">Cash Out</h2>
+              {[
+                { label: 'Doctor Payout', value: data.cashOutByType.doctorPayout },
+                { label: 'Product Purchase (Suppliers)', value: data.cashOutByType.productPurchase },
+                { label: 'Operating Expenses', value: data.cashOutByType.operatingExpenses },
+                { label: 'Investment / CAPEX', value: data.cashOutByType.capex, capex: true },
+                { label: 'Refunds', value: data.cashOutByType.refunds },
+              ].map(r => (
+                <div key={r.label} className="flex items-center justify-between py-1.5 text-sm">
+                  <span className="text-gray-500">{r.label}{r.capex && <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600">not operating</span>}</span>
+                  <span className="font-semibold text-red-500">{r.value.toLocaleString()} Ks</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_10px_28px_-18px_rgba(0,0,0,0.12)] p-6">

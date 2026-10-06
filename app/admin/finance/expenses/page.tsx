@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Check, X, Loader2, Receipt, Trash2, Tag } from 'lucide-react';
+import { Plus, Check, X, Loader2, Receipt, Trash2, Tag, Landmark } from 'lucide-react';
 import { useAdminRole, requestDeletion } from '@/lib/useAdminRole';
 
 const PRIMARY = '#2ab5ad';
 const inp = 'flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-700 outline-none focus:border-teal-400 transition-colors';
 
-interface Category { id: string; name: string; type: 'FIXED' | 'VARIABLE' | 'ONE_TIME' }
+interface Category { id: string; name: string; type: 'FIXED' | 'VARIABLE' | 'ONE_TIME'; isCapital: boolean }
 interface Expense {
   id: string; categoryId: string; amount: number; description: string | null;
   date: string; createdBy: string | null; category: Category;
@@ -33,7 +33,9 @@ export default function ExpensesPage() {
 
   const [newCatName, setNewCatName] = useState('');
   const [newCatType, setNewCatType] = useState<Category['type']>('VARIABLE');
+  const [newCatCapital, setNewCatCapital] = useState(false);
   const [addingCat, setAddingCat] = useState(false);
+  const [togglingCat, setTogglingCat] = useState<string | null>(null);
 
   const load = useCallback(async (catFilter?: string) => {
     setLoading(true);
@@ -83,9 +85,18 @@ export default function ExpensesPage() {
     if (!newCatName.trim()) return;
     await fetch('/api/admin/finance/expense-categories', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newCatName.trim(), type: newCatType }),
+      body: JSON.stringify({ name: newCatName.trim(), type: newCatType, isCapital: newCatCapital }),
     });
-    setNewCatName(''); setAddingCat(false); load(filterCategory || undefined);
+    setNewCatName(''); setNewCatCapital(false); setAddingCat(false); load(filterCategory || undefined);
+  };
+
+  const toggleCapital = async (c: Category) => {
+    setTogglingCat(c.id);
+    await fetch(`/api/admin/finance/expense-categories/${c.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isCapital: !c.isCapital }),
+    });
+    setTogglingCat(null); load(filterCategory || undefined);
   };
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
@@ -114,29 +125,43 @@ export default function ExpensesPage() {
           )}
         </div>
         {addingCat && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Category name" className={inp} />
             <select value={newCatType} onChange={e => setNewCatType(e.target.value as Category['type'])} className={inp}>
               <option value="FIXED">Fixed</option>
               <option value="VARIABLE">Variable</option>
               <option value="ONE_TIME">One-time</option>
             </select>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 shrink-0 px-1 cursor-pointer">
+              <input type="checkbox" checked={newCatCapital} onChange={e => setNewCatCapital(e.target.checked)} className="accent-amber-500" />
+              Investment / CAPEX
+            </label>
             <button onClick={addCategory} className="px-4 py-2.5 rounded-xl text-sm font-bold text-white" style={{ backgroundColor: PRIMARY }}>
               <Check className="w-4 h-4" />
             </button>
             <button onClick={() => setAddingCat(false)} className="px-3 py-2.5 rounded-xl border border-gray-200 text-gray-400"><X className="w-4 h-4" /></button>
           </div>
         )}
+        <p className="text-[11px] text-gray-400 -mt-1">Investment / CAPEX categories (e.g. app development, equipment) are excluded from Operating Expenses in the P&amp;L — click a category&apos;s badge to reclassify it.</p>
         <div className="flex flex-wrap gap-1.5">
           <button onClick={() => { setFilterCategory(''); load(); }}
             className={`text-xs font-semibold px-2.5 py-1 rounded-full ${!filterCategory ? 'text-white' : 'text-gray-500 bg-gray-50'}`}
             style={filterCategory ? {} : { backgroundColor: PRIMARY }}>All</button>
           {categories.map(c => (
-            <button key={c.id} onClick={() => { setFilterCategory(c.id); load(c.id); }}
-              className={`text-xs font-semibold px-2.5 py-1 rounded-full ${filterCategory === c.id ? 'text-white' : 'text-gray-500 bg-gray-50'}`}
-              style={filterCategory === c.id ? { backgroundColor: PRIMARY } : {}}>
-              {c.name} <span className="opacity-60">· {TYPE_LABEL[c.type]}</span>
-            </button>
+            <div key={c.id} className="flex items-center gap-1">
+              <button onClick={() => { setFilterCategory(c.id); load(c.id); }}
+                className={`text-xs font-semibold px-2.5 py-1 rounded-l-full ${filterCategory === c.id ? 'text-white' : 'text-gray-500 bg-gray-50'}`}
+                style={filterCategory === c.id ? { backgroundColor: PRIMARY } : {}}>
+                {c.name} <span className="opacity-60">· {TYPE_LABEL[c.type]}</span>
+              </button>
+              <button onClick={() => toggleCapital(c)} disabled={togglingCat === c.id}
+                title={c.isCapital ? 'Investment/CAPEX — click to mark as Operating Expense' : 'Operating Expense — click to mark as Investment/CAPEX'}
+                className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-r-full border disabled:opacity-50"
+                style={c.isCapital ? { backgroundColor: '#fffbeb', color: '#b45309', borderColor: '#fde68a' } : { backgroundColor: '#f9fafb', color: '#9ca3af', borderColor: '#e5e7eb' }}>
+                {togglingCat === c.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Landmark className="w-2.5 h-2.5" />}
+                {c.isCapital ? 'CAPEX' : 'OPEX'}
+              </button>
+            </div>
           ))}
         </div>
       </div>

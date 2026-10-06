@@ -45,11 +45,11 @@ export async function POST(req: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { name, type } = await req.json();
+    const { name, type, isCapital } = await req.json();
     if (!name || !['FIXED', 'VARIABLE', 'ONE_TIME'].includes(type)) {
       return NextResponse.json({ error: 'name and a valid type (FIXED/VARIABLE/ONE_TIME) are required.' }, { status: 400 });
     }
-    const category = await db.expenseCategory.create({ data: { name, type } });
+    const category = await db.expenseCategory.create({ data: { name, type, isCapital: !!isCapital } });
     return NextResponse.json({ category }, { status: 201 });
   } catch (e) {
     console.error(e);

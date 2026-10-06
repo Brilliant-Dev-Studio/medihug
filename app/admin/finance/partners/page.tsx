@@ -164,7 +164,9 @@ export default function PartnerFinancePage() {
               </div>
             )}
           </div>
-          <p className="text-xs text-gray-400 px-1">Payable/Settled reflect consultation referrals and clinic-owned bookings only — Program and Ads revenue have no per-partner split yet.</p>
+          <p className="text-xs text-gray-400 px-1">
+            Profit = Sales − Medihug Commission − (Partner Payable still owed are tracked separately from Settled). Payable/Settled/Profit reflect consultation referrals and clinic-owned bookings only — Program and Ads revenue have no per-partner split yet.
+          </p>
         </>
       )}
     </div>

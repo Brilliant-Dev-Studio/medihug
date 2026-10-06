@@ -9,6 +9,7 @@ import {
   TrendingUp, TrendingDown, CalendarDays, RefreshCcw,
   BookOpen, Clock, CheckCircle2, Ban, Loader2,
   Wallet, Receipt, ArrowRight, Download, FileSpreadsheet, Building2, Package,
+  Minus, CalendarCheck, CalendarX, Landmark, Trophy, AlertTriangle,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -27,10 +28,17 @@ const monthAgoStr = () => { const d = new Date(); d.setMonth(d.getMonth() - 1); 
 
 interface PnlSummary {
   revenue: { total: number };
-  cost: { costOfSales: number; operatingExpenses: number };
-  result: { grossProfit: number; netProfit: number; profitMargin: number };
+  cost: { costOfSales: number; operatingExpenses: number; capex: number };
+  result: { grossProfit: number; operatingProfit: number; netProfit: number; profitMargin: number };
+  growth: { revenue: number | null; operatingExpenses: number | null; netProfit: number | null };
+  appointmentPerformance: { total: number; completed: number; pending: number; cancelled: number; completionRate: number; cancellationRate: number };
   serviceBreakdown: { serviceType: string; label: string; revenue: number; netProfit: number; margin: number; noDataSource?: boolean }[];
+  expensesByCategory: { name: string; isCapital: boolean; amount: number }[];
 }
+interface TopPartner { clinic: { name: string; nameEn: string | null } | null; sales: number; profit: number; payableUnsettled: number }
+interface TopProduct { name: string; nameEn: string | null; revenue: number; stockBalance: number }
+
+interface Alert { level: 'red' | 'yellow' | 'green'; text: string; }
 
 function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
@@ -40,7 +48,19 @@ function downloadBlob(filename: string, blob: Blob) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function WaterfallTile({ icon: Icon, label, value, color, bg, arrow }: { icon: React.ElementType; label: string; value: number; color: string; bg: string; arrow?: boolean }) {
+function GrowthTag({ pct, invert = false }: { pct: number | null; invert?: boolean }) {
+  if (pct === null) return <span className="text-[9px] font-semibold text-gray-300">new</span>;
+  const up = pct > 0;
+  const good = invert ? pct <= 0 : pct >= 0;
+  const Icon = pct === 0 ? Minus : up ? TrendingUp : TrendingDown;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold" style={{ color: good ? '#16a34a' : '#dc2626' }}>
+      <Icon className="w-2.5 h-2.5" /> {up ? '+' : ''}{pct}%
+    </span>
+  );
+}
+
+function WaterfallTile({ icon: Icon, label, value, color, bg, arrow, growth, invert }: { icon: React.ElementType; label: string; value: number; color: string; bg: string; arrow?: boolean; growth?: number | null; invert?: boolean }) {
   return (
     <div className="flex items-center gap-1.5 sm:gap-3">
       {arrow && <ArrowRight className="w-4 h-4 text-gray-300 shrink-0 hidden sm:block" />}
@@ -52,6 +72,7 @@ function WaterfallTile({ icon: Icon, label, value, color, bg, arrow }: { icon: R
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide truncate">{label}</p>
         </div>
         <p className="text-base sm:text-lg font-bold truncate" style={{ color }}>{value.toLocaleString()} <span className="text-xs font-semibold text-gray-400">Ks</span></p>
+        {growth !== undefined && <div className="mt-1"><GrowthTag pct={growth} invert={invert} /></div>}
       </div>
     </div>
   );
@@ -62,6 +83,10 @@ function BusinessSummary() {
   const [customFrom, setCustomFrom] = useState(monthAgoStr());
   const [customTo, setCustomTo] = useState(todayStr());
   const [data, setData] = useState<PnlSummary | null>(null);
+  const [topPartner, setTopPartner] = useState<TopPartner | null>(null);
+  const [topProduct, setTopProduct] = useState<TopProduct | null>(null);
+  const [cashBalance, setCashBalance] = useState<number | null>(null);
+  const [lowStockCount, setLowStockCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -73,11 +98,32 @@ function BusinessSummary() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/admin/finance/pnl?${query()}`)
-      .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [query]);
+    const q = query();
+    Promise.all([
+      fetch(`/api/admin/finance/pnl?${q}`).then(r => r.json()),
+      fetch(`/api/admin/finance/partners?${q}`).then(r => r.json()).catch(() => ({ partners: [] })),
+      fetch(`/api/admin/finance/products?${q}`).then(r => r.json()).catch(() => ({ products: [] })),
+      fetch(`/api/admin/finance/cashflow?range=${range === 'custom' ? 'monthly' : range}`).then(r => r.json()).catch(() => null),
+    ]).then(([pnl, partnersRes, productsRes, cashflow]) => {
+      setData(pnl);
+      setTopPartner(partnersRes.partners?.[0] ?? null);
+      const products: TopProduct[] = productsRes.products ?? [];
+      setTopProduct(products[0] ?? null);
+      setLowStockCount(products.filter(p => p.stockBalance < 10).length);
+      setCashBalance(cashflow?.closingBalance ?? null);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [query, range]);
+
+  const topPayable = topPartner?.payableUnsettled ?? 0;
+
+  const alerts: Alert[] = data ? [
+    ...(data.appointmentPerformance.cancellationRate > 30 ? [{ level: 'red' as const, text: `Cancellation rate ${data.appointmentPerformance.cancellationRate}% — above 30%` }] : []),
+    ...(data.growth.operatingExpenses !== null && data.growth.operatingExpenses > 20 ? [{ level: 'red' as const, text: `Operating expenses up ${data.growth.operatingExpenses}% vs previous period` }] : []),
+    ...(topPayable > 0 ? [{ level: 'yellow' as const, text: `${topPayable.toLocaleString()} Ks partner payment pending (${topPartner?.clinic?.nameEn ?? topPartner?.clinic?.name})` }] : []),
+    ...(lowStockCount > 0 ? [{ level: 'yellow' as const, text: `${lowStockCount} product${lowStockCount > 1 ? 's' : ''} low on stock (below 10)` }] : []),
+    ...(data.growth.revenue !== null && data.growth.revenue > 25 ? [{ level: 'green' as const, text: `Revenue up ${data.growth.revenue}% vs previous period` }] : []),
+  ] : [];
 
   const exportCsv = () => {
     if (!data) return;
@@ -134,11 +180,30 @@ function BusinessSummary() {
         <div className="flex items-center justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-gray-300" /></div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-1 items-stretch">
-            <WaterfallTile icon={Wallet} label="Sales" value={data.revenue.total} color={PRIMARY} bg="#e6f7f7" />
+          {alerts.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {alerts.map((a, i) => (
+                <div key={i} className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold"
+                  style={a.level === 'red' ? { backgroundColor: '#fef2f2', color: '#dc2626' } : a.level === 'yellow' ? { backgroundColor: '#fffbeb', color: '#b45309' } : { backgroundColor: '#f0fdf4', color: '#16a34a' }}>
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {a.text}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 sm:gap-1 items-stretch">
+            <WaterfallTile icon={Wallet} label="Sales" value={data.revenue.total} color={PRIMARY} bg="#e6f7f7" growth={data.growth.revenue} />
             <WaterfallTile icon={Receipt} label="Cost of Sales" value={data.cost.costOfSales} color="#9ca3af" bg="#f9fafb" arrow />
             <WaterfallTile icon={TrendingUp} label="Gross Profit" value={data.result.grossProfit} color="#f59e0b" bg="#fffbeb" arrow />
-            <WaterfallTile icon={Receipt} label="Expenses" value={data.cost.operatingExpenses} color="#9ca3af" bg="#f9fafb" arrow />
+            <WaterfallTile icon={Receipt} label="Opex" value={data.cost.operatingExpenses} color="#9ca3af" bg="#f9fafb" arrow growth={data.growth.operatingExpenses} invert />
+            <WaterfallTile
+              icon={data.result.operatingProfit >= 0 ? TrendingUp : TrendingDown}
+              label="Operating Profit"
+              value={data.result.operatingProfit}
+              color={data.result.operatingProfit >= 0 ? '#16a34a' : '#dc2626'}
+              bg={data.result.operatingProfit >= 0 ? '#f0fdf4' : '#fef2f2'}
+              arrow
+            />
             <WaterfallTile
               icon={data.result.netProfit >= 0 ? TrendingUp : TrendingDown}
               label={`Net Profit (${data.result.profitMargin}%)`}
@@ -146,7 +211,43 @@ function BusinessSummary() {
               color={data.result.netProfit >= 0 ? '#16a34a' : '#dc2626'}
               bg={data.result.netProfit >= 0 ? '#f0fdf4' : '#fef2f2'}
               arrow
+              growth={data.growth.netProfit}
             />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {data.cost.capex > 0 && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-center gap-2">
+                <Landmark className="w-4 h-4 text-amber-600 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-amber-600 uppercase truncate">Investment / CAPEX</p>
+                  <p className="text-sm font-bold text-amber-700">{data.cost.capex.toLocaleString()} Ks</p>
+                </div>
+              </div>
+            )}
+            {cashBalance !== null && (
+              <div className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-2">
+                <Wallet className="w-4 h-4 shrink-0" style={{ color: PRIMARY }} />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase truncate">Cash Balance</p>
+                  <p className="text-sm font-bold text-gray-700">{cashBalance.toLocaleString()} Ks</p>
+                </div>
+              </div>
+            )}
+            <div className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-2">
+              <CalendarCheck className="w-4 h-4 text-green-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-gray-400 uppercase truncate">Completion Rate</p>
+                <p className="text-sm font-bold text-gray-700">{data.appointmentPerformance.completionRate}% <span className="text-[10px] font-normal text-gray-400">({data.appointmentPerformance.completed}/{data.appointmentPerformance.total})</span></p>
+              </div>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-2">
+              <CalendarX className={`w-4 h-4 shrink-0 ${data.appointmentPerformance.cancellationRate > 30 ? 'text-red-500' : 'text-gray-300'}`} />
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-gray-400 uppercase truncate">Cancellation Rate</p>
+                <p className={`text-sm font-bold ${data.appointmentPerformance.cancellationRate > 30 ? 'text-red-500' : 'text-gray-700'}`}>{data.appointmentPerformance.cancellationRate}% <span className="text-[10px] font-normal text-gray-400">({data.appointmentPerformance.cancelled})</span></p>
+              </div>
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -174,10 +275,45 @@ function BusinessSummary() {
             </table>
           </div>
 
+          {/* Top Performance */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl border border-gray-100 p-3.5">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Trophy className="w-3 h-3 text-amber-400" /> Top Profit Business</p>
+              {(() => {
+                const top = [...data.serviceBreakdown].filter(s => !s.noDataSource).sort((a, b) => b.netProfit - a.netProfit)[0];
+                return top ? <p className="text-sm font-bold text-gray-700">{top.label} <span className="text-xs font-normal text-gray-400">· {top.netProfit.toLocaleString()} Ks</span></p> : <p className="text-xs text-gray-300">—</p>;
+              })()}
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 p-3.5">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Building2 className="w-3 h-3 text-gray-400" /> Top Partner</p>
+              {topPartner?.clinic ? <p className="text-sm font-bold text-gray-700">{topPartner.clinic.nameEn ?? topPartner.clinic.name} <span className="text-xs font-normal text-gray-400">· {topPartner.sales.toLocaleString()} Ks</span></p> : <p className="text-xs text-gray-300">—</p>}
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 p-3.5">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-1"><Package className="w-3 h-3 text-gray-400" /> Top Product</p>
+              {topProduct && topProduct.revenue > 0 ? <p className="text-sm font-bold text-gray-700">{topProduct.nameEn ?? topProduct.name} <span className="text-xs font-normal text-gray-400">· {topProduct.revenue.toLocaleString()} Ks</span></p> : <p className="text-xs text-gray-300">—</p>}
+            </div>
+          </div>
+
+          {data.expensesByCategory.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <p className="text-xs font-bold text-gray-500 mb-2">Top Expense Categories</p>
+              <div className="flex flex-col gap-1">
+                {[...data.expensesByCategory].sort((a, b) => b.amount - a.amount).slice(0, 3).map(e => (
+                  <div key={e.name} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">{e.name}{e.isCapital && <span className="ml-1.5 text-[9px] font-bold px-1 py-0.5 rounded-full bg-amber-50 text-amber-600">CAPEX</span>}</span>
+                    <span className="font-semibold text-gray-700">{e.amount.toLocaleString()} Ks</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-4 flex-wrap text-xs font-semibold">
             <Link href="/admin/finance/pnl" className="flex items-center gap-1 hover:underline" style={{ color: PRIMARY }}>Full P&amp;L <ArrowRight className="w-3 h-3" /></Link>
             <Link href="/admin/finance/partners" className="flex items-center gap-1 text-gray-500 hover:underline"><Building2 className="w-3.5 h-3.5" /> Partner P&amp;L</Link>
             <Link href="/admin/finance/products" className="flex items-center gap-1 text-gray-500 hover:underline"><Package className="w-3.5 h-3.5" /> Product P&amp;L</Link>
+            <Link href="/admin/finance/cashflow" className="flex items-center gap-1 text-gray-500 hover:underline"><Wallet className="w-3.5 h-3.5" /> Cash Flow</Link>
+            <Link href="/admin/finance/expenses" className="flex items-center gap-1 text-gray-500 hover:underline"><Receipt className="w-3.5 h-3.5" /> Expense Detail</Link>
           </div>
         </>
       )}
@@ -573,9 +709,14 @@ export default function AdminDashboardPage() {
                 <Clock className="w-4 h-4" style={{ color: PRIMARY }} />
                 <p className="text-sm font-bold text-gray-700">Latest Appointments</p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>
-                Recent 5
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: PRIMARY }}>
+                  Recent 5
+                </span>
+                <Link href="/admin/appointments" className="flex items-center gap-1 text-xs font-semibold hover:underline" style={{ color: PRIMARY }}>
+                  View All <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
             </div>
 
             <div className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-4 px-5 py-2.5 bg-gray-50 border-b border-gray-100">
@@ -603,7 +744,7 @@ export default function AdminDashboardPage() {
                   const s = STATUS_MAP[appt.status] ?? STATUS_MAP.pending;
                   const StatusIcon = s.icon;
                   return (
-                    <div key={appt.id} className="grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2 sm:gap-4 px-5 py-3.5 items-center hover:bg-gray-50/60 transition-colors">
+                    <Link key={appt.id} href={`/admin/appointments/${appt.id}`} className="grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2 sm:gap-4 px-5 py-3.5 items-center hover:bg-gray-50/60 transition-colors">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                           style={{ backgroundColor: AVATAR_COLORS[i % 5] }}>
@@ -626,7 +767,7 @@ export default function AdminDashboardPage() {
                           {s.label}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })
               )}

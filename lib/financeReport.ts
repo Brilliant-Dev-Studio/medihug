@@ -23,6 +23,64 @@ export function resolveWindow(range: FinanceRange, fromParam: string | null, toP
 // HealthcareProgram category rolls up into "Other Programs" until more categories are split out.
 const WEIGHT_PROGRAM_CATEGORY_NAME_EN = 'Comprehensive Weight Management Program';
 
+/** Just the bottom-line totals for a window — revenue, cost of sales, gross/operating/net
+ * profit — with none of the breakdown tables. Used to compute "vs previous period" growth
+ * without re-running the full report twice. */
+async function getPnlTotals(since: Date, until: Date) {
+  const [appointments, orders, opexExpenses, refunds, programEnrollments, purchaseItemCosts] = await Promise.all([
+    db.appointment.findMany({
+      where: { status: 'COMPLETED', date: { gte: since, lte: until } },
+      select: { fee: true, doctorPayoutAmount: true, paymentMethod: true },
+    }),
+    db.order.findMany({
+      where: { status: 'COMPLETED', createdAt: { gte: since, lte: until } },
+      select: { paymentMethod: true, items: { select: { productId: true, price: true, quantity: true } } },
+    }),
+    db.expense.findMany({ where: { date: { gte: since, lte: until }, category: { isCapital: false } }, select: { amount: true } }),
+    db.refund.aggregate({ where: { createdAt: { gte: since, lte: until } }, _sum: { amount: true } }),
+    db.programEnrollment.findMany({ where: { status: 'APPROVED', createdAt: { gte: since, lte: until } }, select: { amount: true } }),
+    db.purchaseItem.groupBy({ by: ['productId'], _sum: { lineTotal: true, receivedQty: true } }),
+  ]);
+
+  const avgCostByProduct = new Map<string, number>();
+  for (const p of purchaseItemCosts) {
+    const qty = p._sum.receivedQty ?? 0;
+    if (qty > 0) avgCostByProduct.set(p.productId, (p._sum.lineTotal ?? 0) / qty);
+  }
+  const consultationRevenue = appointments.reduce((s, a) => s + (a.fee ?? 0), 0);
+  const doctorPayout = appointments.reduce((s, a) => s + (a.doctorPayoutAmount ?? 0), 0);
+  const productRevenue = orders.reduce((s, o) => s + o.items.reduce((si, i) => si + i.price * i.quantity, 0), 0);
+  const productCogs = Math.round(orders.reduce((s, o) => s + o.items.reduce((si, i) => si + (avgCostByProduct.get(i.productId) ?? 0) * i.quantity, 0), 0));
+  const programRevenue = programEnrollments.reduce((s, e) => s + e.amount, 0);
+
+  let gatewayFee = 0;
+  const methodVolumes = new Map<string, number>();
+  for (const a of appointments) { if (a.paymentMethod && a.fee) methodVolumes.set(a.paymentMethod, (methodVolumes.get(a.paymentMethod) ?? 0) + a.fee); }
+  for (const o of orders) { const total = o.items.reduce((s, i) => s + i.price * i.quantity, 0); if (o.paymentMethod) methodVolumes.set(o.paymentMethod, (methodVolumes.get(o.paymentMethod) ?? 0) + total); }
+  for (const [method, volume] of methodVolumes) {
+    const { feePercent, feeFixed } = await getPaymentMethodFee(method);
+    const methodTxnCount = appointments.filter(a => a.paymentMethod === method).length + orders.filter(o => o.paymentMethod === method).length;
+    gatewayFee += Math.round(volume * feePercent / 100) + feeFixed * methodTxnCount;
+  }
+
+  const totalOpex = opexExpenses.reduce((s, e) => s + e.amount, 0);
+  const totalRefunds = refunds._sum.amount ?? 0;
+  const totalRevenue = consultationRevenue + productRevenue + programRevenue;
+  const costOfSales = doctorPayout + productCogs;
+  const grossProfit = totalRevenue - costOfSales;
+  const operatingExpenses = gatewayFee + totalOpex + totalRefunds;
+  const operatingProfit = grossProfit - operatingExpenses;
+
+  return { revenue: totalRevenue, grossProfit, operatingExpenses, operatingProfit, netProfit: operatingProfit };
+}
+
+/** Percent change from `prev` to `curr`, rounded to one decimal. null when `prev` is 0 (no
+ * meaningful percent to show — the UI renders "new" instead of a number). */
+function growthPct(curr: number, prev: number): number | null {
+  if (prev === 0) return curr === 0 ? 0 : null;
+  return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10;
+}
+
 /** The platform-wide P&L for a date window: Sales → Cost of Sales → Gross Profit → Operating
  * Expenses → Net Profit, plus business-type, doctor and partner breakdowns. Shared by the P&L
  * page's API, the Dashboard's summary widget, and the Excel export — one computation, several
@@ -31,7 +89,7 @@ const WEIGHT_PROGRAM_CATEGORY_NAME_EN = 'Comprehensive Weight Management Program
 export async function getPnlReport(range: FinanceRange, since: Date, until: Date) {
   const [
     appointments, orders, expenses, refunds, revenueEntries, clinicReferrals,
-    programEnrollments, medicalRequests, purchaseItemCosts,
+    programEnrollments, medicalRequests, purchaseItemCosts, appointmentStatusCounts,
   ] = await Promise.all([
     db.appointment.findMany({
       where: { status: 'COMPLETED', date: { gte: since, lte: until } },
@@ -79,6 +137,9 @@ export async function getPnlReport(range: FinanceRange, since: Date, until: Date
     // Historical weighted-average cost per product, from every Purchase ever received —
     // not range-filtered: cost basis predates the reporting window, same as any inventory system.
     db.purchaseItem.groupBy({ by: ['productId'], _sum: { lineTotal: true, receivedQty: true } }),
+    // Every appointment in the window regardless of status — Appointment Performance counts
+    // bookings, not just realized revenue.
+    db.appointment.groupBy({ by: ['status'], where: { date: { gte: since, lte: until } }, _count: true }),
   ]);
 
   const consultationRevenue = appointments.reduce((s, a) => s + (a.fee ?? 0), 0);
@@ -124,12 +185,18 @@ export async function getPnlReport(range: FinanceRange, since: Date, until: Date
     gatewayFee += Math.round(volume * feePercent / 100) + feeFixed * methodTxnCount;
   }
 
-  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const expensesByCategory = new Map<string, { name: string; type: string; amount: number }>();
+  // Operating cost vs Investment/CAPEX — orthogonal to the FIXED/VARIABLE/ONE_TIME `type`,
+  // driven by ExpenseCategory.isCapital. A big one-off build-cost month shouldn't read as an
+  // operating loss, so CAPEX is reported separately and never subtracted into Net Profit.
+  const opexExpenses = expenses.filter(e => !e.category.isCapital);
+  const capexExpenses = expenses.filter(e => e.category.isCapital);
+  const totalOpex = opexExpenses.reduce((s, e) => s + e.amount, 0);
+  const totalCapex = capexExpenses.reduce((s, e) => s + e.amount, 0);
+  const expensesByCategory = new Map<string, { name: string; type: string; isCapital: boolean; amount: number }>();
   for (const e of expenses) {
     const existing = expensesByCategory.get(e.categoryId);
     if (existing) existing.amount += e.amount;
-    else expensesByCategory.set(e.categoryId, { name: e.category.name, type: e.category.type, amount: e.amount });
+    else expensesByCategory.set(e.categoryId, { name: e.category.name, type: e.category.type, isCapital: e.category.isCapital, amount: e.amount });
   }
 
   const totalRefunds = refunds._sum.amount ?? 0;
@@ -140,11 +207,41 @@ export async function getPnlReport(range: FinanceRange, since: Date, until: Date
   const totalRevenue = consultationRevenue + productRevenue + programRevenue + adsRevenue;
   const costOfSales = doctorPayout + productCogs + programAdsPartnerPayout;
   const grossProfit = totalRevenue - costOfSales;
-  const operatingExpenses = gatewayFee + totalExpenses + totalRefunds;
-  const netProfit = grossProfit - operatingExpenses;
+  const operatingExpenses = gatewayFee + totalOpex + totalRefunds;
+  const operatingProfit = grossProfit - operatingExpenses;
+  // Other Income/Expense (interest, one-off write-offs, ...) has no tracked source yet —
+  // kept as an explicit zero stage rather than folded silently into Operating Profit, so the
+  // chain matches the standard P&L shape and is ready the day one exists.
+  const otherIncome = 0;
+  const otherExpense = 0;
+  const netProfit = operatingProfit + otherIncome - otherExpense;
   const profitMargin = totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 1000) / 10 : 0;
 
   const marginOf = (revenue: number, cost: number) => revenue > 0 ? Math.round(((revenue - cost) / revenue) * 1000) / 10 : 0;
+
+  // vs previous period — the immediately preceding window of the same length.
+  const periodMs = until.getTime() - since.getTime();
+  const prevUntil = new Date(since.getTime() - 1);
+  const prevSince = new Date(prevUntil.getTime() - periodMs);
+  const prevTotals = await getPnlTotals(prevSince, prevUntil);
+  const growth = {
+    revenue: growthPct(totalRevenue, prevTotals.revenue),
+    grossProfit: growthPct(grossProfit, prevTotals.grossProfit),
+    operatingExpenses: growthPct(operatingExpenses, prevTotals.operatingExpenses),
+    netProfit: growthPct(netProfit, prevTotals.netProfit),
+  };
+
+  const apptStatus = { PENDING: 0, CONFIRMED: 0, COMPLETED: 0, CANCELLED: 0 } as Record<string, number>;
+  for (const c of appointmentStatusCounts) apptStatus[c.status] = c._count;
+  const totalBookings = Object.values(apptStatus).reduce((a, b) => a + b, 0);
+  const appointmentPerformance = {
+    total: totalBookings,
+    completed: apptStatus.COMPLETED,
+    pending: apptStatus.PENDING + apptStatus.CONFIRMED,
+    cancelled: apptStatus.CANCELLED,
+    completionRate: totalBookings > 0 ? Math.round((apptStatus.COMPLETED / totalBookings) * 1000) / 10 : 0,
+    cancellationRate: totalBookings > 0 ? Math.round((apptStatus.CANCELLED / totalBookings) * 1000) / 10 : 0,
+  };
 
   // Business-type breakdown — the vocabulary the client reports in, not the internal
   // ServiceType enum. Types with no live data source yet are included at zero so the
@@ -264,8 +361,12 @@ export async function getPnlReport(range: FinanceRange, since: Date, until: Date
   return {
     range, since, until,
     revenue: { consultation: consultationRevenue, product: productRevenue, program: programRevenue, weightProgram: weightProgramRevenue, ads: adsRevenue, internationalService: 0, total: totalRevenue },
-    cost: { doctorPayout, productCogs, gatewayFee, expenses: totalExpenses, refunds: totalRefunds, partnerPayout: programAdsPartnerPayout, costOfSales, operatingExpenses, txnCount },
-    result: { grossProfit, netProfit, profitMargin, platformCommission },
+    cost: { doctorPayout, productCogs, gatewayFee, opex: totalOpex, capex: totalCapex, refunds: totalRefunds, partnerPayout: programAdsPartnerPayout, costOfSales, operatingExpenses, txnCount },
+    // Revenue → Cost of Sales → Gross Profit → Operating Expenses → Operating Profit →
+    // (Other Income/Expense) → Net Profit. CAPEX is reported but never subtracted here.
+    result: { grossProfit, operatingProfit, otherIncome, otherExpense, netProfit, profitMargin, platformCommission },
+    growth,
+    appointmentPerformance,
     serviceBreakdown,
     doctorProfitability,
     clinicProfitability,
@@ -275,3 +376,153 @@ export async function getPnlReport(range: FinanceRange, since: Date, until: Date
 }
 
 export type PnlReport = Awaited<ReturnType<typeof getPnlReport>>;
+
+/** Per-partner rollup: how much each partner clinic generated, what they're owed, what's
+ * already settled. Draws on the same RevenueLedger rows the row-level Revenue Ledger /
+ * settlement page works from — this is the aggregate view of the same data, not a second
+ * source of truth. Programs/Ads have no per-partner split yet (no commission model exists for
+ * them), so those columns stay informational (program listing count only). Shared by the
+ * Partner P&L page's API and the Excel export. */
+export async function getPartnerReport(since: Date, until: Date) {
+  const [ledgerRows, referrals, programs] = await Promise.all([
+    db.revenueLedger.findMany({
+      where: {
+        createdAt: { gte: since, lte: until },
+        OR: [{ clinicId: { not: null } }, { referralClinicId: { not: null } }],
+      },
+      select: {
+        clinicId: true, referralClinicId: true, patientPaid: true,
+        partnerShareAmount: true, partnerReferralFeeAmount: true, settlementStatus: true,
+      },
+    }),
+    db.clinicReferral.groupBy({ by: ['clinicId'], where: { createdAt: { gte: since, lte: until } }, _count: true }),
+    db.healthcareProgram.groupBy({ by: ['clinicId'], where: { clinicId: { not: null } }, _count: true }),
+  ]);
+
+  const clinicIds = new Set<string>();
+  for (const r of ledgerRows) { if (r.clinicId) clinicIds.add(r.clinicId); if (r.referralClinicId) clinicIds.add(r.referralClinicId); }
+  for (const r of referrals) clinicIds.add(r.clinicId);
+  for (const p of programs) { if (p.clinicId) clinicIds.add(p.clinicId); }
+
+  const clinics = await db.clinic.findMany({
+    where: { id: { in: [...clinicIds] } },
+    select: { id: true, name: true, nameEn: true, imageUrl: true, type: true },
+  });
+  const clinicMap = new Map(clinics.map(c => [c.id, c]));
+
+  interface PartnerRow {
+    clinic: { id: string; name: string; nameEn: string | null; imageUrl: string | null; type: string } | null;
+    sales: number; referrals: number; commission: number;
+    payableUnsettled: number; settled: number; profit: number;
+    programsListed: number;
+  }
+  const rows = new Map<string, PartnerRow>();
+  const get = (id: string): PartnerRow => {
+    let r = rows.get(id);
+    if (!r) { r = { clinic: clinicMap.get(id) ?? null, sales: 0, referrals: 0, commission: 0, payableUnsettled: 0, settled: 0, profit: 0, programsListed: 0 }; rows.set(id, r); }
+    return r;
+  };
+
+  for (const led of ledgerRows) {
+    const isSettled = led.settlementStatus === 'SETTLED';
+    if (led.clinicId && led.partnerShareAmount > 0) {
+      const r = get(led.clinicId);
+      r.sales += led.patientPaid;
+      r.commission += led.patientPaid - led.partnerShareAmount;
+      r.profit += led.partnerShareAmount;
+      if (isSettled) r.settled += led.partnerShareAmount; else r.payableUnsettled += led.partnerShareAmount;
+    }
+    if (led.referralClinicId && led.partnerReferralFeeAmount > 0) {
+      const r = get(led.referralClinicId);
+      r.profit += led.partnerReferralFeeAmount;
+      if (isSettled) r.settled += led.partnerReferralFeeAmount; else r.payableUnsettled += led.partnerReferralFeeAmount;
+    }
+  }
+  for (const ref of referrals) get(ref.clinicId).referrals += ref._count;
+  for (const p of programs) { if (p.clinicId) get(p.clinicId).programsListed += p._count; }
+
+  return [...rows.values()].filter(r => r.clinic).sort((a, b) => (b.sales + b.profit) - (a.sales + a.profit));
+}
+
+/** Per-product rollup: purchase cost, selling price, units sold, stock on hand, COGS, gross
+ * profit, margin. Cost basis is a weighted average over every Purchase ever received for that
+ * product (not range-filtered — cost predates the reporting window); revenue/qty/COGS are
+ * range-filtered to COMPLETED orders. Stock is the patient-facing balance checkout actually
+ * checks (Product.stock, or the sum of its sizes' stock), not the separate multi-store POS
+ * ProductStock ledger. Shared by the Product P&L page's API and the Excel export. */
+export async function getProductReport(since: Date, until: Date, search = '') {
+  const [products, purchaseItemCosts, orders] = await Promise.all([
+    db.product.findMany({
+      where: search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { nameEn: { contains: search, mode: 'insensitive' } }] } : {},
+      select: { id: true, name: true, nameEn: true, imageUrl: true, price: true, stock: true, isActive: true, sizes: { select: { stock: true } } },
+      orderBy: { name: 'asc' },
+    }),
+    db.purchaseItem.groupBy({ by: ['productId'], _sum: { lineTotal: true, receivedQty: true } }),
+    db.order.findMany({
+      where: { status: 'COMPLETED', createdAt: { gte: since, lte: until } },
+      select: { items: { select: { productId: true, price: true, quantity: true } } },
+    }),
+  ]);
+
+  const avgCostByProduct = new Map<string, number>();
+  for (const p of purchaseItemCosts) {
+    const qty = p._sum.receivedQty ?? 0;
+    if (qty > 0) avgCostByProduct.set(p.productId, (p._sum.lineTotal ?? 0) / qty);
+  }
+
+  const soldByProduct = new Map<string, { qty: number; revenue: number }>();
+  for (const o of orders) {
+    for (const i of o.items) {
+      const existing = soldByProduct.get(i.productId) ?? { qty: 0, revenue: 0 };
+      existing.qty += i.quantity;
+      existing.revenue += i.price * i.quantity;
+      soldByProduct.set(i.productId, existing);
+    }
+  }
+
+  return products.map(p => {
+    const sold = soldByProduct.get(p.id) ?? { qty: 0, revenue: 0 };
+    const avgCost = avgCostByProduct.get(p.id) ?? 0;
+    const cogs = Math.round(avgCost * sold.qty);
+    const grossProfit = sold.revenue - cogs;
+    const stockBalance = p.sizes.length > 0 ? p.sizes.reduce((s, sz) => s + sz.stock, 0) : p.stock;
+    return {
+      id: p.id, name: p.name, nameEn: p.nameEn, imageUrl: p.imageUrl, isActive: p.isActive,
+      hasSizes: p.sizes.length > 0,
+      purchasePrice: Math.round(avgCost), sellingPrice: p.price,
+      qtySold: sold.qty, stockBalance,
+      revenue: sold.revenue, cogs, grossProfit,
+      margin: sold.revenue > 0 ? Math.round((grossProfit / sold.revenue) * 1000) / 10 : 0,
+    };
+  }).sort((a, b) => b.revenue - a.revenue);
+}
+
+/** Cash in vs cash out with a running balance — see the Cash Flow page's own API for the
+ * bucketed series; this is the totals-only shape the Excel export needs. */
+export async function getCashFlowTotals(since: Date, until: Date) {
+  const [appointments, orders, programEnrollments, purchases, expenses, refunds] = await Promise.all([
+    db.appointment.findMany({ where: { status: 'COMPLETED', date: { gte: since, lte: until } }, select: { fee: true, doctorPayoutAmount: true } }),
+    db.order.findMany({ where: { status: 'COMPLETED', createdAt: { gte: since, lte: until } }, select: { totalAmount: true } }),
+    db.programEnrollment.findMany({ where: { status: 'APPROVED', createdAt: { gte: since, lte: until } }, select: { amount: true } }),
+    db.purchase.findMany({ where: { status: { in: ['RECEIVED', 'PARTIAL'] }, purchaseDate: { gte: since, lte: until } }, select: { totalAmount: true } }),
+    db.expense.findMany({ where: { date: { gte: since, lte: until } }, select: { amount: true, category: { select: { isCapital: true } } } }),
+    db.refund.aggregate({ where: { createdAt: { gte: since, lte: until } }, _sum: { amount: true } }),
+  ]);
+
+  const cashInByType = {
+    consultation: appointments.reduce((s, a) => s + (a.fee ?? 0), 0),
+    product: orders.reduce((s, o) => s + o.totalAmount, 0),
+    program: programEnrollments.reduce((s, p) => s + p.amount, 0),
+  };
+  const cashOutByType = {
+    doctorPayout: appointments.reduce((s, a) => s + (a.doctorPayoutAmount ?? 0), 0),
+    productPurchase: purchases.reduce((s, p) => s + p.totalAmount, 0),
+    operatingExpenses: expenses.filter(e => !e.category.isCapital).reduce((s, e) => s + e.amount, 0),
+    capex: expenses.filter(e => e.category.isCapital).reduce((s, e) => s + e.amount, 0),
+    refunds: refunds._sum.amount ?? 0,
+  };
+  const totalCashIn = Object.values(cashInByType).reduce((a, b) => a + b, 0);
+  const totalCashOut = Object.values(cashOutByType).reduce((a, b) => a + b, 0);
+
+  return { cashInByType, cashOutByType, totalCashIn, totalCashOut, netCashFlow: totalCashIn - totalCashOut };
+}

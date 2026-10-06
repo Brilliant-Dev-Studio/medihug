@@ -1394,6 +1394,11 @@ model ExpenseCategory {
   id        String              @id @default(cuid())
   name      String
   type      ExpenseCategoryType
+  // Accounting classification, orthogonal to `type` (which is cost BEHAVIOR —
+  // fixed/variable/one-time). isCapital = true means spend here is an investment
+  // (software build, equipment, setup cost) excluded from Operating Expenses and
+  // reported separately, so one large CAPEX month doesn't read as an operating loss.
+  isCapital Boolean             @default(false)
   createdAt DateTime            @default(now())
 
   expenses Expense[]
