@@ -80,21 +80,21 @@ export default function SignInPage() {
         return;
       }
 
-      // Patient path: OTP verification is temporarily disabled (SMS gateway not deliverable
-      // yet) — log the patient in directly by phone. Re-enable by restoring the
-      // /api/auth/otp/send + /verify redirect here (see git history for the prior version).
       const phone = form.phone.trim();
-      let name = phone;
-      try {
-        const profileRes = await fetch(`/api/patient/profile?phone=${encodeURIComponent(phone)}`);
-        if (profileRes.ok) {
-          const profileData = await profileRes.json();
-          if (profileData.user?.name) name = profileData.user.name;
-        }
-      } catch {}
-      localStorage.setItem('medihug_patient', JSON.stringify({ name, phone }));
-      toast.success(mm ? 'ဝင်ရောက်ပြီးပါပြီ!' : 'Signed in!');
-      router.push('/patient/dashboard');
+      const otpRes = await fetch('/api/auth/otp/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const otpData = await otpRes.json();
+      if (!otpRes.ok) {
+        toast.error(otpData.error ?? (mm ? 'OTP ပို့၍မရပါ' : 'Could not send OTP'));
+        return;
+      }
+      sessionStorage.setItem('medihug_login_role', 'PATIENT');
+      sessionStorage.setItem('medihug_pending_phone', phone);
+
+      toast.success(mm ? 'OTP ကုဒ် ပေးပို့ပြီးပါပြီ' : 'OTP code sent');
+      router.push('/verify');
     } finally {
       setSubmitting(false);
     }

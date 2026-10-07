@@ -53,44 +53,29 @@ export default function RegisterPage() {
     return true;
   };
 
-  // OTP verification is temporarily disabled (SMS gateway not deliverable yet) — register
-  // creates the account directly. Re-enable by restoring the /api/auth/otp/send + /verify
-  // step here (same pattern as app/(auth)/signin/page.tsx before this change).
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     const phone = form.phone.trim();
     setSubmitting(true);
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/api/auth/otp/send', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: form.username.trim(), phone, password: form.password }),
+        body: JSON.stringify({ phone }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.code === 'PATIENT_EXISTS'
-          ? (mm ? 'ဤဖုန်းနံပါတ်ဖြင့် လူနာအကောင့် ရှိပြီးသားဖြစ်သည်။ ဝင်ရောက်ရန် (Sign in) ကို အသုံးပြုပါ။' : 'A patient account already exists for this phone. Please sign in instead.')
-          : (data.error ?? (mm ? 'အကောင့်ဖွင့်၍မရပါ' : 'Could not create account')));
+        toast.error(data.error ?? (mm ? 'OTP ပို့၍မရပါ' : 'Could not send OTP'));
         return;
       }
 
-      // Their existing name wins when this phone already belonged to a doctor/partner account.
-      localStorage.setItem('medihug_patient', JSON.stringify({ name: data.user?.name ?? form.username.trim(), phone }));
+      sessionStorage.setItem('medihug_login_role', 'PATIENT');
+      sessionStorage.setItem('medihug_pending_register', JSON.stringify({
+        username: form.username.trim(), phone, password: form.password,
+      }));
 
-      if (data.roleAdded) {
-        const roleNames: Record<string, { mm: string; en: string }> = {
-          DOCTOR: { mm: 'ဆရာဝန်', en: 'Doctor' }, PARTNER: { mm: 'မိတ်ဖက်', en: 'Partner' },
-        };
-        const names = (data.existingRoles as string[] ?? [])
-          .map(r => roleNames[r]?.[mm ? 'mm' : 'en'] ?? 'Admin').join(', ');
-        toast.success(mm
-          ? `ဤဖုန်းနံပါတ်တွင် ${names} အကောင့် ရှိပြီးသားဖြစ်၍ လူနာ (Patient) အကောင့်ကို ထပ်တိုးပေးလိုက်ပါပြီ။ လူနာစကားဝှက်သည် ${names} စကားဝှက်နှင့် သီးခြားစီ ဖြစ်ပါသည်။`
-          : `This phone already has a ${names} account, so a Patient account was added to it. The patient password is separate from your ${names} password.`,
-          { duration: 8000 });
-      } else {
-        toast.success(mm ? 'အကောင့်ဖွင့်ပြီးပါပြီ!' : 'Account created!');
-      }
-      router.push('/patient/dashboard');
+      toast.success(mm ? 'OTP ကုဒ် ပေးပို့ပြီးပါပြီ' : 'OTP code sent');
+      router.push('/verify');
     } finally {
       setSubmitting(false);
     }

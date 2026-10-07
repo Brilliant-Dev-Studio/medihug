@@ -122,10 +122,23 @@ export default function VerifyPage() {
           });
           const regData = await regRes.json();
           if (!regRes.ok) {
-            toast.error(regData.error ?? (lang === 'mm' ? 'အကောင့်ဖွင့်၍မရပါ' : 'Could not create account'));
+            toast.error(regData.code === 'PATIENT_EXISTS'
+              ? (lang === 'mm' ? 'ဤဖုန်းနံပါတ်ဖြင့် လူနာအကောင့် ရှိပြီးသားဖြစ်သည်။ ဝင်ရောက်ရန် (Sign in) ကို အသုံးပြုပါ။' : 'A patient account already exists for this phone. Please sign in instead.')
+              : (regData.error ?? (lang === 'mm' ? 'အကောင့်ဖွင့်၍မရပါ' : 'Could not create account')));
             return;
           }
-          localStorage.setItem('medihug_patient', JSON.stringify({ name: payload.username, phone: payload.phone }));
+          localStorage.setItem('medihug_patient', JSON.stringify({ name: regData.user?.name ?? payload.username, phone: payload.phone }));
+          if (regData.roleAdded) {
+            const roleNames: Record<string, { mm: string; en: string }> = {
+              DOCTOR: { mm: 'ဆရာဝန်', en: 'Doctor' }, PARTNER: { mm: 'မိတ်ဖက်', en: 'Partner' },
+            };
+            const names = (regData.existingRoles as string[] ?? [])
+              .map(r => roleNames[r]?.[lang === 'mm' ? 'mm' : 'en'] ?? 'Admin').join(', ');
+            toast.success(lang === 'mm'
+              ? `ဤဖုန်းနံပါတ်တွင် ${names} အကောင့် ရှိပြီးသားဖြစ်၍ လူနာ (Patient) အကောင့်ကို ထပ်တိုးပေးလိုက်ပါပြီ။ လူနာစကားဝှက်သည် ${names} စကားဝှက်နှင့် သီးခြားစီ ဖြစ်ပါသည်။`
+              : `This phone already has a ${names} account, so a Patient account was added to it. The patient password is separate from your ${names} password.`,
+              { duration: 8000 });
+          }
           sessionStorage.removeItem('medihug_pending_register');
         } else {
           let name = phone;
