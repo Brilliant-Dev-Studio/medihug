@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
-import { hasRole, rolesOf } from '@/lib/roleAccess';
+import { hasRole, rolesOf, getRoleHash, setRolePassword } from '@/lib/roleAccess';
 
 /* ── POST /api/auth/register — creates a patient account. Called only after
  * /api/auth/otp/verify has confirmed the phone via SMS. ── */
@@ -20,6 +20,18 @@ export async function POST(req: NextRequest) {
 
     if (existing) {
       if (await hasRole(existing, 'PATIENT')) {
+        // Several guest flows (booking, favorites, orders, program enroll, support, medical
+        // requests) silently create a PATIENT account by phone with password = bcrypt(phone)
+        // so a guest's activity can be tracked. If that's still the untouched default password,
+        // this is someone claiming that shell account for real — set their chosen password
+        // instead of blocking them with a confusing "already exists".
+        const patientHash = await getRoleHash(existing, 'PATIENT');
+        const isUnclaimedGuestShell = patientHash !== null && await bcrypt.compare(existing.phone, patientHash);
+        if (isUnclaimedGuestShell) {
+          await setRolePassword(existing.id, 'PATIENT', password);
+          await db.user.update({ where: { id: existing.id }, data: { name: username } });
+          return NextResponse.json({ success: true, user: { name: username, phone: existing.phone } }, { status: 200 });
+        }
         return NextResponse.json({ error: 'ဤဖုန်းနံပါတ်ဖြင့် အကောင့်ရှိပြီးသားဖြစ်သည်', code: 'PATIENT_EXISTS' }, { status: 409 });
       }
       // The phone already belongs to a doctor/partner: add a patient login with its own
